@@ -7,7 +7,7 @@
 
 package goray
 
-import "math"
+import "fmath"
 
 type Vector3D struct {
     X, Y, Z float
@@ -22,7 +22,7 @@ func (v Vector3D) Normalize() Vector3D {
 }
 
 func (v Vector3D) Length() float {
-    return float(math.Sqrt(float64(v.Length())))
+    return fmath.Sqrt(v.Length())
 }
 
 func (v Vector3D) LengthSqr() float {
@@ -30,7 +30,7 @@ func (v Vector3D) LengthSqr() float {
 }
 
 func (v Vector3D) Abs() Vector3D {
-    return Vector3D{float(math.Fabs(float64(v.X))), float(math.Fabs(float64(v.Y))), float(math.Fabs(float64(v.Z)))}
+    return Vector3D{fmath.Abs(v.X), fmath.Abs(v.Y), fmath.Abs(v.Z)}
 }
 
 func (v Vector3D) IsZero() bool {

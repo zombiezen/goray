@@ -7,7 +7,7 @@
 
 package goray
 
-import "math"
+import "fmath"
 
 type Color struct {
     R, G, B, A float
@@ -32,31 +32,26 @@ func (c Color) InvertRGB() Color {
 }
 
 func (c Color) AbsRGB() Color {
-    return Color{
-        float(math.Fabs(float64(c.R))),
-        float(math.Fabs(float64(c.G))),
-        float(math.Fabs(float64(c.B))),
-        c.A,
-    }
+    return Color{fmath.Abs(c.R), fmath.Abs(c.G), fmath.Abs(c.B), c.A}
 }
 
 func ColorAdd(c1, c2 Color) Color {
     return Color{c1.R + c2.R, c1.G + c2.G, c1.B + c2.B, c1.A + c2.A}
 }
 
-func ColorSubtract(c1, c2 Color) Color {
+func ColorSub(c1, c2 Color) Color {
     return Color{c1.R - c2.R, c1.G - c2.G, c1.B - c2.B, c1.A - c2.A}
 }
 
-func ColorMultiply(c1, c2 Color) Color {
+func ColorMul(c1, c2 Color) Color {
     return Color{c1.R * c2.R, c1.G * c2.G, c1.B * c2.B, c1.A * c2.A}
 }
 
-func ColorScalarMultiply(c Color, f float) Color {
+func ColorScalarMul(c Color, f float) Color {
     return Color{c.R * f, c.G * f, c.B * f, c.A * f}
 }
 
-func ColorScalarDivide(c Color, f float) Color {
+func ColorScalarDiv(c Color, f float) Color {
     return Color{c.R / f, c.G / f, c.B / f, c.A / f}
 }
 
@@ -70,5 +65,5 @@ func ColorMix(a, b Color, point float) Color {
     } else if point > 1 {
         return a
     }
-    return ColorAdd(ColorScalarMultiply(a, point), ColorScalarMultiply(b, 1 - point))
+    return ColorAdd(ColorScalarMul(a, point), ColorScalarMul(b, 1 - point))
 }
