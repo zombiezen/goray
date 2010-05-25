@@ -10,6 +10,6 @@ package ray
 import "./goray/vector"
 
 type Ray struct {
-    From, Dir vector.Vector3D
-    TMin, TMax, Time float
+	From, Dir        vector.Vector3D
+	TMin, TMax, Time float
 }
