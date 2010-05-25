@@ -18,16 +18,16 @@ type Color interface {
 
 // RGB Color
 
-type RGBColor struct {
+type RGB struct {
 	r, g, b float
 }
 
-func NewRGB(r, g, b float) RGBColor { return RGBColor{r, g, b} }
-func DiscardAlpha(c Color) RGBColor { return NewRGB(c.GetR(), c.GetG(), c.GetB()) }
-func (c RGBColor) GetR() float      { return c.r }
-func (c RGBColor) GetG() float      { return c.g }
-func (c RGBColor) GetB() float      { return c.b }
-func (c RGBColor) GetA() float      { return 1.0 }
+func NewRGB(r, g, b float) RGB { return RGB{r, g, b} }
+func DiscardAlpha(c Color) RGB { return NewRGB(c.GetR(), c.GetG(), c.GetB()) }
+func (c RGB) GetR() float      { return c.r }
+func (c RGB) GetG() float      { return c.g }
+func (c RGB) GetB() float      { return c.b }
+func (c RGB) GetA() float      { return 1.0 }
 
 func IsBlack(c Color) bool {
 	return c.GetR() == 0 && c.GetG() == 0 && c.GetB() == 0
@@ -38,15 +38,15 @@ func GetEnergy(c Color) float {
 }
 
 func InvertRGB(c Color) Color {
-	newColor := RGBAColor{a: c.GetA()}
+	newColor := RGBA{a: c.GetA()}
 	if c.GetR() != 0 {
-		newColor.RGBColor.r = 1.0 / c.GetR()
+		newColor.RGB.r = 1.0 / c.GetR()
 	}
 	if c.GetG() != 0 {
-		newColor.RGBColor.g = 1.0 / c.GetG()
+		newColor.RGB.g = 1.0 / c.GetG()
 	}
 	if c.GetB() != 0 {
-		newColor.RGBColor.b = 1.0 / c.GetB()
+		newColor.RGB.b = 1.0 / c.GetB()
 	}
 	return newColor
 }
@@ -86,14 +86,14 @@ func Mix(a, b Color, point float) Color {
 
 // RGBA colors
 
-type RGBAColor struct {
-	RGBColor
+type RGBA struct {
+	RGB
 	a float
 }
 
-func NewRGBA(r, g, b, a float) RGBAColor { return RGBAColor{NewRGB(r, g, b), a} }
-func (c RGBAColor) GetA() float          { return c.a }
+func NewRGBA(r, g, b, a float) RGBA { return RGBA{NewRGB(r, g, b), a} }
+func (c RGBA) GetA() float          { return c.a }
 
-func (c RGBAColor) AlphaPremultiply() RGBAColor {
+func (c RGBA) AlphaPremultiply() RGBA {
 	return NewRGBA(c.GetR()*c.a, c.GetG()*c.a, c.GetB()*c.a, c.a)
 }
