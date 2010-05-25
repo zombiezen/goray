@@ -23,6 +23,7 @@ type RGBColor struct {
 }
 
 func NewRGB(r, g, b float) RGBColor { return RGBColor{r, g, b} }
+func DiscardAlpha(c Color) RGBColor { return NewRGB(c.GetR(), c.GetG(), c.GetB()) }
 func (c RGBColor) GetR() float      { return c.r }
 func (c RGBColor) GetG() float      { return c.g }
 func (c RGBColor) GetB() float      { return c.b }
