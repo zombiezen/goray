@@ -9,27 +9,33 @@ package fmath
 
 import "math"
 
+var Inf = float(math.Inf(1))
+
 func Abs(f float) float {
-    if f >= 0 {
-        return f
-    }
-    return -f
+	if f >= 0 {
+		return f
+	}
+	return -f
+}
+
+func IsInf(n float) bool {
+	return math.IsInf(float64(n), 0)
 }
 
 func Min(f1, f2 float) float {
-    if f1 <= f2 {
-        return f1
-    }
-    return f2
+	if f1 <= f2 {
+		return f1
+	}
+	return f2
 }
 
 func Max(f1, f2 float) float {
-    if f1 >= f2 {
-        return f1
-    }
-    return f2
+	if f1 >= f2 {
+		return f1
+	}
+	return f2
 }
 
 func Sqrt(f float) float {
-    return float(math.Sqrt(float64(f)))
+	return float(math.Sqrt(float64(f)))
 }
