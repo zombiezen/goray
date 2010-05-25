@@ -34,9 +34,64 @@ func Union(b1, b2 Bound) Bound {
 func (b Bound) Get() (a, g vector.Vector3D) { return b.a, b.g }
 func (b *Bound) Set(a, g vector.Vector3D)   { b.a = a; b.g = g }
 
-func (b Bound) Cross(from, ray vector.Vector3D) bool {
-	// TODO
-	return true
+// Cross checks whether a given ray crosses the bound.
+// from specifies a point where the ray starts.
+// ray specifies the direction the ray is in.
+// dist is the maximum distance that this method will check.  Pass in fmath.Inf
+// to remove the check.
+func (b Bound) Cross(from, ray vector.Vector3D, dist float) (crosses bool, enter, leave float) {
+	a0, a1 := b.a, b.g
+	p := vector.Sub(from, a0)
+	lmin, lmax := -1.0, -1.0
+
+	if ray.X != 0 {
+		tmp1 := -p.X / ray.X
+		tmp2 := ((a1.X - a0.X) - p.X) / ray.X
+		if tmp1 > tmp2 {
+			tmp1, tmp2 = tmp2, tmp1
+		}
+		lmin, lmax = tmp1, tmp2
+		if lmax < 0 || lmin > dist {
+			return
+		}
+	}
+	if ray.Y != 0 {
+		tmp1 := -p.Y / ray.Y
+		tmp2 := ((a1.Y - a0.Y) - p.Y) / ray.Y
+		if tmp1 > tmp2 {
+			tmp1, tmp2 = tmp2, tmp1
+		}
+		if tmp1 > lmin {
+			lmin = tmp1
+		}
+		if tmp2 < lmax || lmax < 0 {
+			lmax = tmp2
+			if lmax < 0 || lmin > dist {
+				return
+			}
+		}
+	}
+	if ray.Z != 0 {
+		tmp1 := -p.Z / ray.Z
+		tmp2 := ((a1.Z - a0.Z) - p.Z) / ray.Z
+		if tmp1 > tmp2 {
+			tmp1, tmp2 = tmp2, tmp1
+		}
+		if tmp1 > lmin {
+			lmin = tmp1
+		}
+		if tmp2 < lmax || lmax < 0 {
+			lmax = tmp2
+		}
+		if lmin <= lmax && lmax >= 0 && lmin <= dist {
+			enter = lmin
+			leave = lmax
+			crosses = true
+			return
+		}
+	}
+
+	return
 }
 
 func (b Bound) GetVolume() float {
