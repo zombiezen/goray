@@ -5,65 +5,94 @@
 //  Created by Ross Light on 2010-05-22.
 //
 
-package goray
+package color
 
-import "fmath"
+import "./fmath"
 
-type Color struct {
-    R, G, B, A float
+type Color interface {
+	GetR() float
+	GetG() float
+	GetB() float
+	GetA() float
 }
 
-func NewColorRGB(r, g, b float) Color { return Color{r, g, b, 1.0} }
+// RGB Color
 
-func (c Color) IsBlack() bool {
-    return c.R == 0 && c.G == 0 && c.B == 0
+type RGBColor struct {
+	r, g, b float
 }
 
-func (c Color) GetEnergy() float {
-    return (c.R + c.G + c.B) * 0.33333333333333
+func NewRGB(r, g, b float) RGBColor { return RGBColor{r, g, b} }
+func (c RGBColor) GetR() float      { return c.r }
+func (c RGBColor) GetG() float      { return c.g }
+func (c RGBColor) GetB() float      { return c.b }
+func (c RGBColor) GetA() float      { return 1.0 }
+
+func IsBlack(c Color) bool {
+	return c.GetR() == 0 && c.GetG() == 0 && c.GetB() == 0
 }
 
-func (c Color) InvertRGB() Color {
-    newColor := Color{A:c.A}
-    if c.R != 0 { newColor.R = 1.0 / c.R }
-    if c.G != 0 { newColor.G = 1.0 / c.G }
-    if c.B != 0 { newColor.B = 1.0 / c.B }
-    return newColor
+func GetEnergy(c Color) float {
+	return (c.GetR() + c.GetG() + c.GetB()) * 0.33333333333333
 }
 
-func (c Color) AbsRGB() Color {
-    return Color{fmath.Abs(c.R), fmath.Abs(c.G), fmath.Abs(c.B), c.A}
+func InvertRGB(c Color) Color {
+	newColor := RGBAColor{a: c.GetA()}
+	if c.GetR() != 0 {
+		newColor.RGBColor.r = 1.0 / c.GetR()
+	}
+	if c.GetG() != 0 {
+		newColor.RGBColor.g = 1.0 / c.GetG()
+	}
+	if c.GetB() != 0 {
+		newColor.RGBColor.b = 1.0 / c.GetB()
+	}
+	return newColor
 }
 
-func ColorAdd(c1, c2 Color) Color {
-    return Color{c1.R + c2.R, c1.G + c2.G, c1.B + c2.B, c1.A + c2.A}
+func AbsRGB(c Color) Color {
+	return NewRGBA(fmath.Abs(c.GetR()), fmath.Abs(c.GetG()), fmath.Abs(c.GetB()), c.GetA())
 }
 
-func ColorSub(c1, c2 Color) Color {
-    return Color{c1.R - c2.R, c1.G - c2.G, c1.B - c2.B, c1.A - c2.A}
+func Add(c1, c2 Color) Color {
+	return NewRGBA(c1.GetR()+c2.GetR(), c1.GetG()+c2.GetG(), c1.GetB()+c2.GetB(), c1.GetA()+c2.GetA())
 }
 
-func ColorMul(c1, c2 Color) Color {
-    return Color{c1.R * c2.R, c1.G * c2.G, c1.B * c2.B, c1.A * c2.A}
+func Sub(c1, c2 Color) Color {
+	return NewRGBA(c1.GetR()-c2.GetR(), c1.GetG()-c2.GetG(), c1.GetB()-c2.GetB(), c1.GetA()-c2.GetA())
 }
 
-func ColorScalarMul(c Color, f float) Color {
-    return Color{c.R * f, c.G * f, c.B * f, c.A * f}
+func Mul(c1, c2 Color) Color {
+	return NewRGBA(c1.GetR()*c2.GetR(), c1.GetG()*c2.GetG(), c1.GetB()*c2.GetB(), c1.GetA()*c2.GetA())
 }
 
-func ColorScalarDiv(c Color, f float) Color {
-    return Color{c.R / f, c.G / f, c.B / f, c.A / f}
+func ScalarMul(c Color, f float) Color {
+	return NewRGBA(c.GetR()*f, c.GetG()*f, c.GetB()*f, c.GetA()*f)
 }
 
-func (c Color) AlphaPremultiply() Color {
-    return Color{c.R * c.A, c.G * c.A, c.B * c.A, c.A}
+func ScalarDiv(c Color, f float) Color {
+	return NewRGBA(c.GetR()/f, c.GetG()/f, c.GetB()/f, c.GetA()/f)
 }
 
-func ColorMix(a, b Color, point float) Color {
-    if point < 0 {
-        return b
-    } else if point > 1 {
-        return a
-    }
-    return ColorAdd(ColorScalarMul(a, point), ColorScalarMul(b, 1 - point))
+func Mix(a, b Color, point float) Color {
+	if point < 0 {
+		return b
+	} else if point > 1 {
+		return a
+	}
+	return Add(ScalarMul(a, point), ScalarMul(b, 1-point))
+}
+
+// RGBA colors
+
+type RGBAColor struct {
+	RGBColor
+	a float
+}
+
+func NewRGBA(r, g, b, a float) RGBAColor { return RGBAColor{NewRGB(r, g, b), a} }
+func (c RGBAColor) GetA() float          { return c.a }
+
+func (c RGBAColor) AlphaPremultiply() RGBAColor {
+	return NewRGBA(c.GetR()*c.a, c.GetG()*c.a, c.GetB()*c.a, c.a)
 }
