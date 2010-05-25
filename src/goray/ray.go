@@ -5,9 +5,11 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-package goray
+package ray
+
+import "./goray/vector"
 
 type Ray struct {
-    From, Dir Vector3D
+    From, Dir vector.Vector3D
     TMin, TMax, Time float
 }
