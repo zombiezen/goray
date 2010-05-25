@@ -5,6 +5,8 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
+package primitive
+
 type Primitive interface {
     GetBound() Bound
     IntersectsBound(Bound) bool
