@@ -19,6 +19,7 @@ fmath_package = env.Go('bin/fmath', 'bin/fmath.go')
 stack_package = env.Go('bin/stack', 'bin/stack.go')
 
 bound_package = env.Go('bin/goray/bound', 'bin/goray/bound.go')
+camera_package = env.Go('bin/goray/camera', 'bin/goray/camera.go')
 color_package = env.Go('bin/goray/color', 'bin/goray/color.go')
 material_package = env.Go('bin/goray/material', 'bin/goray/material.go')
 matrix_package = env.Go('bin/goray/matrix', 'bin/goray/matrix.go')
@@ -27,6 +28,7 @@ vector_package = env.Go('bin/goray/vector', 'bin/goray/vector.go')
 
 packages = [
     bound_package,
+    camera_package,
     color_package,
     fmath_package,
     material_package,
