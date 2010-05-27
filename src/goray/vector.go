@@ -42,12 +42,24 @@ func (v Vector3D) String() string {
 	return fmt.Sprintf("<%.2f, %.2f, %.2f>", v.X, v.Y, v.Z)
 }
 
-func Add(v1, v2 Vector3D) Vector3D {
-	return Vector3D{v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z}
+func Add(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
+	result := Vector3D{v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z}
+	for i := 0; i < len(vn); i++ {
+		result.X += vn[i].X
+		result.Y += vn[i].Y
+		result.Z += vn[i].Z
+	}
+	return result
 }
 
-func Sub(v1, v2 Vector3D) Vector3D {
-	return Vector3D{v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z}
+func Sub(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
+	result := Vector3D{v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z}
+	for i := 0; i < len(vn); i++ {
+		result.X -= vn[i].X
+		result.Y -= vn[i].Y
+		result.Z -= vn[i].Z
+	}
+	return result
 }
 
 func ScalarMul(v Vector3D, s float) Vector3D {
@@ -60,4 +72,12 @@ func ScalarDiv(v Vector3D, s float) Vector3D {
 
 func Dot(v1, v2 Vector3D) float {
 	return v1.X*v2.X + v1.Y*v2.Y + v1.Z*v2.Z
+}
+
+func Cross(v1, v2 Vector3D) Vector3D {
+	return Vector3D{
+		v1.Y*v2.Z - v1.Z*v2.Y,
+		v1.Z*v2.X - v1.X*v2.Z,
+		v1.X*v2.Z - v1.Y*v2.X,
+	}
 }
