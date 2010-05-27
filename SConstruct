@@ -20,6 +20,7 @@ stack_package = env.Go('bin/stack', 'bin/stack.go')
 
 bound_package = env.Go('bin/goray/bound', 'bin/goray/bound.go')
 color_package = env.Go('bin/goray/color', 'bin/goray/color.go')
+material_package = env.Go('bin/goray/material', 'bin/goray/material.go')
 ray_package = env.Go('bin/goray/ray', 'bin/goray/ray.go')
 vector_package = env.Go('bin/goray/vector', 'bin/goray/vector.go')
 
@@ -27,6 +28,7 @@ packages = [
     bound_package,
     color_package,
     fmath_package,
+    material_package,
     ray_package,
     stack_package,
     vector_package,
