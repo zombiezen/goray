@@ -7,6 +7,7 @@
 
 package color
 
+import "fmt"
 import "./fmath"
 
 type Alpha interface {
@@ -43,6 +44,10 @@ func (c RGB) GetR() float { return c.R }
 func (c RGB) GetG() float { return c.G }
 func (c RGB) GetB() float { return c.B }
 
+func (c RGB) String() string {
+	return fmt.Sprintf("RGB(%.3f, %.3f, %.3f)", c.R, c.G, c.B)
+}
+
 // RGBA colors
 
 type RGBA struct {
@@ -58,6 +63,10 @@ func (c *RGBA) Copy(src AlphaColor) {
 }
 
 func (c RGBA) GetA() float { return c.A }
+
+func (c RGBA) String() string {
+	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.GetR(), c.GetG(), c.GetB(), c.A)
+}
 
 func (c RGBA) AlphaPremultiply() RGBA {
 	return NewRGBA(c.GetR()*c.A, c.GetG()*c.A, c.GetB()*c.A, c.A)

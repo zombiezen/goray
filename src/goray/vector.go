@@ -7,6 +7,7 @@
 
 package vector
 
+import "fmt"
 import "./fmath"
 
 type Vector3D struct {
@@ -35,6 +36,10 @@ func (v Vector3D) Abs() Vector3D {
 
 func (v Vector3D) IsZero() bool {
 	return v.X == 0 && v.Y == 0 && v.Z == 0
+}
+
+func (v Vector3D) String() string {
+	return fmt.Sprintf("<%.2f, %.2f, %.2f>", v.X, v.Y, v.Z)
 }
 
 func Add(v1, v2 Vector3D) Vector3D {
