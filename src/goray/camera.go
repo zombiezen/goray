@@ -17,6 +17,9 @@ type Camera interface {
 	ResolutionX() int
 	ResolutionY() int
 	Project(wo ray.Ray, lu, lv float) (ok bool, pu, v float, pdf float)
+    // SampleLens indicates whether the lens needs to be sampled using the u and v
+    // parameters of ShootRay.  This is useful for DOF-like effects.  When this
+    // returns false, no lens samples need to be computed.
 	SampleLens() bool
 }
 
