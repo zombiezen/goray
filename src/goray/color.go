@@ -7,8 +7,12 @@
 
 package color
 
-import "fmt"
-import "./fmath"
+import (
+    "fmt"
+    "image"
+    "math"
+    "./fmath"
+)
 
 type Alpha interface {
 	GetA() float
@@ -44,6 +48,14 @@ func (c RGB) GetR() float { return c.R }
 func (c RGB) GetG() float { return c.G }
 func (c RGB) GetB() float { return c.B }
 
+func (c RGB) RGBA() (r, g, b, a uint32) {
+    r = uint32(c.R * math.MaxUint32)
+    g = uint32(c.G * math.MaxUint32)
+    b = uint32(c.B * math.MaxUint32)
+    a = math.MaxUint32
+    return
+}
+
 func (c RGB) String() string {
 	return fmt.Sprintf("RGB(%.3f, %.3f, %.3f)", c.R, c.G, c.B)
 }
@@ -64,6 +76,12 @@ func (c *RGBA) Copy(src AlphaColor) {
 
 func (c RGBA) GetA() float { return c.A }
 
+func (c RGBA) RGBA() (r, g, b, a uint32) {
+    r, g, b, a = c.RGB.RGBA()
+    a = uint32(c.A * math.MaxUint32)
+    return
+}
+
 func (c RGBA) String() string {
 	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.GetR(), c.GetG(), c.GetB(), c.A)
 }
@@ -73,6 +91,24 @@ func (c RGBA) AlphaPremultiply() RGBA {
 }
 
 // Operations
+
+func toGorayColor(col image.Color) image.Color {
+    if _, ok := col.(RGB); ok {
+        return col
+    }
+    if _, ok := col.(RGBA); ok {
+        return col
+    }
+    r, g, b, a := col.RGBA()
+    return NewRGBA(
+        float(r) / math.MaxUint32,
+        float(g) / math.MaxUint32,
+        float(b) / math.MaxUint32,
+        float(a) / math.MaxUint32,
+    )
+}
+
+var Model image.ColorModel = image.ColorModelFunc(toGorayColor)
 
 func IsBlack(c Color) bool {
 	return c.GetR() == 0 && c.GetG() == 0 && c.GetB() == 0

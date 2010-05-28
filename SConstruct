@@ -24,6 +24,7 @@ color_package = env.Go('bin/goray/color', 'bin/goray/color.go')
 material_package = env.Go('bin/goray/material', 'bin/goray/material.go')
 matrix_package = env.Go('bin/goray/matrix', 'bin/goray/matrix.go')
 ray_package = env.Go('bin/goray/ray', 'bin/goray/ray.go')
+render_package = env.Go('bin/goray/render', 'bin/goray/render.go')
 vector_package = env.Go('bin/goray/vector', 'bin/goray/vector.go')
 
 packages = [
@@ -34,6 +35,7 @@ packages = [
     material_package,
     matrix_package,
     ray_package,
+    render_package,
     stack_package,
     vector_package,
 ]
