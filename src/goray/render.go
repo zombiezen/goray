@@ -59,8 +59,8 @@ func (st *RenderState) SetDefaults() {
 }
 
 type Fragment struct {
-    Color color.AlphaColor
-    X, Y int
+	Color color.AlphaColor
+	X, Y  int
 }
 
 type Image struct {
@@ -70,14 +70,14 @@ type Image struct {
 
 func NewImage(width, height int) (img *Image) {
 	img = new(Image)
-    img.width, img.height = width, height
-    // Allocate image memory
-    dataBlock := make([]color.RGBA, width * height)
-    img.data = make([][]color.RGBA, height)
-    for i := 0; i < height; i++ {
-        img.data[i] = dataBlock[i * width:(i + 1) * width]
-    }
-    return
+	img.width, img.height = width, height
+	// Allocate image memory
+	dataBlock := make([]color.RGBA, width*height)
+	img.data = make([][]color.RGBA, height)
+	for i := 0; i < height; i++ {
+		img.data[i] = dataBlock[i*width : (i+1)*width]
+	}
+	return
 }
 
 func (i *Image) ColorModel() image.ColorModel { return color.Model }
@@ -88,16 +88,16 @@ func (i *Image) At(x, y int) image.Color {
 }
 
 func (i *Image) Clear(clearColor color.AlphaColor) {
-    for y := 0; y < i.height; y++ {
-        for x := 0; x < i.width; x++ {
-            i.data[y][x].Copy(clearColor)
-        }
-    }
+	for y := 0; y < i.height; y++ {
+		for x := 0; x < i.width; x++ {
+			i.data[y][x].Copy(clearColor)
+		}
+	}
 }
 
 func (i *Image) Acquire(ch <-chan Fragment) {
-    for !closed(ch) {
-        frag := <-ch
-        i.data[frag.Y][frag.X].Copy(frag.Color)
-    }
+	for !closed(ch) {
+		frag := <-ch
+		i.data[frag.Y][frag.X].Copy(frag.Color)
+	}
 }

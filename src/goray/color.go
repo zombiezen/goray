@@ -8,10 +8,10 @@
 package color
 
 import (
-    "fmt"
-    "image"
-    "math"
-    "./fmath"
+	"fmt"
+	"image"
+	"math"
+	"./fmath"
 )
 
 type Alpha interface {
@@ -49,21 +49,21 @@ func (c RGB) GetG() float { return c.G }
 func (c RGB) GetB() float { return c.B }
 
 func quantizeComponent(f float) uint32 {
-    temp := uint64(f * math.MaxUint32)
-    if temp > math.MaxUint32 {
-        return math.MaxUint32
-    } else if temp < 0 {
-        return 0
-    }
-    return uint32(temp)
+	temp := uint64(f * math.MaxUint32)
+	if temp > math.MaxUint32 {
+		return math.MaxUint32
+	} else if temp < 0 {
+		return 0
+	}
+	return uint32(temp)
 }
 
 func (c RGB) RGBA() (r, g, b, a uint32) {
-    r = quantizeComponent(c.R)
-    g = quantizeComponent(c.G)
-    b = quantizeComponent(c.B)
-    a = math.MaxUint32
-    return
+	r = quantizeComponent(c.R)
+	g = quantizeComponent(c.G)
+	b = quantizeComponent(c.B)
+	a = math.MaxUint32
+	return
 }
 
 func (c RGB) String() string {
@@ -87,9 +87,9 @@ func (c *RGBA) Copy(src AlphaColor) {
 func (c RGBA) GetA() float { return c.A }
 
 func (c RGBA) RGBA() (r, g, b, a uint32) {
-    r, g, b, a = c.AlphaPremultiply().RGB.RGBA()
-    a = quantizeComponent(c.A)
-    return
+	r, g, b, a = c.AlphaPremultiply().RGB.RGBA()
+	a = quantizeComponent(c.A)
+	return
 }
 
 func (c RGBA) String() string {
@@ -103,19 +103,19 @@ func (c RGBA) AlphaPremultiply() RGBA {
 // Operations
 
 func toGorayColor(col image.Color) image.Color {
-    if _, ok := col.(RGB); ok {
-        return col
-    }
-    if _, ok := col.(RGBA); ok {
-        return col
-    }
-    r, g, b, a := col.RGBA()
-    return NewRGBA(
-        float(r) / math.MaxUint32,
-        float(g) / math.MaxUint32,
-        float(b) / math.MaxUint32,
-        float(a) / math.MaxUint32,
-    )
+	if _, ok := col.(RGB); ok {
+		return col
+	}
+	if _, ok := col.(RGBA); ok {
+		return col
+	}
+	r, g, b, a := col.RGBA()
+	return NewRGBA(
+		float(r)/math.MaxUint32,
+		float(g)/math.MaxUint32,
+		float(b)/math.MaxUint32,
+		float(a)/math.MaxUint32,
+	)
 }
 
 var Model image.ColorModel = image.ColorModelFunc(toGorayColor)
