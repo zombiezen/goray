@@ -37,8 +37,11 @@ packages = [
     stack_package,
     vector_package,
 ]
+Alias('lib', packages)
 
-Default(packages)
+program = env.GoProgram('bin/run-goray', env.Go('bin/main.go'))
+
+Default(packages + [program])
 
 # Testing
 #testenv = env.Clone(ENV=os.environ)
