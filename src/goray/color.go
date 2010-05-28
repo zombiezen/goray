@@ -48,10 +48,20 @@ func (c RGB) GetR() float { return c.R }
 func (c RGB) GetG() float { return c.G }
 func (c RGB) GetB() float { return c.B }
 
+func quantizeComponent(f float) uint32 {
+    temp := uint64(f * math.MaxUint32)
+    if temp > math.MaxUint32 {
+        return math.MaxUint32
+    } else if temp < 0 {
+        return 0
+    }
+    return uint32(temp)
+}
+
 func (c RGB) RGBA() (r, g, b, a uint32) {
-    r = uint32(c.R * math.MaxUint32)
-    g = uint32(c.G * math.MaxUint32)
-    b = uint32(c.B * math.MaxUint32)
+    r = quantizeComponent(c.R)
+    g = quantizeComponent(c.G)
+    b = quantizeComponent(c.B)
     a = math.MaxUint32
     return
 }
@@ -77,8 +87,8 @@ func (c *RGBA) Copy(src AlphaColor) {
 func (c RGBA) GetA() float { return c.A }
 
 func (c RGBA) RGBA() (r, g, b, a uint32) {
-    r, g, b, a = c.RGB.RGBA()
-    a = uint32(c.A * math.MaxUint32)
+    r, g, b, a = c.AlphaPremultiply().RGB.RGBA()
+    a = quantizeComponent(c.A)
     return
 }
 
