@@ -10,7 +10,10 @@ package main
 import (
     "flag"
     "fmt"
-    "./goray/scene"
+    "os"
+    "image/png"
+    "./goray/color"
+    "./goray/render"
 )
 
 func printInstructions() {
@@ -46,19 +49,20 @@ func main() {
     }
     
     _ = debug
-    f, err := os.Open(outputPath, os.O_WRONLY | os.O_CREAT, 0644)
+    f, err := os.Open(*outputPath, os.O_WRONLY | os.O_CREAT, 0644)
     defer f.Close()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
         return
     }
-    sc := scene.New()
+    //sc := scene.New()
     
     fmt.Println("Setting up scene...")
     //ok := parseXMLFile(f, scene)
     
     fmt.Println("Rendering...")
-    outputImage := sc.Render()
+    outputImage := render.NewImage(640, 480)
+    outputImage.Clear(color.NewRGBA(1.0, 0.0, 0.0, 1.0))
     
     fmt.Println("Writing and finishing...")
     switch *format {
