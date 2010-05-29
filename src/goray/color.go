@@ -93,11 +93,11 @@ func (c RGBA) RGBA() (r, g, b, a uint32) {
 }
 
 func (c RGBA) String() string {
-	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.GetR(), c.GetG(), c.GetB(), c.A)
+	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.R, c.G, c.B, c.A)
 }
 
 func (c RGBA) AlphaPremultiply() RGBA {
-	return NewRGBA(c.GetR()*c.A, c.GetG()*c.A, c.GetB()*c.A, c.A)
+	return NewRGBA(c.R*c.A, c.G*c.A, c.B*c.A, c.A)
 }
 
 // Operations
