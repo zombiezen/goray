@@ -56,6 +56,11 @@ func Add(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
 	return result
 }
 
+// ScalarAdd adds a scalar to all of a vector's components.
+func ScalarAdd(v Vector3D, s float) Vector3D {
+	return Vector3D{v.X + s, v.Y + s, v.Z + s}
+}
+
 func Sub(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
 	result := Vector3D{v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z}
 	for i := 0; i < len(vn); i++ {
@@ -64,6 +69,11 @@ func Sub(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
 		result.Z -= vn[i].Z
 	}
 	return result
+}
+
+// ScalarSub subtracts a scalar from all of a vector's components.
+func ScalarSub(v Vector3D, s float) Vector3D {
+	return Vector3D{v.X - s, v.Y - s, v.Z - s}
 }
 
 func ScalarMul(v Vector3D, s float) Vector3D {
@@ -84,4 +94,14 @@ func Cross(v1, v2 Vector3D) Vector3D {
 		v1.Z*v2.X - v1.X*v2.Z,
 		v1.X*v2.Z - v1.Y*v2.X,
 	}
+}
+
+// CompMul multiplies the components of two vectors together.
+func CompMul(v1, v2 Vector3D) Vector3D {
+	return Vector3D{v1.X * v2.X, v1.Y * v2.Y, v1.Z * v2.Z}
+}
+
+// CompDiv divides the components of two vectors.
+func CompDiv(v1, v2 Vector3D) Vector3D {
+	return Vector3D{v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z}
 }
