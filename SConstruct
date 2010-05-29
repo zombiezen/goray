@@ -15,32 +15,25 @@ def _add_test(source, test):
     test_sources.append(test)
 
 # Main build
-fmath_package = env.Go('bin/fmath', 'bin/fmath.go')
-stack_package = env.Go('bin/stack', 'bin/stack.go')
-
-background_package = env.Go('bin/goray/background', 'bin/goray/background.go')
-bound_package = env.Go('bin/goray/bound', 'bin/goray/bound.go')
-camera_package = env.Go('bin/goray/camera', 'bin/goray/camera.go')
-color_package = env.Go('bin/goray/color', 'bin/goray/color.go')
-material_package = env.Go('bin/goray/material', 'bin/goray/material.go')
-matrix_package = env.Go('bin/goray/matrix', 'bin/goray/matrix.go')
-ray_package = env.Go('bin/goray/ray', 'bin/goray/ray.go')
-render_package = env.Go('bin/goray/render', 'bin/goray/render.go')
-vector_package = env.Go('bin/goray/vector', 'bin/goray/vector.go')
-
-packages = [
-    background_package,
-    bound_package,
-    camera_package,
-    color_package,
-    fmath_package,
-    material_package,
-    matrix_package,
-    ray_package,
-    render_package,
-    stack_package,
-    vector_package,
+root_packages = [
+    env.Go('bin/fmath.go'),
+    env.Go('bin/stack.go'),
 ]
+
+goray_packages = [
+    env.Go('bin/goray/background.go'),
+    env.Go('bin/goray/bound.go'),
+    env.Go('bin/goray/camera.go'),
+    env.Go('bin/goray/color.go'),
+    env.Go('bin/goray/light.go'),
+    env.Go('bin/goray/material.go'),
+    env.Go('bin/goray/matrix.go'),
+    env.Go('bin/goray/ray.go'),
+    env.Go('bin/goray/render.go'),
+    env.Go('bin/goray/vector.go'),
+]
+
+packages = root_packages + goray_packages
 Alias('lib', packages)
 
 program = env.GoProgram('bin/run-goray', 'bin/main.go')
