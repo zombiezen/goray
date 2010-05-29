@@ -30,6 +30,22 @@ func Abs(f float) float {
 	return -f
 }
 
+func Acos(f float) float {
+    return callUnary(math.Acos, f)
+}
+
+func Asin(f float) float {
+    return callUnary(math.Asin, f)
+}
+
+func Atan(f float) float {
+    return callUnary(math.Atan, f)
+}
+
+func Atan2(y, x float) float {
+    return callBinary(math.Atan2, y, x)
+}
+
 func Cos(f float) float {
 	return callUnary(math.Cos, f)
 }
