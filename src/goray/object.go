@@ -9,15 +9,15 @@ package object
 
 import (
 	"./goray/light"
-	"./goray/material"
 	"./goray/primitive"
+	"./goray/surface"
 	"./goray/vector"
 )
 
 type Object3D interface {
 	GetPrimitives() []primitive.Primitive
 	// Evaluate vertex map (or equivalent for other geometry types if available)
-	EvalVmap(sp material.SurfacePoint, id uint, val []float) (dim int)
+	EvalVmap(sp surface.Point, id uint, val []float) (dim int)
 	// Set a light source to be associated with this object
 	SetLight(light.Light)
 	// Query whether object surface can be sampled right now
@@ -50,7 +50,7 @@ func (o *primitiveObject) EnableSampling() bool   { return false }
 func (o *primitiveObject) IsVisible() bool        { return !o.hidden }
 func (o *primitiveObject) SetVisible(v bool)      { o.hidden = !v }
 
-func (o *primitiveObject) EvalVmap(sp material.SurfacePoint, id uint, val []float) int {
+func (o *primitiveObject) EvalVmap(sp surface.Point, id uint, val []float) int {
 	return 0
 }
 

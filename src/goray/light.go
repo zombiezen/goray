@@ -9,8 +9,8 @@ package light
 
 import (
 	"./goray/color"
-	"./goray/material"
 	"./goray/ray"
+	"./goray/surface"
 	"./goray/vector"
 )
 
@@ -37,7 +37,7 @@ type Sample struct {
 	// Flags of the sampled light source
 	Flags uint
 	// Surface point on the light source, may only be complete enough to call other light methods with it!
-	Sp *material.SurfacePoint
+	Sp surface.Point
 }
 
 type Light interface {
@@ -45,12 +45,12 @@ type Light interface {
 	TotalEnergy() color.Color
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
 	EmitSample(wo vector.Vector3D) (color.Color, Sample)
-	IllumSample(sp material.SurfacePoint, wi ray.Ray) (bool, Sample)
-	Illuminate(sp material.SurfacePoint, col color.Color, wi ray.Ray) bool
+	IllumSample(sp surface.Point, wi ray.Ray) (bool, Sample)
+	Illuminate(sp surface.Point, col color.Color, wi ray.Ray) bool
 	CanIntersect() bool
 	Intersect(r ray.Ray) (ok bool, dist float, col color.Color, ipdf float)
-	IllumPdf(sp, spLight material.SurfacePoint) float
-	EmitPdf(sp material.SurfacePoint, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
+	IllumPdf(sp, spLight surface.Point) float
+	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
 	NumSamples() int
 	CanIlluminate(pt vector.Vector3D) bool
 	GetFlags() uint

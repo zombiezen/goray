@@ -13,6 +13,7 @@ import (
 	"./goray/bound"
 	"./goray/material"
 	"./goray/ray"
+	"./goray/surface"
 	"./goray/vector"
 )
 
@@ -23,7 +24,7 @@ type Primitive interface {
 	HasClippingSupport() bool
 	ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool)
 	Intersect(ray ray.Ray) (hit bool, raydepth float)
-	GetSurface(pt vector.Vector3D) material.SurfacePoint
+	GetSurface(pt vector.Vector3D) surface.Point
 	GetMaterial() material.Material
 }
 
@@ -77,7 +78,7 @@ func (s *sphere) Intersect(ray ray.Ray) (hit bool, raydepth float) {
 	return
 }
 
-func (s *sphere) GetSurface(pt vector.Vector3D) (sp material.SurfacePoint) {
+func (s *sphere) GetSurface(pt vector.Vector3D) (sp surface.Point) {
 	normal := vector.Sub(pt, s.center)
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()

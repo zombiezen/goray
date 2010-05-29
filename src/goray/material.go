@@ -9,28 +9,7 @@ package material
 
 import (
 	"./goray/color"
-	"./goray/vector"
 )
-
-type SurfacePoint struct {
-	Material                            Material
-	Normal, GeometricNormal, OrcoNormal vector.Vector3D
-	Position, OrcoPosition              vector.Vector3D
-
-	HasUV, HasOrco, Available bool
-	PrimitiveNumber           int
-
-	U, V               float
-	NormalU, NormalV   vector.Vector3D
-	WorldU, WorldV     vector.Vector3D
-	ShadingU, ShadingV vector.Vector3D
-	SurfaceU, SurfaceV float
-}
-
-type Differentials struct {
-	X, Y  vector.Vector3D
-	Point SurfacePoint
-}
 
 const (
 	BSDFSpecular = 1 << iota
