@@ -15,7 +15,7 @@ import (
 	"./goray/vector"
 )
 
-type RenderState struct {
+type State struct {
 	RayLevel       int
 	Depth          float
 	Contribution   float
@@ -35,7 +35,7 @@ type RenderState struct {
 	Rand           *rand.Rand
 }
 
-func (st *RenderState) Init(rgen *rand.Rand) {
+func (st *State) Init(rgen *rand.Rand) {
 	st.CurrentPass = 0
 	st.PixelSample = 0
 	st.RayOffset = 0
@@ -49,7 +49,7 @@ func (st *RenderState) Init(rgen *rand.Rand) {
 	}
 }
 
-func (st *RenderState) SetDefaults() {
+func (st *State) SetDefaults() {
 	st.RayLevel = 0
 	st.Chromatic = true
 	st.RayDivision = 1
