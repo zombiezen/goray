@@ -16,12 +16,12 @@ type Bound struct {
 	a, g vector.Vector3D
 }
 
-func New(a, g vector.Vector3D) Bound {
-	return Bound{a, g}
+func New(a, g vector.Vector3D) *Bound {
+	return &Bound{a, g}
 }
 
-func Union(b1, b2 Bound) Bound {
-	newBound := Bound{}
+func Union(b1, b2 *Bound) *Bound {
+	newBound := &Bound{}
 	newBound.a.X = fmath.Min(b1.a.X, b2.a.X)
 	newBound.a.Y = fmath.Min(b1.a.Y, b2.a.Y)
 	newBound.a.Z = fmath.Min(b1.a.Z, b2.a.Z)

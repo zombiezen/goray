@@ -31,6 +31,7 @@ goray_packages = [
     env.Go('bin/goray/ray.go'),
     env.Go('bin/goray/render.go'),
     env.Go('bin/goray/vector.go'),
+    env.Go('bin/goray/volume.go'),
 ]
 
 packages = root_packages + goray_packages
