@@ -18,6 +18,7 @@ def _add_test(source, test):
 fmath_package = env.Go('bin/fmath', 'bin/fmath.go')
 stack_package = env.Go('bin/stack', 'bin/stack.go')
 
+background_package = env.Go('bin/goray/background', 'bin/goray/background.go')
 bound_package = env.Go('bin/goray/bound', 'bin/goray/bound.go')
 camera_package = env.Go('bin/goray/camera', 'bin/goray/camera.go')
 color_package = env.Go('bin/goray/color', 'bin/goray/color.go')
@@ -28,6 +29,7 @@ render_package = env.Go('bin/goray/render', 'bin/goray/render.go')
 vector_package = env.Go('bin/goray/vector', 'bin/goray/vector.go')
 
 packages = [
+    background_package,
     bound_package,
     camera_package,
     color_package,
@@ -41,7 +43,7 @@ packages = [
 ]
 Alias('lib', packages)
 
-program = env.GoProgram('bin/run-goray', env.Go('bin/main.go'))
+program = env.GoProgram('bin/run-goray', 'bin/main.go')
 
 Default(packages + [program])
 
