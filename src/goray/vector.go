@@ -14,6 +14,10 @@ type Vector3D struct {
 	X, Y, Z float
 }
 
+func New(x, y, z float) Vector3D {
+	return Vector3D{x, y, z}
+}
+
 func (v Vector3D) Normalize() Vector3D {
 	vlen := v.Length()
 	if vlen == 0 {
