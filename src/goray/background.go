@@ -9,7 +9,7 @@ package background
 
 import (
 	"./goray/color"
-    "./goray/light"
+	"./goray/light"
 	"./goray/ray"
 	"./goray/render"
 )

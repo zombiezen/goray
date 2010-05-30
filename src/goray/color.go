@@ -129,17 +129,13 @@ func GetEnergy(c Color) float {
 }
 
 func Invert(c Color) Color {
-	newColor := NewRGB(0.0, 0.0, 0.0)
-	if c.GetR() != 0 {
-		newColor.R = 1.0 / c.GetR()
+	doInvert := func(comp float) float {
+		if comp == 0.0 {
+			return 0.0
+		}
+		return 1.0 / comp
 	}
-	if c.GetG() != 0 {
-		newColor.G = 1.0 / c.GetG()
-	}
-	if c.GetB() != 0 {
-		newColor.B = 1.0 / c.GetB()
-	}
-	return newColor
+	return NewRGB(doInvert(c.GetR()), doInvert(c.GetG()), doInvert(c.GetB()))
 }
 
 func Abs(c Color) Color {

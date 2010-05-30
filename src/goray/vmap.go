@@ -34,14 +34,13 @@ func (vm *VMap) Len() int { return vm.fmap.Len() / vm.dim }
 func (vm *VMap) GetValue(triangle int) (vals []float, ok bool) {
     vals = make([]float, 3 * vm.dim)
     base := len(vals) * triangle
-    end := base + len(vals)
-    if end > len(vm.fmap) {
+    if base + len(vals) > len(vm.fmap) {
         vals = nil
         return
     }
     ok = true
-    for i := 0; i < len(vals); i++ {
-        vals[i] = vm.fmap.At(i).(float)
+    for i, _ := range vals {
+        vals[i] = vm.fmap.At(base + i).(float)
     }
     return
 }
@@ -51,19 +50,18 @@ func (vm *VMap) SetValue(triangle, vertex int, vals []float) (ok bool) {
     if base + vm.dim > vm.fmap.Len() || len(vals) != vm.dim {
         return false
     }
-    for i := 0; i < vm.dim; i++ {
-        vm.fmap.Set(base + i, vals[i])
+    for i, v := range vals {
+        vm.fmap.Set(base + i, v)
     }
     return true
 }
 
 func (vm *VMap) PushTriValue(vals []float) (ok bool) {
-    n := 3 * vm.dim
-    if len(vals) != n {
+    if len(vals) != vm.dim * 3 {
         return false
     }
-    for i := 0; i < n; i++ {
-        vm.fmap.Push(vals[i])
+    for _, v := range vals {
+        vm.fmap.Push(v)
     }
     return true
 }

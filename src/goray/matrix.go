@@ -14,13 +14,15 @@ import (
 	"./goray/vector"
 )
 
+const dim = 4
+
 type Matrix struct {
 	m [][]float
 }
 
 func New(fill float) *Matrix {
 	m := new(Matrix)
-	data := make([]float, 16)
+	data := make([]float, dim*dim)
 	m.m = [][]float{data[0:4], data[4:8], data[8:12], data[12:16]}
 	m.Init(fill)
 	return m
@@ -36,8 +38,8 @@ func Identity() *Matrix {
 }
 
 func (m *Matrix) Init(fill float) {
-	for i := 0; i < 16; i++ {
-		(m.m[0][0:16])[i] = fill
+	for i := 0; i < dim*dim; i++ {
+		(m.m[0][0 : dim*dim])[i] = fill
 	}
 }
 
@@ -58,32 +60,39 @@ func (m *Matrix) Set(row, col int, val float) {
 }
 
 func (m *Matrix) SetAll(data [][]float) {
-	for i := 0; i < 4; i++ {
-		copy(m.m[i], data[i])
+	for i, row := range m.m {
+		copy(row, data[i])
 	}
 }
 
 func (m Matrix) String() (result string) {
-	for row := 0; row < 4; row++ {
-		result += fmt.Sprintf("| %5.2f %5.2f %5.2f |", m.m[row][0], m.m[row][1], m.m[row][2])
+	for i, row := range m.m {
+		format := "| %5.2f %5.2f %5.2f %5.2f |\n"
+		switch i {
+		case 0:
+			format = "/ %5.2f %5.2f %5.2f %5.2f \\\n"
+		case dim - 1:
+			format = "\\ %5.2f %5.2f %5.2f %5.2f /\n"
+		}
+		result += fmt.Sprintf(format, row[0], row[1], row[2], row[3])
 	}
 	return
 }
 
 func (m Matrix) Duplicate() *Matrix {
 	dup := New(0.0)
-	copy(dup.m[0:16], m.m[0:16])
+	copy(dup.m[0:dim*dim], m.m[0:dim*dim])
 	return dup
 }
 
 func (m *Matrix) Inverse() bool {
 	iden := New(1.0)
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < dim; i++ {
 		max := 0.0
 		ci := 0
 
-		for k := i; k < 4; k++ {
+		for k := i; k < dim; k++ {
 			if fmath.Abs(m.m[k][i]) > max {
 				max = fmath.Abs(m.m[k][i])
 				ci = k
@@ -96,7 +105,7 @@ func (m *Matrix) Inverse() bool {
 		}
 
 		swap := func(mat *Matrix) {
-			for j := 0; j < 4; j++ {
+			for j := 0; j < dim; j++ {
 				mat.m[i][j] = mat.m[ci][j]
 			}
 		}
@@ -105,18 +114,18 @@ func (m *Matrix) Inverse() bool {
 
 		factor := m.m[i][i]
 		div := func(mat *Matrix) {
-			for j := 0; j < 4; j++ {
+			for j := 0; j < dim; j++ {
 				mat.m[i][j] /= factor
 			}
 		}
 		div(m)
 		div(iden)
 
-		for k := 0; k < 4; k++ {
+		for k := 0; k < dim; k++ {
 			if k != i {
 				factor = m.m[k][i]
 				res := func(mat *Matrix) {
-					for j := 0; j < 4; j++ {
+					for j := 0; j < dim; j++ {
 						mat.m[i][j] -= mat.m[k][j] * factor
 					}
 				}
@@ -206,9 +215,9 @@ func (m1 *Matrix) Mul(m2 *Matrix) {
 func Mul(m1, m2 *Matrix) (result *Matrix) {
 	result = New(0.0)
 
-	for i := 0; i < 4; i++ {
-		for k := 0; k < 4; k++ {
-			for j := 0; j < 4; j++ {
+	for i := 0; i < dim; i++ {
+		for k := 0; k < dim; k++ {
+			for j := 0; j < dim; j++ {
 				result.m[i][k] += m1.m[i][j] * m2.m[j][k]
 			}
 		}

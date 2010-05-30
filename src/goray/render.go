@@ -96,8 +96,7 @@ func (i *Image) Clear(clearColor color.AlphaColor) {
 }
 
 func (i *Image) Acquire(ch <-chan Fragment) {
-	for !closed(ch) {
-		frag := <-ch
+	for frag := range ch {
 		i.data[frag.Y][frag.X].Copy(frag.Color)
 	}
 }

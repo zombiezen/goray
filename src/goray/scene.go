@@ -249,7 +249,7 @@ func (s *Scene) Update() (err os.Error) {
 	if s.background != nil {
 		bgLight := s.background.GetLight()
 		if bgLight != nil {
-			//bgLight.Init(s)
+			bgLight.Init(s)
 		}
 	}
 

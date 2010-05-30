@@ -9,15 +9,15 @@ package material
 
 import (
 	"./goray/color"
-    "./goray/render"
-    "./goray/ray"
-    "./goray/surface"
-    "./goray/vector"
+	"./goray/render"
+	"./goray/ray"
+	"./goray/surface"
+	"./goray/vector"
 )
 
 type VolumeHandler interface {
-    Transmittance(state render.State, r ray.Ray) (bool, color.Color)
-    Scatter(state, render.State, r ray.Ray) (bool, ray.Ray, PhotonSample)
+	Transmittance(state render.State, r ray.Ray) (bool, color.Color)
+	Scatter(state render.State, r ray.Ray) (bool, ray.Ray, PhotonSample)
 }
 
 const (
@@ -74,22 +74,22 @@ func NewPhotonSample(s1, s2, s3 float, flags BSDF, lCol color.Color) PhotonSampl
 }
 
 type Material interface {
-    // Initialize the BSDF of a material.  You must call this with the current surface point 
-    // first before any other methods (except isTransparent/getTransparency)! The renderstate
-    // holds a pointer to preallocated userdata to save data that only depends on the current sp,
-    // like texture lookups etc.
-    InitBSDF(state *render.State, sp surface.Point) BSDF
-    Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types BSDF) color.Color
-    Sample(state *render.State, sp surface.Point, wo vector.Vector3D) (color.Color, vector.Vector3D, Sample)
-    Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs BSDF) float
+	// Initialize the BSDF of a material.  You must call this with the current surface point
+	// first before any other methods (except isTransparent/getTransparency)! The renderstate
+	// holds a pointer to preallocated userdata to save data that only depends on the current sp,
+	// like texture lookups etc.
+	InitBSDF(state *render.State, sp surface.Point) BSDF
+	Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types BSDF) color.Color
+	Sample(state *render.State, sp surface.Point, wo vector.Vector3D) (color.Color, vector.Vector3D, Sample)
+	Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs BSDF) float
 	IsTransparent() bool
-    GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
-    GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color)
-    GetReflectivity(state *render.State, sp surface.Point, flags BSDF) color.Color
-    Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
-    VolumeTransmittance(state *render.State, sp surface.Point, r ray.Ray, col color.Color) bool
-    GetVolumeHandler(inside bool) VolumeHandler
-    GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float
-    ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D) (bool, vector.Vector3D, PhotonSample)
+	GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
+	GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color)
+	GetReflectivity(state *render.State, sp surface.Point, flags BSDF) color.Color
+	Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
+	VolumeTransmittance(state *render.State, sp surface.Point, r ray.Ray, col color.Color) bool
+	GetVolumeHandler(inside bool) VolumeHandler
+	GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float
+	ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D) (bool, vector.Vector3D, PhotonSample)
 	GetFlags() BSDF
 }
