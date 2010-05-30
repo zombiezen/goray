@@ -11,16 +11,9 @@ import (
     "./goray/bound"
     "./goray/color"
     "./goray/light"
-    "./goray/material"
     "./goray/ray"
-    "./goray/render"
     "./goray/vector"
 )
-
-type Handler interface {
-    Transmittance(state render.State, r ray.Ray) (bool, color.Color)
-    Scatter(state, render.State, r ray.Ray) (bool, ray.Ray, material.PhotonSample)
-}
 
 type Region interface {
     SigmaA(p, v vector.Vector3D) color.Color
