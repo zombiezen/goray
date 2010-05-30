@@ -32,6 +32,7 @@ goray_packages = [
     env.Go('bin/goray/primitive.go'),
     env.Go('bin/goray/ray.go'),
     env.Go('bin/goray/render.go'),
+    env.Go('bin/goray/scene.go'),
     env.Go('bin/goray/surface.go'),
     env.Go('bin/goray/vector.go'),
     env.Go('bin/goray/vmap.go'),
