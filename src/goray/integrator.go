@@ -8,30 +8,30 @@
 package integrator
 
 import (
-    "os"
-    "./goray/color"
-    "./goray/ray"
-    "./goray/render"
+	"os"
+	"./goray/color"
+	"./goray/ray"
+	"./goray/render"
 )
 
 const (
-    SurfaceType = iota
-    VolumeType
+	SurfaceType = iota
+	VolumeType
 )
 
 type Integrator interface {
-    GetType() int
-    SetScene(interface{})
-    Preprocess() (os.Error)
-    Render() <-chan render.Fragment
-    Integrate(*render.State, *ray.Ray) color.AlphaColor
+	GetType() int
+	SetScene(interface{})
+	Preprocess() os.Error
+	Render() <-chan render.Fragment
+	Integrate(*render.State, *ray.Ray) color.AlphaColor
 }
 
 type SurfaceIntegrator interface {
-    Integrator
+	Integrator
 }
 
 type VolumeIntegrator interface {
-    Integrator
-    Transmittance(*render.State, *ray.Ray) color.AlphaColor
+	Integrator
+	Transmittance(*render.State, *ray.Ray) color.AlphaColor
 }

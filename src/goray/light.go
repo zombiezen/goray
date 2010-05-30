@@ -41,7 +41,7 @@ type Sample struct {
 }
 
 type Light interface {
-	//Init(*Scene)
+	Init(scene interface{})
 	TotalEnergy() color.Color
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
 	EmitSample(wo vector.Vector3D) (color.Color, Sample)

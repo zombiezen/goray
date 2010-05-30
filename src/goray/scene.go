@@ -19,11 +19,12 @@ import (
 	"./goray/bound"
 	"./goray/camera"
 	"./goray/light"
+	"./goray/integrator"
 	"./goray/material"
 	"./goray/object"
-    "./goray/ray"
+	"./goray/ray"
 	"./goray/render"
-    "./goray/surface"
+	"./goray/surface"
 	"./goray/vector"
 	"./goray/vmap"
 	"./goray/volume"
@@ -51,30 +52,30 @@ type objData struct {
 	dataType int
 }
 
-type sceneState struct {
-	stack       *stack.Stack
-	changes     uint
-	nextFreeID  ObjectID
-	currObj     *objData
-	currVmap    *vmap.VMap
-	orco        bool
-	smoothAngle float
-}
-
 type ObjectID uint
 
 type Scene struct {
-	state sceneState
+	state struct {
+		stack       *stack.Stack
+		changes     uint
+		nextFreeID  ObjectID
+		currObj     *objData
+		currVmap    *vmap.VMap
+		orco        bool
+		smoothAngle float
+	}
 
-	objects   map[ObjectID]object.Object3D
-	meshes    map[ObjectID]objData
-	materials map[string]material.Material
-	volumes   *vecarray.Vector
-	lights    *vecarray.Vector
-	vmaps      map[int]int
-	camera camera.Camera
-	background background.Background
-	sceneBound *bound.Bound
+	objects        map[ObjectID]object.Object3D
+	meshes         map[ObjectID]objData
+	materials      map[string]material.Material
+	volumes        *vecarray.Vector
+	lights         *vecarray.Vector
+	vmaps          map[int]int
+	camera         camera.Camera
+	background     background.Background
+	volIntegrator  integrator.VolumeIntegrator
+	surfIntegrator integrator.SurfaceIntegrator
+	sceneBound     *bound.Bound
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
@@ -170,8 +171,8 @@ func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
 
 func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes.Push(vr) }
 
-//func (s *Scene) GetCamera() camera.Camera    { return s.camera }
-//func (s *Scene) SetCamera(cam camera.Camera) { s.camera = cam }
+func (s *Scene) GetCamera() camera.Camera    { return s.camera }
+func (s *Scene) SetCamera(cam camera.Camera) { s.camera = cam }
 
 func (s *Scene) GetBackground() background.Background   { return s.background }
 func (s *Scene) SetBackground(bg background.Background) { s.background = bg }
@@ -190,6 +191,18 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
+func (s *Scene) SetSurfaceIntegrator(i integrator.SurfaceIntegrator) {
+	s.surfIntegrator = i
+	s.surfIntegrator.SetScene(s)
+	s.state.changes |= changeOther
+}
+
+func (s *Scene) SetVolumeIntegrator(i integrator.VolumeIntegrator) {
+	s.volIntegrator = i
+	s.volIntegrator.SetScene(s)
+	s.state.changes |= changeOther
+}
+
 func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
 
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
@@ -199,7 +212,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, err os.Error) {
 	if r.TMax < 0 {
 		dist = fmath.Inf
 	}
-    _ = dist // for now
+	_ = dist // for now
 	// Intersect with tree
 	if s.mode == 0 {
 		// TODO: Stuff
@@ -210,13 +223,15 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, err os.Error) {
 }
 
 func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
+	// TODO
 	return false
 }
 
+// Update scene state to prepare for rendering
 func (s *Scene) Update() (err os.Error) {
-	//	if s.camera == nil {
-	//		return os.NewError("Scene has no camera")
-	//	}
+	if s.camera == nil {
+		return os.NewError("Scene has no camera")
+	}
 
 	if s.state.changes&changeGeom != 0 {
 		if s.mode == 0 {
@@ -226,10 +241,10 @@ func (s *Scene) Update() (err os.Error) {
 		}
 	}
 
-	for light := range s.lights.Iter() {
-		//light.Init(s)
-        _ = light // for now
-	}
+	s.lights.Do(func(obj interface{}) {
+		li := obj.(light.Light)
+		li.Init(s)
+	})
 
 	if s.background != nil {
 		bgLight := s.background.GetLight()
@@ -238,10 +253,17 @@ func (s *Scene) Update() (err os.Error) {
 		}
 	}
 
-	//if s.surfIntegrator == nil {
+	if s.surfIntegrator == nil {
+		return os.NewError("Scene has no surface integrator")
+	}
 
 	if s.state.changes != changeNone {
-		// TODO
+		if err = s.surfIntegrator.Preprocess(); err != nil {
+			return
+		}
+		if err = s.volIntegrator.Preprocess(); err != nil {
+			return
+		}
 	}
 	s.state.changes = changeNone
 	return
@@ -253,8 +275,8 @@ func (s *Scene) Render() (img *render.Image, err os.Error) {
 		return
 	}
 
-	//	img = render.NewImage(s.camera.ResolutionX(), s.camera.ResolutionY())
-	//ch := s.surfIntegrator.Render()
-	//img.Acquire(ch)
+	img = render.NewImage(s.camera.ResolutionX(), s.camera.ResolutionY())
+	ch := s.surfIntegrator.Render()
+	img.Acquire(ch)
 	return
 }
