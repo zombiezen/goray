@@ -9,6 +9,7 @@ package background
 
 import (
 	"./goray/color"
+    "./goray/light"
 	"./goray/ray"
 	"./goray/render"
 )
@@ -17,5 +18,5 @@ type Background interface {
 	// Get the background color for a given ray
 	GetColor(r ray.Ray, state *render.State, filtered bool) color.Color
 	Eval(r ray.Ray, filtered bool)
-	//GetLight() Light
+	GetLight() light.Light
 }
