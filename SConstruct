@@ -25,6 +25,7 @@ goray_packages = [
     env.Go('bin/goray/bound.go'),
     env.Go('bin/goray/camera.go'),
     env.Go('bin/goray/color.go'),
+    env.Go('bin/goray/integrator.go'),
     env.Go('bin/goray/light.go'),
     env.Go('bin/goray/material.go'),
     env.Go('bin/goray/matrix.go'),
