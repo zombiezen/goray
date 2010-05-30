@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-package goray
+package camera
 
 import (
 	"./goray/ray"
