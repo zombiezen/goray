@@ -22,6 +22,7 @@ import (
 	"./goray/integrator"
 	"./goray/material"
 	"./goray/object"
+	"./goray/partition"
 	"./goray/ray"
 	"./goray/render"
 	"./goray/surface"
@@ -71,6 +72,7 @@ type Scene struct {
 	volumes        *vecarray.Vector
 	lights         *vecarray.Vector
 	vmaps          map[int]int
+	tree           partition.Partitioner
 	camera         camera.Camera
 	background     background.Background
 	volIntegrator  integrator.VolumeIntegrator
@@ -152,7 +154,6 @@ func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
 
 func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 	id = s.state.nextFreeID
-	// TODO: Check meshes, too.
 	if _, found := s.objects[id]; found {
 		err = os.NewError("Internal error: allocated ID is already in use")
 		return
@@ -164,7 +165,6 @@ func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 }
 
 func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
-	// TODO: support meshes
 	obj, found = s.objects[id]
 	return
 }
@@ -207,24 +207,39 @@ func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
 
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
-func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, err os.Error) {
+func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) {
 	dist := r.TMax
 	if r.TMax < 0 {
 		dist = fmath.Inf
 	}
 	_ = dist // for now
 	// Intersect with tree
-	if s.mode == 0 {
-		// TODO: Stuff
-	} else {
-		// TODO: Other stuff
+	if s.tree == nil {
+		err = os.NewError("Partition map has not been built")
+		return
 	}
+	hit, hitprim, z := s.tree.Intersect(r, dist)
+	if !hit {
+		return
+	}
+	h := vector.Add(r.From, vector.ScalarMul(r.Dir, z))
+	sp = hitprim.GetSurface(h)
+	sp.origin = hitprim
 	return
 }
 
 func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
-	// TODO
-	return false
+	if s.tree == nil {
+		return false
+	}
+	r.From = vector.Add(r.From, vector.ScalarMul(r.Dir, r.TMin))
+	r.Time = state.Time
+	dist := fmath.Inf
+	if r.TMax >= 0 {
+		dist = r.TMax - 2*r.TMin
+	}
+	hit, _ := s.tree.IntersectS(r, dist)
+	return hit
 }
 
 // Update scene state to prepare for rendering
@@ -234,10 +249,30 @@ func (s *Scene) Update() (err os.Error) {
 	}
 
 	if s.state.changes&changeGeom != 0 {
-		if s.mode == 0 {
-			// TODO: Stuff
-		} else {
-			// TODO: Other stuff
+		// We've changed the scene's geometry.  We need to rebuild the tree.
+		s.tree = nil
+		// Collect primitives
+		var prims []primitive.Primitive
+		{
+			nPrims := 0
+			primLists := make([][]primitive.Primitive, len(s.objects))
+
+			for i, obj := range s.objects {
+				primLists[i] = obj.GetPrimitives()
+				nPrims += len(primLists[i])
+			}
+
+			prims = make([]primitive.Primitive, nPrims)
+			pos := 0
+			for _, pl := range primLists {
+				copy(prims[pos:], pl)
+				pos += len(pl)
+			}
+		}
+		// Do tree building
+		if len(prims) > 0 {
+			s.tree = partition.NewKdTree(prims, -1, 1, 0.8, 0.33)
+			s.sceneBound = s.tree.GetBound()
 		}
 	}
 
