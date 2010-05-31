@@ -23,6 +23,7 @@ import (
 	"./goray/material"
 	"./goray/object"
 	"./goray/partition"
+	"./goray/primitive"
 	"./goray/ray"
 	"./goray/render"
 	"./goray/surface"
@@ -224,7 +225,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 	}
 	h := vector.Add(r.From, vector.ScalarMul(r.Dir, z))
 	sp = hitprim.GetSurface(h)
-	sp.origin = hitprim
+	sp.Primitive = hitprim
 	return
 }
 
@@ -271,7 +272,7 @@ func (s *Scene) Update() (err os.Error) {
 		}
 		// Do tree building
 		if len(prims) > 0 {
-			s.tree = partition.NewKdTree(prims, -1, 1, 0.8, 0.33)
+			s.tree = partition.NewKDTree(prims, -1, 1, 0.8, 0.33)
 			s.sceneBound = s.tree.GetBound()
 		}
 	}

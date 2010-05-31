@@ -32,6 +32,7 @@ type State struct {
 	Chromatic      bool
 	IncludeLights  bool
 	WaveLength     bool
+	Time           float
 	Rand           *rand.Rand
 }
 
