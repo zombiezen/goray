@@ -256,6 +256,34 @@ func (tree *kdTree) build(primNums []int, nodeBound *bound.Bound, leftPrims, rig
             }
             splitPos = edges[split.bestAxis][split.bestOffset].pos
     }
+    
+    currNode := tree.nextFreeNode
+    tree.nodes[currNode] = newInterior(split.bestAxis, splitPos)
+    tree.nextFreeNode++
+    boundL, boundR := bound.New(nodeBound.Get()), bound.New(nodeBound.Get())
+    switch split.bestAxis {
+    case 0:
+        boundL.SetMaxX(splitPos)
+        boundR.SetMinX(splitPos)
+    case 1:
+        boundL.SetMaxY(splitPos)
+        boundR.SetMinY(splitPos)
+    case 2:
+        boundL.SetMaxZ(splitPos)
+        boundR.SetMinZ(splitPos)
+    }
+    
+    if triClip && len(primNums) <= triClipThreshold {
+        // TODO
+    } else {
+        // << Recurse below child >>
+        tree.build(leftPrims[0:n0], boundL, leftPrims, newRightPrims, edges, depth + 1, badRefines)
+        // << Recurse above child >>
+        tree.nodes[currNode].(kdInteriorNode).SetRightChild(tree.nextFreeNode)
+        tree.build(newRightPrims[0:n1], boundR, leftPrims, newRightPrims[n1:], edges, depth + 1, badRefines)
+    }
+    
+    return 1
 }
 
 func (tree *kdTree) pigeonMinCost(primNums []int, nodeBound *bound.Bound, split *splitCost) {
@@ -316,7 +344,7 @@ func (tree *kdTree) pigeonMinCost(primNums []int, nodeBound *bound.Bound, split 
                     bins[bRight].t = tUp
                     bins[bRight].cLeft += bins[bRight].cBoth + bins[bRight].cBLeft
                     bins[bRight].cRight += bins[bRight].cBoth
-                    bins[bRight].cBoth = bins[bRight].cBLeft = 0
+                    bins[bRight].cBoth, bins[bRight].cBLeft = 0, 0
                 }
                 bins[bRight].n++
             }
