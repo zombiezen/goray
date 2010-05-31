@@ -31,9 +31,9 @@ func Union(b1, b2 *Bound) *Bound {
 	return newBound
 }
 
-func (b Bound) Get() (a, g vector.Vector3D) { return b.a, b.g }
-func (b Bound) GetMin() vector.Vector3D     { return b.a }
-func (b Bound) GetMax() vector.Vector3D     { return b.g }
+func (b *Bound) Get() (a, g vector.Vector3D) { return b.a, b.g }
+func (b *Bound) GetMin() vector.Vector3D     { return b.a }
+func (b *Bound) GetMax() vector.Vector3D     { return b.g }
 func (b *Bound) Set(a, g vector.Vector3D)   { b.a = a; b.g = g }
 
 func (b *Bound) SetMinX(x float) { b.a.X = x }
@@ -48,7 +48,7 @@ func (b *Bound) SetMaxZ(z float) { b.g.Z = z }
 // ray specifies the direction the ray is in.
 // dist is the maximum distance that this method will check.  Pass in fmath.Inf
 // to remove the check.
-func (b Bound) Cross(from, ray vector.Vector3D, dist float) (crosses bool, enter, leave float) {
+func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (crosses bool, enter, leave float) {
 	a0, a1 := b.a, b.g
 	p := vector.Sub(from, a0)
 	lmin, lmax := -1.0, -1.0
@@ -103,13 +103,13 @@ func (b Bound) Cross(from, ray vector.Vector3D, dist float) (crosses bool, enter
 	return
 }
 
-func (b Bound) GetVolume() float {
+func (b *Bound) GetVolume() float {
 	return (b.g.Y - b.a.Y) * (b.g.X - b.a.X) * (b.g.Z - b.a.Z)
 }
 
-func (b Bound) GetXLength() float { return b.g.X - b.a.X }
-func (b Bound) GetYLength() float { return b.g.Y - b.a.Y }
-func (b Bound) GetZLength() float { return b.g.Z - b.a.Z }
+func (b *Bound) GetXLength() float { return b.g.X - b.a.X }
+func (b *Bound) GetYLength() float { return b.g.Y - b.a.Y }
+func (b *Bound) GetZLength() float { return b.g.Z - b.a.Z }
 
 func (b *Bound) Include(p vector.Vector3D) {
 	b.a.X = fmath.Min(b.a.X, p.X)
@@ -120,19 +120,19 @@ func (b *Bound) Include(p vector.Vector3D) {
 	b.g.Z = fmath.Max(b.g.Z, p.Z)
 }
 
-func (b Bound) Includes(p vector.Vector3D) bool {
+func (b *Bound) Includes(p vector.Vector3D) bool {
 	return (p.X >= b.a.X && p.X <= b.g.X &&
 		p.Y >= b.a.Y && p.Y <= b.g.Y &&
 		p.Z >= b.a.Z && p.Z <= b.g.Z)
 }
 
-func (b Bound) GetCenter() vector.Vector3D {
+func (b *Bound) GetCenter() vector.Vector3D {
 	return vector.ScalarMul(vector.Add(b.g, b.a), 0.5)
 }
 
-func (b Bound) GetCenterX() float { return (b.g.X + b.a.X) * 0.5 }
-func (b Bound) GetCenterY() float { return (b.g.Y + b.a.Y) * 0.5 }
-func (b Bound) GetCenterZ() float { return (b.g.Z + b.a.Z) * 0.5 }
+func (b *Bound) GetCenterX() float { return (b.g.X + b.a.X) * 0.5 }
+func (b *Bound) GetCenterY() float { return (b.g.Y + b.a.Y) * 0.5 }
+func (b *Bound) GetCenterZ() float { return (b.g.Z + b.a.Z) * 0.5 }
 
 func (b *Bound) Grow(d float) {
 	b.a.X -= d
