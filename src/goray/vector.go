@@ -42,6 +42,18 @@ func (v Vector3D) IsZero() bool {
 	return v.X == 0 && v.Y == 0 && v.Z == 0
 }
 
+func (v Vector3D) GetAxis(axis int) float {
+	switch axis {
+	case 0:
+		return v.X
+	case 1:
+		return v.Y
+	case 2:
+		return v.Z
+	}
+	return 0.0
+}
+
 func (v Vector3D) String() string {
 	return fmt.Sprintf("<%.2f, %.2f, %.2f>", v.X, v.Y, v.Z)
 }
