@@ -21,24 +21,26 @@ root_packages = [
 ]
 
 goray_packages = [
-    env.Go('bin/goray/background.go'),
-    env.Go('bin/goray/bound.go'),
-    env.Go('bin/goray/camera.go'),
-    env.Go('bin/goray/color.go'),
-    env.Go('bin/goray/integrator.go'),
-    env.Go('bin/goray/light.go'),
-    env.Go('bin/goray/material.go'),
-    env.Go('bin/goray/matrix.go'),
-    env.Go('bin/goray/object.go'),
-    env.Go('bin/goray/primitive.go'),
-    env.Go('bin/goray/ray.go'),
-    env.Go('bin/goray/render.go'),
-    env.Go('bin/goray/scene.go'),
-    env.Go('bin/goray/surface.go'),
-    env.Go('bin/goray/vector.go'),
-    env.Go('bin/goray/vmap.go'),
-    env.Go('bin/goray/volume.go'),
+    'background',
+    'bound',
+    'camera',
+    'color',
+    'integrator',
+    'light',
+    'material',
+    'matrix',
+    'object',
+    'partition',
+    'primitive',
+    'ray',
+    'render',
+    'scene',
+    'surface',
+    'vector',
+    'vmap',
+    'volume',
 ]
+goray_packages = [env.Go('bin/goray/%s.go' % name) for name in goray_packages]
 
 packages = root_packages + goray_packages
 Alias('lib', packages)
