@@ -32,6 +32,8 @@ func Union(b1, b2 *Bound) *Bound {
 }
 
 func (b Bound) Get() (a, g vector.Vector3D) { return b.a, b.g }
+func (b Bound) GetMin() vector.Vector3D     { return b.a }
+func (b Bound) GetMax() vector.Vector3D     { return b.g }
 func (b *Bound) Set(a, g vector.Vector3D)   { b.a = a; b.g = g }
 
 // Cross checks whether a given ray crosses the bound.
