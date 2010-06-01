@@ -79,7 +79,7 @@ type kdTree struct {
 	depthLimitReached, numBadSplits int
 }
 
-func NewKDTree(prims []primitive.Primitive, depth int, leafSize int, costRatio float, emptyBonus float) Partitioner {
+func NewKDTree(prims []primitive.Primitive, depth, leafSize int, costRatio, emptyBonus float) Partitioner {
 	// Constants
 	const boundFudge = 0.001
     const clipDataSize = 36
