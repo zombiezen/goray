@@ -29,7 +29,7 @@ type Camera interface {
 	/* ResolutionY returns the number of fragments high that the camera is. */
 	ResolutionY() int
 	/* Project calculates the projection of a ray onto the fragment plane. */
-	Project(wo ray.Ray, lu, lv float) (ok bool, pu, v float, pdf float)
+	Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool)
 	/*
 	   SampleLens returns whether the lens needs to be sampled using the u and v
 	   parameters of ShootRay.  This is useful for DOF-like effects.  When this
@@ -73,7 +73,6 @@ func (c *orthoCam) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 func (c *orthoCam) SampleLens() bool { return false }
 func (c *orthoCam) ResolutionX() int { return c.resx }
 func (c *orthoCam) ResolutionY() int { return c.resy }
-func (c *orthoCam) Project(wo ray.Ray, lu, lv float) (ok bool, u, v float, pdf float) {
-	ok = false
-	return
+func (c *orthoCam) Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool) {
+	return 0.0, false
 }
