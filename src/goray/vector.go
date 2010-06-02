@@ -27,7 +27,7 @@ func (v Vector3D) Normalize() Vector3D {
 }
 
 func (v Vector3D) Length() float {
-	return fmath.Sqrt(v.Length())
+	return fmath.Sqrt(v.LengthSqr())
 }
 
 func (v Vector3D) LengthSqr() float {
