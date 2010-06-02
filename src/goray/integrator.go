@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-29.
 //
 
+/* The goray/integrator package provides the interface for rendering methods. */
 package integrator
 
 import (
@@ -19,6 +20,7 @@ const (
 	VolumeType
 )
 
+/* A rendering system */
 type Integrator interface {
 	GetType() int
 	SetScene(interface{})
