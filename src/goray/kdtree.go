@@ -425,7 +425,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 	// goroutine.
 	var a, b float
 	var crosses bool
-	if crosses, a, b = tree.treeBound.Cross(r.From, r.Dir, maxDist); !crosses {
+	if a, b, crosses = tree.treeBound.Cross(r.From, r.Dir, maxDist); !crosses {
 		close(ch)
 		return ch, signal
 	}

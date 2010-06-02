@@ -61,7 +61,7 @@ func (b *Bound) SetMaxZ(z float)         { b.g.Z = z }
    ray specifies the direction the ray is in.
    dist is the maximum distance that this method will check.  Pass in fmath.Inf to remove the check.
 */
-func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (crosses bool, enter, leave float) {
+func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (enter, leave float, crosses bool) {
 	a0, a1 := b.a, b.g
 	p := vector.Sub(from, a0)
 	lmin, lmax := -1.0, -1.0
