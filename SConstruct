@@ -26,6 +26,7 @@ goray_packages = [
     'camera',
     'color',
     'integrator',
+    'kdtree',
     'light',
     'material',
     'matrix',
