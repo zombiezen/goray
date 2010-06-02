@@ -13,10 +13,10 @@ import (
 )
 
 type Point struct {
-	// The associated material, light, and 3D object.
+	// The associated material, light, 3D object, and primitive.
 	// You will have to convert these to the appropriate type, due to dependency
 	// issues.  Admittedly, this is an ugly hack, but it fixes the problem.
-	Material, Light, Object interface{}
+	Material, Light, Object, Primitive interface{}
 
 	// Only used with "win" texture coordinate mode
 	OriginX, OriginY                    int

@@ -30,26 +30,6 @@ func Abs(f float) float {
 	return -f
 }
 
-func Acos(f float) float {
-    return callUnary(math.Acos, f)
-}
-
-func Asin(f float) float {
-    return callUnary(math.Asin, f)
-}
-
-func Atan(f float) float {
-    return callUnary(math.Atan, f)
-}
-
-func Atan2(y, x float) float {
-    return callBinary(math.Atan2, y, x)
-}
-
-func Cos(f float) float {
-	return callUnary(math.Cos, f)
-}
-
 func IsInf(n float) bool {
 	return math.IsInf(float64(n), 0)
 }
@@ -72,14 +52,19 @@ func Mod(f1, f2 float) float {
 	return callBinary(math.Fmod, f1, f2)
 }
 
-func Sin(f float) float {
-	return callUnary(math.Sin, f)
-}
-
 func Sqrt(f float) float {
 	return callUnary(math.Sqrt, f)
 }
 
-func Tan(f float) float {
-	return callUnary(math.Tan, f)
-}
+func Asin(f float) float     { return callUnary(math.Asin, f) }
+func Acos(f float) float     { return callUnary(math.Acos, f) }
+func Atan(f float) float     { return callUnary(math.Atan, f) }
+func Atan2(y, x float) float { return callBinary(math.Atan2, y, x) }
+
+func Sin(f float) float { return callUnary(math.Sin, f) }
+func Cos(f float) float { return callUnary(math.Cos, f) }
+func Tan(f float) float { return callUnary(math.Tan, f) }
+
+func Log(f float) float   { return callUnary(math.Log, f) }
+func Log2(f float) float  { return callUnary(math.Log2, f) }
+func Log10(f float) float { return callUnary(math.Log10, f) }
