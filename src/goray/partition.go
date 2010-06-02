@@ -24,7 +24,7 @@ import (
 type Partitioner interface {
 	Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float)
 	IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive)
-	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float) (hit bool, prim primitive.Primitive, filt color.Color)
+	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive)
 	GetBound() *bound.Bound
 }
 
@@ -61,6 +61,7 @@ type splitCost struct {
 }
 
 const triClipThreshold = 32
+const maxKdStack = 64 // this probably needs to be tweaked for Go
 
 type kdTree struct {
 	costRatio   float // node transversal cost divided by primitive intersection cost
@@ -68,7 +69,7 @@ type kdTree struct {
 	maxDepth    int
 	maxLeafSize uint
 	treeBound   *bound.Bound
-	nodes       []interface{}
+	nodes       []kdNode
 
 	prims     []primitive.Primitive
 	allBounds []*bound.Bound
@@ -85,7 +86,7 @@ func NewKDTree(prims []primitive.Primitive, depth, leafSize int, costRatio, empt
     const clipDataSize = 36
 	// Create tree!
 	tree := &kdTree{costRatio: costRatio, emptyBonus: emptyBonus, maxDepth: depth}
-	tree.nodes = make([]interface{}, 0, 256)
+	tree.nodes = make([]kdNode, 0, 256)
 	// Calculate maximum depth
 	if tree.maxDepth <= 0 {
 		tree.maxDepth = int(7.0 + 1.66*math.Log(float64(len(prims))))
@@ -162,7 +163,7 @@ func (tree *kdTree) build(primNums []int, nodeBound *bound.Bound, leftPrims, rig
 		if newCap > 0x100000 {
 			newCap += 0x80000
 		}
-		n := make([]interface{}, len(tree.nodes), newCap)
+		n := make([]kdNode, len(tree.nodes), newCap)
 		copy(n, tree.nodes)
 		tree.nodes = n
 	}
@@ -410,19 +411,184 @@ func (tree *kdTree) minimalCost(primNums []int, nodeBound *bound.Bound, pBounds 
     // TODO
 }
 
+type kdStackFrame struct {
+    node kdNode
+    t float
+    pb vector.Vector3D
+    prev int
+}
+
+type collideResult struct {
+    prim primitive.Primitive
+    depth float
+}
+
+func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideResult, chan<- bool) {
+    ch := make(chan collideResult)
+    signal := make(chan bool, 1)
+    
+    // Quick check: If we're not even in the ballpark, then don't spawn a
+    // goroutine.
+    var a, b float
+    var crosses bool
+    if crosses, a, b = tree.treeBound.Cross(r.From, r.Dir, maxDist); !crosses {
+        close(ch)
+        return ch, signal
+    }
+
+    // Now start the interesting stuff.
+    go func() {
+        defer close(ch) // This channel should last as long as the goroutine.
+        
+        var t float
+        invDir := vector.New(1.0 / r.Dir.X, 1.0 / r.Dir.Y, 1.0 / r.Dir.Z)
+        stack := make([]kdStackFrame, maxKdStack)
+        currIndex := 0
+        farIndex := 0
+        
+        enterPt := 0
+        stack[enterPt].t = a
+        
+        if a >= 0.0 {
+            // Ray with external origin
+            stack[enterPt].pb = vector.Add(r.From, vector.ScalarMul(r.Dir, a))
+        } else {
+            // Ray with internal origin
+            stack[enterPt].pb = r.From
+        }
+        
+        // Setup initial entry and exit point in stack
+        exitPt := 1
+        stack[exitPt].t = b
+        stack[exitPt].pb = vector.Add(r.From, vector.ScalarMul(r.Dir, b))
+        stack[exitPt].node = nil
+        
+        for currIndex != -1 {
+            currNode := tree.nodes[currIndex]
+            if maxDist < stack[enterPt].t { break }
+            for !currNode.IsLeaf() {
+                axis := currNode.(*kdInteriorNode).GetSplitAxis()
+                splitVal := currNode.(*kdInteriorNode).GetSplitPos()
+                if stack[enterPt].pb.GetAxis(axis) <= splitVal {
+                    if stack[exitPt].pb.GetAxis(axis) <= splitVal {
+                        currIndex++
+                        continue
+                    } else if stack[exitPt].pb.GetAxis(axis) == splitVal {
+                        currIndex = currNode.(*kdInteriorNode).GetRightChild()
+                        continue
+                    } else {
+                        farIndex = currNode.(*kdInteriorNode).GetRightChild()
+                        currIndex++
+                        currNode = tree.nodes[currIndex]
+                    }
+                } else {
+                    if splitVal < stack[exitPt].pb.GetAxis(axis) {
+                        currIndex = currNode.(*kdInteriorNode).GetRightChild()
+                        continue
+                    }
+                    farIndex = currIndex + 1
+                    currIndex = currNode.(*kdInteriorNode).GetRightChild()
+                    currNode = tree.nodes[currIndex]
+                }
+                // Traverse both children
+                t = (splitVal - r.From.GetAxis(axis)) * invDir.GetAxis(axis)
+                // Set up the new exit point
+                prevExitPt := exitPt
+                exitPt++
+                // Possibly skip current entry point so not to overwrite the data
+                if exitPt == enterPt { exitPt++ }
+                // Push values onto the stack
+                nextAxis := (axis + 1) % 3
+                prevAxis := (axis + 2) % 3
+                stack[exitPt].prev = prevExitPt
+                stack[exitPt].t = t
+                stack[exitPt].node = tree.nodes[farIndex]
+                // TODO: SetAxis?
+                _, _ = nextAxis, prevAxis
+                //stack[exitPt].pb[axis] = splitVal
+            }
+            
+            // Check for intersections inside leaf node
+            for _, index := range currNode.(*kdLeafNode).GetPrimitives() {
+                mp := tree.prims[index]
+                hit, depth := mp.Intersect(r)
+                if hit && depth < maxDist && depth > minDist {
+                    // It's a hit!  Send it back!
+                    ch <- collideResult{mp, depth}
+                    // Now check to see whether we can stop.
+                    if !<-signal {
+                        // Caller wants us to terminate.
+                        return
+                    }
+                }
+            }
+            enterPt, currIndex = exitPt, exitPt
+            exitPt = stack[enterPt].prev
+        }
+    }()
+    return ch, signal
+}
+
 func (tree *kdTree) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float) {
+    ch, signal := tree.collide(r, r.TMin, dist)
+    signal <- false
+    result := <-ch
+    if result.prim == nil {
+        hit = false
+    } else {
+        hit = true
+        prim = result.prim
+        z = result.depth
+    }
     return
 }
 
 func (tree *kdTree) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive) {
+    ch, signal := tree.collide(r, r.TMin, dist)
+    signal <- false
+    result := <-ch
+    if result.prim == nil {
+        hit = false
+    } else {
+        hit = true
+        prim = result.prim
+    }
     return
 }
 
-func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float) (hit bool, prim primitive.Primitive, filt color.Color) {
+func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive) {
+    ch, signal := tree.collide(r, r.TMin, dist)
+    filtered := make(map[primitive.Primitive] bool)
+    depth := 0
+    for result := range ch {
+        hit = true
+        prim = result.prim
+        mat := prim.GetMaterial()
+        if !mat.IsTransparent() {
+            signal <- false
+            return
+        }
+        if found, _ := filtered[prim]; !found {
+            filtered[prim] = true
+            if depth < maxDepth {
+                h := vector.Add(r.From, vector.ScalarMul(r.Dir, result.depth))
+                sp := prim.GetSurface(h)
+                *filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
+                depth++
+            } else {
+                // We've hit the depth limit.  Cut it off.
+                signal <- false
+            }
+        }
+    }
     return
 }
 
 func (tree *kdTree) GetBound() *bound.Bound { return tree.treeBound }
+
+type kdNode interface {
+    IsLeaf() bool
+}
 
 type kdInteriorNode struct {
 	division   float
@@ -434,6 +600,7 @@ func newInterior(axis int, d float) *kdInteriorNode {
 	return &kdInteriorNode{division: d, axis: axis}
 }
 
+func (node *kdInteriorNode) IsLeaf() bool { return false }
 func (node *kdInteriorNode) GetSplitPos() float   { return node.division }
 func (node *kdInteriorNode) GetSplitAxis() int    { return node.axis }
 func (node *kdInteriorNode) GetRightChild() int   { return node.rightChild }
@@ -446,4 +613,6 @@ type kdLeafNode struct {
 func newLeaf(prims []int) *kdLeafNode {
 	return &kdLeafNode{prims}
 }
+
+func (node *kdLeafNode) IsLeaf() bool { return false }
 func (node *kdLeafNode) GetPrimitives() []int { return node.primitives }
