@@ -19,7 +19,6 @@ import (
 	"./goray/bound"
 	"./goray/camera"
 	"./goray/integrator"
-	"./goray/kdtree"
 	"./goray/light"
 	"./goray/material"
 	"./goray/object"
@@ -273,7 +272,8 @@ func (s *Scene) Update() (err os.Error) {
 		}
 		// Do tree building
 		if len(prims) > 0 {
-			s.tree = kdtree.New(prims, -1, 1, 0.8, 0.33)
+			//s.tree = kdtree.New(prims, -1, 1, 0.8, 0.33)
+			s.tree = partition.NewSimple(prims)
 			s.sceneBound = s.tree.GetBound()
 		}
 	}
