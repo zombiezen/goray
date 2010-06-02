@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
+/* The goray/light package provides an interface for an entity that provides light. */
 package light
 
 import (
@@ -21,27 +22,23 @@ const (
 	TypeNone = 0
 )
 
+/* A light sample */
 type Sample struct {
-	// 2D sample value for choosing a surface point on the light.
-	S1, S2 float
-	// 2D sample value for choosing an outgoing direction on the light (EmitSample)
-	S3, S4 float
-	// "Standard" directional PDF from illuminated surface point for MC integration of direct lighting (illumSample)
-	Pdf float
-	// Probability density for generating this sample direction (emitSample)
-	DirPdf float
-	// Probability density for generating this sample point on light surface (emitSample)
-	AreaPdf float
-	// Color of the generated sample
-	Col color.Color
-	// Flags of the sampled light source
-	Flags uint
-	// Surface point on the light source, may only be complete enough to call other light methods with it!
-	Sp surface.Point
+	S1, S2  float         // 2D sample value for choosing a surface point on the light.
+	S3, S4  float         // 2D sample value for choosing an outgoing direction on the light (EmitSample)
+	Pdf     float         // "Standard" directional PDF from illuminated surface point for MC integration of direct lighting (IllumSample)
+	DirPdf  float         // Probability density for generating this sample direction (EmitSample)
+	AreaPdf float         // Probability density for generating this sample point on light surface (EmitSample)
+	Col     color.Color   // Color of the generated sample
+	Flags   uint          // Flags of the sampled light source
+	Sp      surface.Point // Surface point on the light source.  This may only be complete enough to call other light methods with it!
 }
 
+/* An entity that emits light */
 type Light interface {
-	Init(scene interface{})
+	/* SetScene sets up a light for use with a scene. */
+	SetScene(scene interface{})
+	/* TotalEnergy returns the light's color energy */
 	TotalEnergy() color.Color
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
 	EmitSample(wo vector.Vector3D) (color.Color, Sample)
