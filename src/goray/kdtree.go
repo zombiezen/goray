@@ -214,13 +214,13 @@ func (tree *kdTree) build(primNums []int, nodeBound *bound.Bound, leftPrims, rig
 	case len(primNums) > 128: // we did pigeonhole
 		for _, pn := range primNums {
 			bd := tree.allBounds[pn]
-			if a, _ := bd.Get(); a.GetAxis(split.bestAxis) >= split.t {
+			if a, _ := bd.Get(); a.GetComponent(split.bestAxis) >= split.t {
 				newRightPrims[n1] = pn
 				n1++
 			} else {
 				leftPrims[n0] = pn
 				n0++
-				if _, g := bd.Get(); g.GetAxis(split.bestAxis) > split.t {
+				if _, g := bd.Get(); g.GetComponent(split.bestAxis) > split.t {
 					newRightPrims[n1] = pn
 					n1++
 				}
@@ -298,11 +298,11 @@ func (tree *kdTree) pigeonMinCost(primNums []int, nodeBound *bound.Bound, split 
 
 	for axis := 0; axis < 3; axis++ {
 		s := kdBins / d[axis]
-		min := nodeBound.GetMin().GetAxis(axis)
+		min := nodeBound.GetMin().GetComponent(axis)
 		// Pigeonhole Sort
 		for _, primNum := range primNums {
 			bbox := tree.allBounds[primNum]
-			tLow, tUp := bbox.GetMin().GetAxis(axis), bbox.GetMax().GetAxis(axis)
+			tLow, tUp := bbox.GetMin().GetComponent(axis), bbox.GetMax().GetComponent(axis)
 			bLeft, bRight := int((tLow-min)*s), int((tUp-min)*s)
 			{
 				clamp := func(b int) int {
@@ -361,10 +361,10 @@ func (tree *kdTree) pigeonMinCost(primNums []int, nodeBound *bound.Bound, split 
 				nAbove -= b.cRight
 				// Cost
 				edget := b.t
-				if edget > nodeBound.GetMin().GetAxis(axis) && edget < nodeBound.GetMax().GetAxis(axis) {
+				if edget > nodeBound.GetMin().GetComponent(axis) && edget < nodeBound.GetMax().GetComponent(axis) {
 					// Compute cost at ith edge
-					l1 := edget - nodeBound.GetMin().GetAxis(axis)
-					l2 := nodeBound.GetMax().GetAxis(axis) - edget
+					l1 := edget - nodeBound.GetMin().GetComponent(axis)
+					l2 := nodeBound.GetMax().GetComponent(axis) - edget
 					belowSA := capArea + l1*capPerim
 					aboveSA := capArea + l2*capPerim
 					rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
@@ -465,11 +465,11 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 			for !currNode.IsLeaf() {
 				axis := currNode.(*kdInteriorNode).GetSplitAxis()
 				splitVal := currNode.(*kdInteriorNode).GetSplitPos()
-				if stack[enterPt].pb.GetAxis(axis) <= splitVal {
-					if stack[exitPt].pb.GetAxis(axis) <= splitVal {
+				if stack[enterPt].pb.GetComponent(axis) <= splitVal {
+					if stack[exitPt].pb.GetComponent(axis) <= splitVal {
 						currIndex++
 						continue
-					} else if stack[exitPt].pb.GetAxis(axis) == splitVal {
+					} else if stack[exitPt].pb.GetComponent(axis) == splitVal {
 						currIndex = currNode.(*kdInteriorNode).GetRightChild()
 						continue
 					} else {
@@ -478,7 +478,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 						currNode = tree.nodes[currIndex]
 					}
 				} else {
-					if splitVal < stack[exitPt].pb.GetAxis(axis) {
+					if splitVal < stack[exitPt].pb.GetComponent(axis) {
 						currIndex = currNode.(*kdInteriorNode).GetRightChild()
 						continue
 					}
@@ -487,7 +487,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 					currNode = tree.nodes[currIndex]
 				}
 				// Traverse both children
-				t = (splitVal - r.From.GetAxis(axis)) * invDir.GetAxis(axis)
+				t = (splitVal - r.From.GetComponent(axis)) * invDir.GetComponent(axis)
 				// Set up the new exit point
 				prevExitPt := exitPt
 				exitPt++

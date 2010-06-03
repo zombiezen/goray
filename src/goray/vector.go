@@ -43,9 +43,9 @@ func (v Vector3D) Abs() Vector3D { return Vector3D{fmath.Abs(v.X), fmath.Abs(v.Y
 /* IsZero indicates whether the vector is the zero vector. */
 func (v Vector3D) IsZero() bool { return v.X == 0 && v.Y == 0 && v.Z == 0 }
 
-/* GetAxis returns one of the vector's components by index. */
-func (v Vector3D) GetAxis(axis int) float {
-	switch axis {
+/* GetComponent returns one of the vector's components by index. */
+func (v Vector3D) GetComponent(i int) float {
+	switch i {
 	case 0:
 		return v.X
 	case 1:
