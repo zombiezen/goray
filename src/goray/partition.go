@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-29.
 //
 
+/* The goray/partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
 package partition
 
 import (
@@ -16,10 +17,18 @@ import (
 	"./goray/vector"
 )
 
+/*
+   Partitioner defines a type that can detect ray collisions.
+   For most cases, this will involve an algorithm that partitions the scene to make these operations faster.
+*/
 type Partitioner interface {
+	/* Intersect determines the primitive that a ray collides with. */
 	Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float)
+	/* IntersectS determines the primitive that a ray collides with for shadow-detection. */
 	IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive)
+	/* IntersectTS computes the color of a transparent shadow after bouncing around. */
 	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive)
+	/* GetBound returns a bounding box that contains all of the primitives in the scene. */
 	GetBound() *bound.Bound
 }
 
@@ -28,6 +37,10 @@ type simple struct {
 	bound *bound.Bound
 }
 
+/*
+   NewSimple creates a partitioner that doesn't split up the scene at all.
+   This should only be used for debugging code, the complexity is O(N).
+*/
 func NewSimple(prims []primitive.Primitive) Partitioner {
 	part := &simple{prims, prims[0].GetBound()}
 	for _, p := range part.prims[1:] {
