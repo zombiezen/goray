@@ -53,7 +53,7 @@ func (s *simple) GetBound() *bound.Bound { return s.bound }
 
 func (s *simple) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float) {
 	for _, p := range s.prims {
-		if hit, z = p.Intersect(r); hit {
+		if z, hit = p.Intersect(r); hit {
 			if z < dist && z > r.TMin {
 				prim = p
 				return
@@ -67,7 +67,7 @@ func (s *simple) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Prim
 func (s *simple) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive) {
 	var z float
 	for _, p := range s.prims {
-		if hit, z = p.Intersect(r); hit {
+		if z, hit = p.Intersect(r); hit {
 			if z < dist {
 				prim = p
 				return
@@ -81,7 +81,7 @@ func (s *simple) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Pri
 func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive) {
 	depth := 0
 	for _, p := range s.prims {
-		if intersects, z := p.Intersect(r); intersects && z < dist && z > r.TMin {
+		if z, intersects := p.Intersect(r); intersects && z < dist && z > r.TMin {
 			hit, prim = true, p
 			mat := prim.GetMaterial()
 			if !mat.IsTransparent() {

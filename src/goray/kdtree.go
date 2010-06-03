@@ -509,7 +509,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 			// Check for intersections inside leaf node
 			for _, index := range currNode.(*kdLeafNode).GetPrimitives() {
 				mp := tree.prims[index]
-				hit, depth := mp.Intersect(r)
+				depth, hit := mp.Intersect(r)
 				if hit && depth < maxDist && depth > minDist {
 					// It's a hit!  Send it back!
 					ch <- collideResult{mp, depth}
