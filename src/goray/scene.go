@@ -93,8 +93,8 @@ type Scene struct {
 	doDepth             bool
 }
 
-/* NewScene creates a new scene */
-func NewScene() *Scene {
+/* New creates a new scene */
+func New() *Scene {
 	s := new(Scene)
 	s.aaSamples = 1
 	s.aaPasses = 1
