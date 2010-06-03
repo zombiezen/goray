@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
+/* The goray/scene package provides the basic mechanism for establishing an environment to render. */
 package scene
 
 import (
@@ -56,6 +57,11 @@ type objData struct {
 
 type ObjectID uint
 
+/*
+   Scene stores all of the entities that define an environment to render.
+   Scene also functions as a high-level API for goray: once you have created a scene, you can create geometry,
+   add entities, and render an image.
+*/
 type Scene struct {
 	state struct {
 		stack       *stack.Stack
@@ -87,6 +93,7 @@ type Scene struct {
 	doDepth             bool
 }
 
+/* NewScene creates a new scene */
 func NewScene() *Scene {
 	s := new(Scene)
 	s.aaSamples = 1
@@ -104,6 +111,7 @@ func (s *Scene) currState() int {
 	return cs.(int)
 }
 
+/* StartGeometry puts the scene in geometry creation mode. */
 func (s *Scene) StartGeometry() (err os.Error) {
 	if s.currState() != stateReady {
 		return os.NewError("Scene asked to start geometry in wrong mode")
@@ -112,6 +120,7 @@ func (s *Scene) StartGeometry() (err os.Error) {
 	return
 }
 
+/* EndGeometry finishes geometry creation mode. */
 func (s *Scene) EndGeometry() (err os.Error) {
 	if s.currState() != stateGeometry {
 		return os.NewError("Scene asked to end geometry in wrong mode")
@@ -140,6 +149,7 @@ func (s *Scene) EndGeometry() (err os.Error) {
 //
 //}
 
+/* AddLight adds a light to the scene. */
 func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	if l == nil {
 		return os.NewError("Attempted to insert nil light")
@@ -149,10 +159,12 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	return
 }
 
+/* AddMaterial adds a material to the scene. */
 func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
 	return os.NewError("We don't support named materials yet")
 }
 
+/* AddObject adds a three-dimensional object to the scene. */
 func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 	id = s.state.nextFreeID
 	if _, found := s.objects[id]; found {
@@ -165,19 +177,28 @@ func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 	return
 }
 
+/* GetObject retrieves the object with a given ID. */
 func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
 	obj, found = s.objects[id]
 	return
 }
 
+/* AddVolumeRegion adds a volumetric effect to the scene. */
 func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes.Push(vr) }
 
-func (s *Scene) GetCamera() camera.Camera    { return s.camera }
+/* GetCamera returns the scene's current camera. */
+func (s *Scene) GetCamera() camera.Camera { return s.camera }
+
+/* SetCamera changes the scene's current camera. */
 func (s *Scene) SetCamera(cam camera.Camera) { s.camera = cam }
 
-func (s *Scene) GetBackground() background.Background   { return s.background }
+/* GetBackground returns the scene's current background. */
+func (s *Scene) GetBackground() background.Background { return s.background }
+
+/* SetBackground changes the scene's current background. */
 func (s *Scene) SetBackground(bg background.Background) { s.background = bg }
 
+/* SetAntialiasing changes the parameters for antialiasing. */
 func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold float) {
 	if numSamples < 1 {
 		numSamples = 1
@@ -192,28 +213,31 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
+/* SetSurfaceIntegrator changes the integrator used for evaluating surfaces. */
 func (s *Scene) SetSurfaceIntegrator(i integrator.SurfaceIntegrator) {
 	s.surfIntegrator = i
 	s.surfIntegrator.SetScene(s)
 	s.state.changes |= changeOther
 }
 
+/* SetVolumeIntegrator changes the integrator used for evaluating volumes. */
 func (s *Scene) SetVolumeIntegrator(i integrator.VolumeIntegrator) {
 	s.volIntegrator = i
 	s.volIntegrator.SetScene(s)
 	s.state.changes |= changeOther
 }
 
+/* GetSceneBound returns a bounding box that contains every object in the scene. */
 func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
 
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
+/* Intersect returns the surface point that intersects with the given ray. */
 func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) {
 	dist := r.TMax
 	if r.TMax < 0 {
 		dist = fmath.Inf
 	}
-	_ = dist // for now
 	// Intersect with tree
 	if s.tree == nil {
 		err = os.NewError("Partition map has not been built")
@@ -229,6 +253,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 	return
 }
 
+/* IsShadowed returns whether a ray will cast a shadow. */
 func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
 	if s.tree == nil {
 		return false
@@ -243,7 +268,10 @@ func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
 	return hit
 }
 
-// Update scene state to prepare for rendering
+/*
+   Update causes the scene state to prepare for rendering.
+   This is a potentially expensive operation.  It will be called automatically before a Render.
+*/
 func (s *Scene) Update() (err os.Error) {
 	if s.camera == nil {
 		return os.NewError("Scene has no camera")
@@ -306,6 +334,7 @@ func (s *Scene) Update() (err os.Error) {
 	return
 }
 
+/* Render creates an image of the scene. */
 func (s *Scene) Render() (img *render.Image, err os.Error) {
 	err = s.Update()
 	if err != nil {
