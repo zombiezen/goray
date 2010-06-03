@@ -29,9 +29,9 @@ type Sample struct {
 	Pdf     float         // "Standard" directional PDF from illuminated surface point for MC integration of direct lighting (IllumSample)
 	DirPdf  float         // Probability density for generating this sample direction (EmitSample)
 	AreaPdf float         // Probability density for generating this sample point on light surface (EmitSample)
-	Col     color.Color   // Color of the generated sample
+	Color   color.Color   // Color of the generated sample
 	Flags   uint          // Flags of the sampled light source
-	Sp      surface.Point // Surface point on the light source.  This may only be complete enough to call other light methods with it!
+	Point   surface.Point // Surface point on the light source.  This may only be complete enough to call other light methods with it!
 }
 
 /* An entity that illuminates a scene. */
