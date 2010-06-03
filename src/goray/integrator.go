@@ -15,14 +15,8 @@ import (
 	"./goray/render"
 )
 
-const (
-	SurfaceType = iota
-	VolumeType
-)
-
 /* A rendering system */
 type Integrator interface {
-	GetType() int
 	SetScene(interface{})
 	Preprocess() os.Error
 	Render() <-chan render.Fragment
@@ -31,9 +25,11 @@ type Integrator interface {
 
 type SurfaceIntegrator interface {
 	Integrator
+	SurfaceIntegrator()
 }
 
 type VolumeIntegrator interface {
 	Integrator
+	VolumeIntegrator()
 	Transmittance(*render.State, ray.Ray) color.AlphaColor
 }
