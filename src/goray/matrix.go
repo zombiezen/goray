@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-27.
 //
 
+/* The goray/matrix package gives a type for representing and manipulating a 4x4 transformation matrix. */
 package matrix
 
 import (
@@ -16,10 +17,12 @@ import (
 
 const dim = 4
 
+/* Matrix holds a 4x4 transformation matrix. */
 type Matrix struct {
 	m [][]float
 }
 
+/* New creates a new matrix, filled with the value given. */
 func New(fill float) *Matrix {
 	m := new(Matrix)
 	data := make([]float, dim*dim)
@@ -28,6 +31,7 @@ func New(fill float) *Matrix {
 	return m
 }
 
+/* Identity creates a new identity matrix. */
 func Identity() *Matrix {
 	i := New(0.0)
 	i.m[0][0] = 1.0
@@ -37,16 +41,19 @@ func Identity() *Matrix {
 	return i
 }
 
+/* Init sets all of the values of a matrix to a given value. */
 func (m *Matrix) Init(fill float) {
 	for i := 0; i < dim*dim; i++ {
 		(m.m[0][0 : dim*dim])[i] = fill
 	}
 }
 
+/* Get retrieves a value inside the matrix. */
 func (m Matrix) Get(row, col int) float {
 	return m.m[row][col]
 }
 
+/* GetAll retrieves a copy of the values inside the matrix. */
 func (m Matrix) GetAll() [][]float {
 	// We do a copy here to prevent the client from rearranging the internal
 	// memory layout.
@@ -55,10 +62,12 @@ func (m Matrix) GetAll() [][]float {
 	return a
 }
 
+/* Set changes a single value inside the matrix. */
 func (m *Matrix) Set(row, col int, val float) {
 	m.m[row][col] = val
 }
 
+/* SetAll changes all of the values inside the matrix simultaneously. */
 func (m *Matrix) SetAll(data [][]float) {
 	for i, row := range m.m {
 		copy(row, data[i])
@@ -79,12 +88,14 @@ func (m Matrix) String() (result string) {
 	return
 }
 
+/* Duplicate creates a new matrix with identical values. */
 func (m Matrix) Duplicate() *Matrix {
 	dup := New(0.0)
 	copy(dup.m[0:dim*dim], m.m[0:dim*dim])
 	return dup
 }
 
+/* Inverse finds the inverse of the matrix in-place and returns whether it was successful. */
 func (m *Matrix) Inverse() bool {
 	iden := New(1.0)
 
@@ -139,6 +150,7 @@ func (m *Matrix) Inverse() bool {
 	return true
 }
 
+/* Transpose performs an in-place matrix transposition. */
 func (m *Matrix) Transpose() {
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
@@ -225,6 +237,7 @@ func Mul(m1, m2 *Matrix) (result *Matrix) {
 	return
 }
 
+/* VecMul transforms a vector by a transformation matrix. */
 func VecMul(m *Matrix, v vector.Vector3D) vector.Vector3D {
 	return vector.Vector3D{
 		m.m[0][0]*v.X + m.m[0][1]*v.Y + m.m[0][2]*v.Z,

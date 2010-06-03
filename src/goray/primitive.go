@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
+/* The goray/primitive package provides the basic components of a scene. */
 package primitive
 
 import (
@@ -17,14 +18,30 @@ import (
 	"./goray/vector"
 )
 
+/* Primitive defines a basic 3D entity in a scene. */
 type Primitive interface {
-	// Return the bound in global (world) coordinates
+	/* GetBound returns the bounding box in global (world) coordinates. */
 	GetBound() *bound.Bound
+	/*
+	   IntersectsBound returns whether a bounding box intersects the primitive.
+	   This can be used to implement more precise partitioning.
+	*/
 	IntersectsBound(*bound.Bound) bool
+	/* HasClippingSupport indicates if the object has a clipping implementation. */
 	HasClippingSupport() bool
+	/*
+	   ClipToBound calculates the overlapping bounding box of a given bounding box and the primitive.
+	   It returns true only if a valid clip exists.
+	*/
 	ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool)
-	Intersect(ray ray.Ray) (hit bool, raydepth float)
+	/*
+	   Intersect checks whether a ray collides with the primitive.
+	   This should not skip intersections outside of [TMin, TMax].
+	*/
+	Intersect(ray ray.Ray) (raydepth float, hit bool)
+	/* GetSurface obtains information about a point on the primitive's surface. */
 	GetSurface(pt vector.Vector3D) surface.Point
+	/* GetMaterial returns the material associated with this primitive. */
 	GetMaterial() material.Material
 }
 
@@ -34,6 +51,7 @@ type sphere struct {
 	material material.Material
 }
 
+/* NewSphere creates a spherical primitive. */
 func NewSphere(center vector.Vector3D, radius float, material material.Material) Primitive {
 	return &sphere{center, radius, material}
 }
@@ -51,7 +69,7 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 	return nil, false
 }
 
-func (s *sphere) Intersect(ray ray.Ray) (hit bool, raydepth float) {
+func (s *sphere) Intersect(ray ray.Ray) (raydepth float, hit bool) {
 	vf := vector.Sub(ray.From, s.center)
 	ea := vector.Dot(ray.Dir, ray.Dir)
 	eb := vector.Dot(vf, ray.Dir) * 2.0
@@ -89,6 +107,6 @@ func (s *sphere) GetSurface(pt vector.Vector3D) (sp surface.Point) {
 	sp.Position = pt
 	sp.U = fmath.Atan2(normal.Y, normal.X)*(1.0/math.Pi) + 1
 	sp.V = 1.0 - fmath.Acos(normal.Z)*(1.0/math.Pi)
-	//sp.Light = nil
+	sp.Light = nil
 	return
 }
