@@ -33,7 +33,7 @@ type Sample struct {
 	// Probability density for generating this sample point on light surface (emitSample)
 	AreaPdf float
 	// Color of the generated sample
-	Col color.Color
+	Color color.Color
 	// Flags of the sampled light source
 	Flags uint
 	// Surface point on the light source, may only be complete enough to call other light methods with it!
@@ -45,8 +45,8 @@ type Light interface {
 	TotalEnergy() color.Color
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
 	EmitSample(wo vector.Vector3D) (color.Color, Sample)
-	IllumSample(sp surface.Point, wi ray.Ray) (bool, Sample)
-	Illuminate(sp surface.Point, col color.Color, wi ray.Ray) bool
+	IllumSample(sp surface.Point, wi *ray.Ray) (s Sample, ok bool)
+	Illuminate(sp surface.Point, wi *ray.Ray) (col color.Color, ok bool)
 	CanIntersect() bool
 	Intersect(r ray.Ray) (ok bool, dist float, col color.Color, ipdf float)
 	IllumPdf(sp, spLight surface.Point) float
