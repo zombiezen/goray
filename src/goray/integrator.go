@@ -26,7 +26,7 @@ type Integrator interface {
 	SetScene(interface{})
 	Preprocess() os.Error
 	Render() <-chan render.Fragment
-	Integrate(*render.State, *ray.Ray) color.AlphaColor
+	Integrate(*render.State, ray.Ray) color.AlphaColor
 }
 
 type SurfaceIntegrator interface {
@@ -35,5 +35,5 @@ type SurfaceIntegrator interface {
 
 type VolumeIntegrator interface {
 	Integrator
-	Transmittance(*render.State, *ray.Ray) color.AlphaColor
+	Transmittance(*render.State, ray.Ray) color.AlphaColor
 }
