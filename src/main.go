@@ -12,8 +12,11 @@ import (
     "fmt"
     "os"
     "image/png"
-    "./goray/color"
-    "./goray/render"
+    "./goray/camera"
+    "./goray/object"
+    "./goray/primitive"
+    "./goray/scene"
+    "./goray/vector"
 )
 
 func printInstructions() {
@@ -55,14 +58,21 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
         return
     }
-    //sc := scene.New()
+    sc := scene.New()
     
     fmt.Println("Setting up scene...")
+    // We should be doing this:
     //ok := parseXMLFile(f, scene)
+    // For now, we'll do this:
+    sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 0.0), 640, 480, 1.0, 1.0))
+    sc.AddObject(object.NewPrimitive(primitive.NewSphere(vector.New(0.0, 0.0, 0.0), 1.0, nil)))
     
     fmt.Println("Rendering...")
-    outputImage := render.NewImage(640, 480)
-    outputImage.Clear(color.NewRGBA(1.0, 0.0, 0.0, 1.0))
+    outputImage, err := sc.Render()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
+        return
+    }
     
     fmt.Println("Writing and finishing...")
     switch *format {

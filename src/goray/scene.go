@@ -76,8 +76,8 @@ type Scene struct {
 	objects        map[ObjectID]object.Object3D
 	meshes         map[ObjectID]objData
 	materials      map[string]material.Material
-	volumes        *vecarray.Vector
-	lights         *vecarray.Vector
+	volumes        vecarray.Vector
+	lights         vecarray.Vector
 	vmaps          map[int]int
 	tree           partition.Partitioner
 	camera         camera.Camera
@@ -93,13 +93,22 @@ type Scene struct {
 	doDepth             bool
 }
 
-/* NewScene creates a new scene */
-func NewScene() *Scene {
+/* New creates a new scene */
+func New() *Scene {
 	s := new(Scene)
 	s.aaSamples = 1
 	s.aaPasses = 1
 	s.aaThreshold = 0.05
+
+	s.objects = make(map[ObjectID]object.Object3D)
+	s.meshes = make(map[ObjectID]objData)
+	s.materials = make(map[string]material.Material)
+	s.volumes = make(vecarray.Vector, 0)
+	s.lights = make(vecarray.Vector, 0)
+	s.vmaps = make(map[int]int)
+
 	s.state.changes = changeAll
+	s.state.stack = stack.New()
 	s.state.stack.Push(stateReady)
 	s.state.nextFreeID = 1
 	s.state.currObj = nil
@@ -286,9 +295,11 @@ func (s *Scene) Update() (err os.Error) {
 			nPrims := 0
 			primLists := make([][]primitive.Primitive, len(s.objects))
 
-			for i, obj := range s.objects {
+			i := 0
+			for _, obj := range s.objects {
 				primLists[i] = obj.GetPrimitives()
 				nPrims += len(primLists[i])
+				i++
 			}
 
 			prims = make([]primitive.Primitive, nPrims)
