@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-27.
 //
 
+/* The goray/render package provides the infrastructure for rendering an image.  It cannot render an image itself. */
 package render
 
 import (
@@ -15,6 +16,7 @@ import (
 	"./goray/vector"
 )
 
+/* State stores information concerning the current rendering state */
 type State struct {
 	RayLevel       int
 	Depth          float
@@ -36,6 +38,7 @@ type State struct {
 	Rand           *rand.Rand
 }
 
+/* Init initializes the state. */
 func (st *State) Init(rgen *rand.Rand) {
 	st.CurrentPass = 0
 	st.PixelSample = 0
@@ -50,6 +53,7 @@ func (st *State) Init(rgen *rand.Rand) {
 	}
 }
 
+/* SetDefaults changes some values to their initial values. */
 func (st *State) SetDefaults() {
 	st.RayLevel = 0
 	st.Chromatic = true
@@ -59,16 +63,22 @@ func (st *State) SetDefaults() {
 	st.Traveled = 0.0
 }
 
+/* A Fragment stores a part of an image. */
 type Fragment struct {
 	Color color.AlphaColor
 	X, Y  int
 }
 
+/*
+   Image stores a two-dimensional array of colors.
+   It implements the image.Image interface, so you can use it directly with the standard library.
+*/
 type Image struct {
 	width, height int
 	data          [][]color.RGBA
 }
 
+/* NewImage creates a new, black image with the given width and height. */
 func NewImage(width, height int) (img *Image) {
 	img = new(Image)
 	img.width, img.height = width, height
@@ -88,6 +98,7 @@ func (i *Image) At(x, y int) image.Color {
 	return i.data[y][x]
 }
 
+/* Clear sets all of the pixels in the image to a given color. */
 func (i *Image) Clear(clearColor color.AlphaColor) {
 	for y := 0; y < i.height; y++ {
 		for x := 0; x < i.width; x++ {
@@ -96,6 +107,7 @@ func (i *Image) Clear(clearColor color.AlphaColor) {
 	}
 }
 
+/* Acquire receives fragments from a channel until the channel is closed. */
 func (i *Image) Acquire(ch <-chan Fragment) {
 	for frag := range ch {
 		i.data[frag.Y][frag.X].Copy(frag.Color)

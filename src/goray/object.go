@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
+/* The goray/object package provides an object type--a collection of primitives. */
 package object
 
 import (
@@ -14,19 +15,23 @@ import (
 	"./goray/vector"
 )
 
+/* Object3D is a collection of primitives */
 type Object3D interface {
+	/* GetPrimitives retrieves all of the primitives for this object. */
 	GetPrimitives() []primitive.Primitive
-	// Evaluate vertex map (or equivalent for other geometry types if available)
+	/* EvalVmap evaluates a vertex map (or equivalent for other geometry types if available) */
 	EvalVmap(sp surface.Point, id uint, val []float) (dim int)
-	// Set a light source to be associated with this object
+	/* SetLight associates a light source with this object */
 	SetLight(light.Light)
-	// Query whether object surface can be sampled right now
+	/* CanSample indicates whether the object's surface can be sampled */
 	CanSample() bool
-	// Try to enable sampling (may require additional memory and preprocessing time, if supported)
+	/* EnableSampling tries to enable sampling (may require additional memory and preprocessing time, if supported) */
 	EnableSampling() bool
-	// Sample object surface
+	/* Sample takes a sample of the object's surface */
 	Sample(s1, s2 float) (p, n vector.Vector3D)
+	/* IsVisible indicates whether the object is shown in the scene. */
 	IsVisible() bool
+	/* SetVisible changes whether the object is shown in the scene. */
 	SetVisible(bool)
 }
 
@@ -36,6 +41,7 @@ type primitiveObject struct {
 	hidden bool
 }
 
+/* NewPrimitive creates an object that contains only one primitive. */
 func NewPrimitive(p primitive.Primitive) Object3D {
 	return &primitiveObject{p, nil, false}
 }
