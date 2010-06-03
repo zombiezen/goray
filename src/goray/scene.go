@@ -280,13 +280,13 @@ func (s *Scene) Update() (err os.Error) {
 
 	s.lights.Do(func(obj interface{}) {
 		li := obj.(light.Light)
-		li.Init(s)
+		li.SetScene(s)
 	})
 
 	if s.background != nil {
 		bgLight := s.background.GetLight()
 		if bgLight != nil {
-			bgLight.Init(s)
+			bgLight.SetScene(s)
 		}
 	}
 
