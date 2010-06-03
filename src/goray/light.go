@@ -40,28 +40,28 @@ type Light interface {
 	SetScene(scene interface{})
 	/* TotalEnergy returns the light's color energy emitted during a frame */
 	TotalEnergy() color.Color
-    /* EmitPhoton computes the values necessary for a photon */
+	/* EmitPhoton computes the values necessary for a photon */
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
-    /* EmitSample creates a light emission sample.  It's more suited to bidirectional methods than EmitPhoton. */
+	/* EmitSample creates a light emission sample.  It's more suited to bidirectional methods than EmitPhoton. */
 	EmitSample(wo vector.Vector3D) (color.Color, Sample)
-    /* Illuminate a given surface point, generating a sample. */
+	/* Illuminate a given surface point, generating a sample. */
 	IllumSample(sp surface.Point, wi *ray.Ray) (s Sample, ok bool)
-    /* Illuminate a given surface point.  Only for Dirac lights. */
+	/* Illuminate a given surface point.  Only for Dirac lights. */
 	Illuminate(sp surface.Point, wi *ray.Ray) (col color.Color, ok bool)
-    /* CanIntersect indicates whether the light can intersect with a ray */
+	/* CanIntersect indicates whether the light can intersect with a ray */
 	CanIntersect() bool
-    /* Intersect intersects the light source with a ray, giving back the distance, the energy, and 1/PDF. */
+	/* Intersect intersects the light source with a ray, giving back the distance, the energy, and 1/PDF. */
 	Intersect(r ray.Ray) (ok bool, dist float, col color.Color, ipdf float)
-    /* IllumPdf returns the PDF for sampling with IllumSample. */
+	/* IllumPdf returns the PDF for sampling with IllumSample. */
 	IllumPdf(sp, spLight surface.Point) float
-    /* EmitPdf returns the PDFs for sampling with EmitSample. */
+	/* EmitPdf returns the PDFs for sampling with EmitSample. */
 	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
-    /* NumSamples returns the preferred number of samples for direct lighting. */
+	/* NumSamples returns the preferred number of samples for direct lighting. */
 	NumSamples() int
-    /* CanIlluminate returns whether the light can illuminate a certain point. */
+	/* CanIlluminate returns whether the light can illuminate a certain point. */
 	CanIlluminate(pt vector.Vector3D) bool
-    /* DiracLight indicates whether the light has a Dirac delta distribution. */
-    IsDirac() bool
-    /* GetFlags returns the type of light the light is. */
+	/* DiracLight indicates whether the light has a Dirac delta distribution. */
+	IsDirac() bool
+	/* GetFlags returns the type of light the light is. */
 	GetFlags() uint
 }
