@@ -34,8 +34,8 @@ type Region interface {
 	Tau(r ray.Ray, step, offset float) color.Color
 
     /* Intersect returns whether a ray intersects the volume. */
-	Intersect(r ray.Ray) (ok bool, t0, t1 float)
+	Intersect(r ray.Ray) (t0, t1 float, ok bool)
 
-    /* GetBoundingBox returns the bounding box of the volume. */
-	GetBoundingBox() *bound.Bound
+    /* GetBound returns the bounding box of the volume. */
+	GetBound() *bound.Bound
 }
