@@ -43,8 +43,15 @@ goray_packages = [
 ]
 goray_packages = [env.Go('bin/goray/%s.go' % name) for name in goray_packages]
 
-packages = root_packages + goray_packages
+std_packages = [
+    'integrators/trivial',
+]
+std_packages = [env.Go('bin/goray/std/%s.go' % name) for name in std_packages]
+
+packages = root_packages + goray_packages + std_packages
 Alias('lib', packages)
+Alias('core', root_packages + goray_packages)
+Alias('std', std_packages)
 
 program = env.GoProgram('bin/run-goray', 'bin/main.go')
 
