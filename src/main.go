@@ -66,7 +66,7 @@ func main() {
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
-	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), 1920, 1080, 1.0, 2.0))
+	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), 640, 480, 1.0, 2.0))
 	sc.AddObject(object.NewPrimitive(primitive.NewSphere(vector.New(0.0, 0.0, 0.0), 1.0, nil)))
 	sc.SetSurfaceIntegrator(trivialInt.New())
 

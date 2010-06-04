@@ -36,7 +36,7 @@ func (ti *trivial) Integrate(s *render.State, r ray.Ray) color.AlphaColor {
 func (ti *trivial) Render() <-chan render.Fragment {
 	cam := ti.sc.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment)
+	ch := make(chan render.Fragment, w)
     renderPixel := func(x, y int, finish chan bool) {
         // Set up state
         state := &render.State{}
