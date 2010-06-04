@@ -36,38 +36,40 @@ func (ti *trivial) Integrate(s *render.State, r ray.Ray) color.AlphaColor {
 func (ti *trivial) Render() <-chan render.Fragment {
 	cam := ti.sc.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment, 1000)
-	control := make(chan bool)
+	ch := make(chan render.Fragment)
+    renderPixel := func(x, y int, finish chan bool) {
+        // Set up state
+        state := &render.State{}
+        state.Init(nil)
+        state.PixelNumber = y*w + x
+        state.ScreenPos = vector.New(2.0*float(x)/float(w)-1.0, -2.0*float(y)/float(h)+1.0, 0.0)
+        state.Time = 0.0
+        // Shoot ray
+        r, _ := cam.ShootRay(float(x), float(y), 0, 0)
+        // Integrate
+        color := ti.Integrate(state, r)
+        ch <- render.Fragment{X: x, Y: y, Color: color}
+        finish <- true
+    }
+    renderLine := func(y int) {
+        flags := make([]chan bool, w)
+        for i, _ := range flags {
+            flags[i] = make(chan bool)
+        }
+        // Render pixels
+        for x := 0; x < w; x++ {
+            go renderPixel(x, y, flags[x])
+        }
+        // Join processes
+        for _, flag := range flags {
+            <-flag
+        }
+    }
 	go func() {
-		for x := 0; x < w; x++ {
-			for y := 0; y < h; y++ {
-				go func(x, y int) {
-					// Set up state
-					state := &render.State{}
-					state.Init(nil)
-					state.PixelNumber = y*w + x
-					state.ScreenPos = vector.New(2.0*float(x)/float(w)-1.0, -2.0*float(y)/float(h)+1.0, 0.0)
-					state.Time = 0.0
-					// Shoot ray
-					r, _ := cam.ShootRay(float(x), float(y), 0, 0)
-					// Integrate
-					color := ti.Integrate(state, r)
-					ch <- render.Fragment{X: x, Y: y, Color: color}
-					control <- true
-				}(x, y)
-			}
-		}
-	}()
-	go func() {
-		pixrendered := 0
-		pixcount := w * h
-		for _ = range control {
-			pixrendered++
-			if pixrendered >= pixcount {
-				close(control)
-				close(ch)
-			}
-		}
+        for y := 0; y < h; y++ {
+            renderLine(y)
+        }
+        close(ch)
 	}()
 	return ch
 }
