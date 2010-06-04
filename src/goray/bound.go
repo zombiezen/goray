@@ -12,6 +12,7 @@
 package bound
 
 import (
+	"fmt"
 	"./fmath"
 	"./goray/vector"
 )
@@ -27,6 +28,10 @@ type Bound struct {
 /* New creates a new bounding box from the two points given. */
 func New(min, max vector.Vector3D) *Bound {
 	return &Bound{min, max}
+}
+
+func (b *Bound) String() string {
+	return fmt.Sprintf("Bound{min: %v, max: %v}", b.a, b.g)
 }
 
 /* Union creates a new bounding box that contains the two bounds. */
