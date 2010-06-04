@@ -5,8 +5,8 @@ import os
 test_build = ('test' in COMMAND_LINE_TARGETS)
 
 # Set up environment
-env = Environment(TOOLS=['default', 'go'], GOBUILDDIR='bin')
-env.VariantDir('bin', 'src')
+env = Environment(TOOLS=['default', 'go'], GOBUILDDIR='build')
+env.VariantDir('build', 'src')
 
 test_sources = []
 def _add_test(source, test):
@@ -16,8 +16,8 @@ def _add_test(source, test):
 
 # Main build
 root_packages = [
-    env.Go('bin/fmath.go'),
-    env.Go('bin/stack.go'),
+    env.Go('build/fmath.go'),
+    env.Go('build/stack.go'),
 ]
 
 goray_packages = [
@@ -41,19 +41,19 @@ goray_packages = [
     'vmap',
     'volume',
 ]
-goray_packages = [env.Go('bin/goray/%s.go' % name) for name in goray_packages]
+goray_packages = [env.Go('build/goray/%s.go' % name) for name in goray_packages]
 
 std_packages = [
     'integrators/trivial',
 ]
-std_packages = [env.Go('bin/goray/std/%s.go' % name) for name in std_packages]
+std_packages = [env.Go('build/goray/std/%s.go' % name) for name in std_packages]
 
 packages = root_packages + goray_packages + std_packages
 Alias('lib', packages)
 Alias('core', root_packages + goray_packages)
 Alias('std', std_packages)
 
-program = env.GoProgram('bin/run-goray', 'bin/main.go')
+program = env.GoProgram('bin/goray', 'build/main.go')
 
 Default(packages + [program])
 
