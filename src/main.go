@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"image/png"
+    "time"
 	"./goray/camera"
 	"./goray/object"
 	"./goray/primitive"
@@ -65,16 +66,19 @@ func main() {
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
-	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), 100, 100, 1.0, 2.0))
+	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), 1920, 1080, 1.0, 2.0))
 	sc.AddObject(object.NewPrimitive(primitive.NewSphere(vector.New(0.0, 0.0, 0.0), 1.0, nil)))
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
 	fmt.Println("Rendering...")
+    startTime := time.Nanoseconds()
 	outputImage, err := sc.Render()
+    endTime := time.Nanoseconds()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
 		return
 	}
+    fmt.Printf("Render finished in %.3fs\n", float(endTime - startTime) * 1e-9)
 
 	fmt.Println("Writing and finishing...")
 	switch *format {
