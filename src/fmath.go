@@ -57,18 +57,30 @@ func IsInf(n float) bool {
 	return math.IsInf(float64(n), 0)
 }
 
-func Min(f1, f2 float) float {
-	if f1 <= f2 {
-		return f1
+func Min(f1, f2 float, fn ...float) (min float) {
+	min = f1
+	if f2 < f1 {
+		min = f2
 	}
-	return f2
+	for _, f := range fn {
+		if f < min {
+			min = f
+		}
+	}
+	return
 }
 
-func Max(f1, f2 float) float {
-	if f1 >= f2 {
-		return f1
+func Max(f1, f2 float, fn ...float) (max float) {
+	max = f1
+	if f2 > f1 {
+		max = f2
 	}
-	return f2
+	for _, f := range fn {
+		if f > max {
+			max = f
+		}
+	}
+	return
 }
 
 func Mod(f1, f2 float) float {
