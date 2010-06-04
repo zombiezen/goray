@@ -337,8 +337,10 @@ func (s *Scene) Update() (err os.Error) {
 		if err = s.surfIntegrator.Preprocess(); err != nil {
 			return
 		}
-		if err = s.volIntegrator.Preprocess(); err != nil {
-			return
+		if s.volIntegrator != nil {
+			if err = s.volIntegrator.Preprocess(); err != nil {
+				return
+			}
 		}
 	}
 	s.state.changes = changeNone
