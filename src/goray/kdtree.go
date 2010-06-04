@@ -527,7 +527,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 	return ch, signal
 }
 
-func (tree *kdTree) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float) {
+func (tree *kdTree) Intersect(r ray.Ray, dist float) (prim primitive.Primitive, z float, hit bool) {
 	ch, signal := tree.collide(r, r.TMin, dist)
 	signal <- false
 	result := <-ch
@@ -541,7 +541,7 @@ func (tree *kdTree) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.P
 	return
 }
 
-func (tree *kdTree) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive) {
+func (tree *kdTree) IntersectS(r ray.Ray, dist float) (prim primitive.Primitive, hit bool) {
 	ch, signal := tree.collide(r, r.TMin, dist)
 	signal <- false
 	result := <-ch
@@ -554,7 +554,7 @@ func (tree *kdTree) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.
 	return
 }
 
-func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive) {
+func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (prim primitive.Primitive, hit bool) {
 	ch, signal := tree.collide(r, r.TMin, dist)
 	filtered := make(map[primitive.Primitive]bool)
 	depth := 0
