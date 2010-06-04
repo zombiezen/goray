@@ -23,11 +23,11 @@ import (
 */
 type Partitioner interface {
 	/* Intersect determines the primitive that a ray collides with. */
-	Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float)
+	Intersect(r ray.Ray, dist float) (prim primitive.Primitive, z float, hit bool)
 	/* IntersectS determines the primitive that a ray collides with for shadow-detection. */
-	IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive)
+	IntersectS(r ray.Ray, dist float) (prim primitive.Primitive, hit bool)
 	/* IntersectTS computes the color of a transparent shadow after bouncing around. */
-	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive)
+	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (prim primitive.Primitive, hit bool)
 	/* GetBound returns a bounding box that contains all of the primitives in the scene. */
 	GetBound() *bound.Bound
 }
@@ -51,7 +51,7 @@ func NewSimple(prims []primitive.Primitive) Partitioner {
 
 func (s *simple) GetBound() *bound.Bound { return s.bound }
 
-func (s *simple) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Primitive, z float) {
+func (s *simple) Intersect(r ray.Ray, dist float) (prim primitive.Primitive, z float, hit bool) {
 	for _, p := range s.prims {
 		if z, hit = p.Intersect(r); hit {
 			if z < dist && z > r.TMin {
@@ -64,7 +64,7 @@ func (s *simple) Intersect(r ray.Ray, dist float) (hit bool, prim primitive.Prim
 	return
 }
 
-func (s *simple) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Primitive) {
+func (s *simple) IntersectS(r ray.Ray, dist float) (prim primitive.Primitive, hit bool) {
 	var z float
 	for _, p := range s.prims {
 		if z, hit = p.Intersect(r); hit {
@@ -78,7 +78,7 @@ func (s *simple) IntersectS(r ray.Ray, dist float) (hit bool, prim primitive.Pri
 	return
 }
 
-func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (hit bool, prim primitive.Primitive) {
+func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (prim primitive.Primitive, hit bool) {
 	depth := 0
 	for _, p := range s.prims {
 		if z, intersects := p.Intersect(r); intersects && z < dist && z > r.TMin {

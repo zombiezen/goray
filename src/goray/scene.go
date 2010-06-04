@@ -252,7 +252,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 		err = os.NewError("Partition map has not been built")
 		return
 	}
-	hit, hitprim, z := s.tree.Intersect(r, dist)
+	hitprim, z, hit := s.tree.Intersect(r, dist)
 	if !hit {
 		return
 	}
@@ -273,7 +273,7 @@ func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
 	if r.TMax >= 0 {
 		dist = r.TMax - 2*r.TMin
 	}
-	hit, _ := s.tree.IntersectS(r, dist)
+	_, hit := s.tree.IntersectS(r, dist)
 	return hit
 }
 
