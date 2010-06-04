@@ -19,6 +19,8 @@ type Ray struct {
 	Time       float           // Time stores the relative time frame (values between [0, 1]) at which the ray was generated
 }
 
+func New() Ray { return Ray{TMax: -1.0} }
+
 func (r Ray) String() string {
 	return fmt.Sprintf("Ray{From: %v, Dir: %v, TMin: %.2f, TMax: %.2f, Time: %.2f}", r.From, r.Dir, r.TMin, r.TMax, r.Time)
 }
@@ -32,6 +34,8 @@ type DifferentialRay struct {
 	FromX, FromY vector.Vector3D
 	DirX, DirY   vector.Vector3D
 }
+
+func NewDifferential() DifferentialRay { return DifferentialRay{Ray: New()} }
 
 func (r DifferentialRay) String() string {
 	return fmt.Sprintf("DifferentialRay{Ray: %v, FromX: %v, FromY: %v, DirX: %v, DirY: %v}", r.Ray, r.FromX, r.FromY, r.DirX, r.DirY)

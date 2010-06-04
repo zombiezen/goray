@@ -50,7 +50,6 @@ func (ti *trivial) Render() <-chan render.Fragment {
 					state.Time = 0.0
 					// Shoot ray
 					r, _ := cam.ShootRay(float(x), float(y), 0, 0)
-					r.TMin, r.TMax = 0.0, -1.0 // TODO: Add this to Ray
 					// Integrate
 					color := ti.Integrate(state, r)
 					ch <- render.Fragment{X: x, Y: y, Color: color}
