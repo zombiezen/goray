@@ -71,9 +71,9 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 
 func (s *sphere) Intersect(ray ray.Ray) (raydepth float, hit bool) {
 	vf := vector.Sub(ray.From, s.center)
-	ea := vector.Dot(ray.Dir, ray.Dir)
+	ea := ray.Dir.LengthSqr()
 	eb := vector.Dot(vf, ray.Dir) * 2.0
-	ec := vector.Dot(vf, vf) - s.radius*s.radius
+	ec := vf.LengthSqr() - s.radius*s.radius
 	osc := eb*eb - 4.0*ea*ec
 	if osc < 0 {
 		hit = false
