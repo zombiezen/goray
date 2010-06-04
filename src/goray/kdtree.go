@@ -412,13 +412,8 @@ type kdStackFrame struct {
 	prev int
 }
 
-type collideResult struct {
-	prim  primitive.Primitive
-	depth float
-}
-
-func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideResult, chan<- bool) {
-	ch := make(chan collideResult)
+func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan primitive.Collision, chan<- bool) {
+	ch := make(chan primitive.Collision)
 	signal := make(chan bool, 1)
 
 	// Quick check: If we're not even in the ballpark, then don't spawn a
@@ -509,10 +504,10 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 			// Check for intersections inside leaf node
 			for _, index := range currNode.(*kdLeafNode).GetPrimitives() {
 				mp := tree.prims[index]
-				depth, hit := mp.Intersect(r)
-				if hit && depth < maxDist && depth > minDist {
+				coll, hit := mp.Intersect(r)
+				if hit && coll.RayDepth < maxDist && coll.RayDepth > minDist {
 					// It's a hit!  Send it back!
-					ch <- collideResult{mp, depth}
+					ch <- coll
 					// Now check to see whether we can stop.
 					if !<-signal {
 						// Caller wants us to terminate.
@@ -527,50 +522,42 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 	return ch, signal
 }
 
-func (tree *kdTree) Intersect(r ray.Ray, dist float) (prim primitive.Primitive, z float, hit bool) {
+func (tree *kdTree) Intersect(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
 	ch, signal := tree.collide(r, r.TMin(), dist)
 	signal <- false
-	result := <-ch
-	if result.prim == nil {
-		hit = false
-	} else {
-		hit = true
-		prim = result.prim
-		z = result.depth
-	}
-	return
+	coll = <-ch
+    if coll.Primitive != nil {
+        hit = true
+    }
+    return
 }
 
-func (tree *kdTree) IntersectS(r ray.Ray, dist float) (prim primitive.Primitive, hit bool) {
+func (tree *kdTree) IntersectS(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
 	ch, signal := tree.collide(r, r.TMin(), dist)
 	signal <- false
-	result := <-ch
-	if result.prim == nil {
-		hit = false
-	} else {
-		hit = true
-		prim = result.prim
-	}
-	return
+	coll = <-ch
+    if coll.Primitive != nil {
+        hit = true
+    }
+    return
 }
 
-func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (prim primitive.Primitive, hit bool) {
+func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision, hit bool) {
 	ch, signal := tree.collide(r, r.TMin(), dist)
 	filtered := make(map[primitive.Primitive]bool)
 	depth := 0
-	for result := range ch {
+	for coll = range ch {
 		hit = true
-		prim = result.prim
-		mat := prim.GetMaterial()
+		mat := coll.Primitive.GetMaterial()
 		if !mat.IsTransparent() {
 			signal <- false
 			return
 		}
-		if found, _ := filtered[prim]; !found {
-			filtered[prim] = true
+		if found, _ := filtered[coll.Primitive]; !found {
+			filtered[coll.Primitive] = true
 			if depth < maxDepth {
-				h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), result.depth))
-				sp := prim.GetSurface(h)
+				h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), coll.RayDepth))
+				sp := coll.Primitive.GetSurface(h, coll.UserData)
 				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
 				depth++
 			} else {

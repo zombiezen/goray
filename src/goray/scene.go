@@ -252,13 +252,13 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 		err = os.NewError("Partition map has not been built")
 		return
 	}
-	hitprim, z, hit := s.tree.Intersect(r, dist)
+	coll, hit := s.tree.Intersect(r, dist)
 	if !hit {
 		return
 	}
-	h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), z))
-	sp = hitprim.GetSurface(h)
-	sp.Primitive = hitprim
+	h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), coll.RayDepth))
+	sp = coll.Primitive.GetSurface(h, coll.UserData)
+	sp.Primitive = coll.Primitive
 	return
 }
 

@@ -18,6 +18,13 @@ import (
 	"./goray/vector"
 )
 
+/* Collision stores information about a ray intersection. */
+type Collision struct {
+	Primitive Primitive
+	RayDepth  float
+	UserData  interface{}
+}
+
 /* Primitive defines a basic 3D entity in a scene. */
 type Primitive interface {
 	/* GetBound returns the bounding box in global (world) coordinates. */
@@ -38,9 +45,9 @@ type Primitive interface {
 	   Intersect checks whether a ray collides with the primitive.
 	   This should not skip intersections outside of [TMin, TMax].
 	*/
-	Intersect(ray ray.Ray) (raydepth float, hit bool)
+	Intersect(r ray.Ray) (coll Collision, hit bool)
 	/* GetSurface obtains information about a point on the primitive's surface. */
-	GetSurface(pt vector.Vector3D) surface.Point
+	GetSurface(pt vector.Vector3D, userData interface{}) surface.Point
 	/* GetMaterial returns the material associated with this primitive. */
 	GetMaterial() material.Material
 }
@@ -69,34 +76,33 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 	return nil, false
 }
 
-func (s *sphere) Intersect(ray ray.Ray) (raydepth float, hit bool) {
-	vf := vector.Sub(ray.From(), s.center)
-	ea := ray.Dir().LengthSqr()
-	eb := vector.Dot(vf, ray.Dir()) * 2.0
+func (s *sphere) Intersect(r ray.Ray) (coll Collision, hit bool) {
+	vf := vector.Sub(r.From(), s.center)
+	ea := r.Dir().LengthSqr()
+	eb := vector.Dot(vf, r.Dir()) * 2.0
 	ec := vf.LengthSqr() - s.radius*s.radius
 	osc := eb*eb - 4.0*ea*ec
 	if osc < 0 {
-		hit = false
 		return
 	}
 
 	osc = fmath.Sqrt(osc)
 	sol1 := (-eb - osc) / (ea * 2.0)
 	sol2 := (-eb + osc) / (ea * 2.0)
-	raydepth = sol1
-	if raydepth < ray.TMin() {
-		raydepth = sol2
-		if raydepth < ray.TMin() {
-			hit = false
-			raydepth = 0.0
+	coll.RayDepth = sol1
+	if coll.RayDepth < r.TMin() {
+		coll.RayDepth = sol2
+		if coll.RayDepth < r.TMin() {
+			coll = Collision{}
 			return
 		}
 	}
 	hit = true
+	coll.Primitive = s
 	return
 }
 
-func (s *sphere) GetSurface(pt vector.Vector3D) (sp surface.Point) {
+func (s *sphere) GetSurface(pt vector.Vector3D, userdata interface{}) (sp surface.Point) {
 	normal := vector.Sub(pt, s.center)
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()
