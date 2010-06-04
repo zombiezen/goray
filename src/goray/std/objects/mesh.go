@@ -138,26 +138,8 @@ func (tri *Triangle) GetSurface(pt vector.Vector3D, userData interface{}) (sp su
 
 func (tri *Triangle) GetBound() *bound.Bound {
 	a, b, c := tri.getVertices()
-	min := func(n1, n2, n3 float) float {
-		switch {
-		case n3 < n2 && n3 < n1:
-			return n3
-		case n2 < n3 && n2 < n1:
-			return n2
-		}
-		return n1
-	}
-	max := func(n1, n2, n3 float) float {
-		switch {
-		case n3 > n2 && n3 > n1:
-			return n3
-		case n2 > n3 && n2 > n1:
-			return n2
-		}
-		return n1
-	}
-	minPt := vector.New(min(a.X, b.X, c.X), min(a.Y, b.Y, c.Y), min(a.Z, b.Z, c.Z))
-	maxPt := vector.New(max(a.X, b.X, c.X), max(a.Y, b.Y, c.Y), max(a.Z, b.Z, c.Z))
+	minPt := vector.New(fmath.Min(a.X, b.X, c.X), fmath.Min(a.Y, b.Y, c.Y), fmath.Min(a.Z, b.Z, c.Z))
+	maxPt := vector.New(fmath.Max(a.X, b.X, c.X), fmath.Max(a.Y, b.Y, c.Y), fmath.Max(a.Z, b.Z, c.Z))
 	return bound.New(minPt, maxPt)
 }
 
