@@ -23,11 +23,34 @@ func callBinary(f binaryFunc, n1, n2 float) float {
 	return float(f(float64(n1), float64(n2)))
 }
 
-func Abs(f float) float {
+func Abs(f float) float { return callUnary(abs64, f) }
+
+func abs64(f float64) float64 {
 	if f >= 0 {
 		return f
 	}
 	return -f
+}
+
+func Eq(a, b float) bool {
+	const epsilon = 0.000001
+	return nearlyEqual(float64(a), float64(b), epsilon)
+}
+
+/*
+   nearlyEqual checks whether two numbers are equivalent.
+   This is taken from http://floating-point-gui.de/
+*/
+func nearlyEqual(a, b, epsilon float64) bool {
+	absA, absB := abs64(a), abs64(b)
+	diff := abs64(a - b)
+
+	if a*b == 0 {
+		// A or B is zero; relative error is not meaningful
+		return diff < epsilon*epsilon
+	}
+	// Use relative error
+	return diff/(absA+absB) < epsilon
 }
 
 func IsInf(n float) bool {
