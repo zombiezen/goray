@@ -52,7 +52,11 @@ func NewOrtho(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float
 	c.vup = vector.Sub(up, pos)
 	c.vlook = vector.Sub(look, pos).Normalize()
 	c.vright = vector.Cross(c.vup, c.vlook)
-	c.vup = vector.Cross(c.vright, c.vlook).Normalize()
+	c.vup = vector.Cross(c.vright, c.vlook)
+
+	// Normalize separately
+	c.vup = c.vup.Normalize()
+	c.vright = c.vright.Normalize()
 
 	c.vright = vector.ScalarMul(c.vright.Normalize(), -1.0)
 	c.vup = vector.ScalarMul(c.vup, aspect*float(resy)/float(resx))
@@ -60,7 +64,7 @@ func NewOrtho(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float
 	c.position = vector.Sub(pos, vector.ScalarMul(vector.Add(c.vup, c.vright), 0.5*scale))
 
 	c.vup = vector.ScalarMul(c.vup, scale/float(resy))
-	c.vright = vector.ScalarMul(c.vup, scale/float(resx))
+	c.vright = vector.ScalarMul(c.vright, scale/float(resx))
 	return c
 }
 
