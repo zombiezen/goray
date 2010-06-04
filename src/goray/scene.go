@@ -243,8 +243,8 @@ func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
 /* Intersect returns the surface point that intersects with the given ray. */
 func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) {
-	dist := r.TMax
-	if r.TMax < 0 {
+	dist := r.TMax()
+	if r.TMax() < 0 {
 		dist = fmath.Inf
 	}
 	// Intersect with tree
@@ -256,7 +256,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 	if !hit {
 		return
 	}
-	h := vector.Add(r.From, vector.ScalarMul(r.Dir, z))
+	h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), z))
 	sp = hitprim.GetSurface(h)
 	sp.Primitive = hitprim
 	return
@@ -267,11 +267,11 @@ func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
 	if s.tree == nil {
 		return false
 	}
-	r.From = vector.Add(r.From, vector.ScalarMul(r.Dir, r.TMin))
-	r.Time = state.Time
+	r.SetFrom(vector.Add(r.From(), vector.ScalarMul(r.Dir(), r.TMin())))
+	r.SetTime(state.Time)
 	dist := fmath.Inf
-	if r.TMax >= 0 {
-		dist = r.TMax - 2*r.TMin
+	if r.TMax() >= 0 {
+		dist = r.TMax() - 2*r.TMin()
 	}
 	_, hit := s.tree.IntersectS(r, dist)
 	return hit

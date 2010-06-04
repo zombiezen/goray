@@ -71,8 +71,8 @@ func NewOrtho(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float
 func (c *orthoCam) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 	wt = 1
 	r = ray.New()
-	r.From = vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y))
-	r.Dir = c.vlook
+	r.SetFrom(vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y)))
+	r.SetDir(c.vlook)
 	return
 }
 func (c *orthoCam) SampleLens() bool { return false }

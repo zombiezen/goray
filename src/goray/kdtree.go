@@ -425,7 +425,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 	// goroutine.
 	var a, b float
 	var crosses bool
-	if a, b, crosses = tree.treeBound.Cross(r.From, r.Dir, maxDist); !crosses {
+	if a, b, crosses = tree.treeBound.Cross(r.From(), r.Dir(), maxDist); !crosses {
 		close(ch)
 		return ch, signal
 	}
@@ -435,7 +435,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 		defer close(ch) // This channel should last as long as the goroutine.
 
 		var t float
-		invDir := vector.New(1.0/r.Dir.X, 1.0/r.Dir.Y, 1.0/r.Dir.Z)
+		invDir := vector.New(1.0/r.Dir().X, 1.0/r.Dir().Y, 1.0/r.Dir().Z)
 		stack := make([]kdStackFrame, maxKdStack)
 		currIndex := 0
 		farIndex := 0
@@ -445,16 +445,16 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 
 		if a >= 0.0 {
 			// Ray with external origin
-			stack[enterPt].pb = vector.Add(r.From, vector.ScalarMul(r.Dir, a))
+			stack[enterPt].pb = vector.Add(r.From(), vector.ScalarMul(r.Dir(), a))
 		} else {
 			// Ray with internal origin
-			stack[enterPt].pb = r.From
+			stack[enterPt].pb = r.From()
 		}
 
 		// Setup initial entry and exit point in stack
 		exitPt := 1
 		stack[exitPt].t = b
-		stack[exitPt].pb = vector.Add(r.From, vector.ScalarMul(r.Dir, b))
+		stack[exitPt].pb = vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))
 		stack[exitPt].node = nil
 
 		for currIndex != -1 {
@@ -487,7 +487,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 					currNode = tree.nodes[currIndex]
 				}
 				// Traverse both children
-				t = (splitVal - r.From.GetComponent(axis)) * invDir.GetComponent(axis)
+				t = (splitVal - r.From().GetComponent(axis)) * invDir.GetComponent(axis)
 				// Set up the new exit point
 				prevExitPt := exitPt
 				exitPt++
@@ -528,7 +528,7 @@ func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan collideRe
 }
 
 func (tree *kdTree) Intersect(r ray.Ray, dist float) (prim primitive.Primitive, z float, hit bool) {
-	ch, signal := tree.collide(r, r.TMin, dist)
+	ch, signal := tree.collide(r, r.TMin(), dist)
 	signal <- false
 	result := <-ch
 	if result.prim == nil {
@@ -542,7 +542,7 @@ func (tree *kdTree) Intersect(r ray.Ray, dist float) (prim primitive.Primitive, 
 }
 
 func (tree *kdTree) IntersectS(r ray.Ray, dist float) (prim primitive.Primitive, hit bool) {
-	ch, signal := tree.collide(r, r.TMin, dist)
+	ch, signal := tree.collide(r, r.TMin(), dist)
 	signal <- false
 	result := <-ch
 	if result.prim == nil {
@@ -555,7 +555,7 @@ func (tree *kdTree) IntersectS(r ray.Ray, dist float) (prim primitive.Primitive,
 }
 
 func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (prim primitive.Primitive, hit bool) {
-	ch, signal := tree.collide(r, r.TMin, dist)
+	ch, signal := tree.collide(r, r.TMin(), dist)
 	filtered := make(map[primitive.Primitive]bool)
 	depth := 0
 	for result := range ch {
@@ -569,9 +569,9 @@ func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, di
 		if found, _ := filtered[prim]; !found {
 			filtered[prim] = true
 			if depth < maxDepth {
-				h := vector.Add(r.From, vector.ScalarMul(r.Dir, result.depth))
+				h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), result.depth))
 				sp := prim.GetSurface(h)
-				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
+				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
