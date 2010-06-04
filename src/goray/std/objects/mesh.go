@@ -97,7 +97,7 @@ func (tri *Triangle) getVertices() (a, b, c vector.Vector3D) {
 	return tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 }
 
-func (tri *Triangle) Intersect(r ray.Ray) (raydepth float, hit bool) {
+func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision, hit bool) {
 	// Tomas Möller and Ben Trumbore ray intersection scheme
 	// Ross adds: This is based on an ACM white paper which I don't have access to.
 	// I'm just going to smile, nod, and copy the code.  Code monkey very diligent.
@@ -122,7 +122,17 @@ func (tri *Triangle) Intersect(r ray.Ray) (raydepth float, hit bool) {
 	}
 
 	hit = true
-	raydepth = vector.Dot(edge2, qvec) * invDet
+    coll.Primitive = tri
+	coll.RayDepth = vector.Dot(edge2, qvec) * invDet
+    coll.UserData = interface{}([2]float{u, v})
+	return
+}
+
+func (tri *Triangle) GetSurface(pt vector.Vector3D, userData interface{}) (sp surface.Point) {
+	sp.GeometricNormal = tri.normal
+    dat := userData.([2]float)
+    _ = dat
+	// TODO: This is gonna be ugly.
 	return
 }
 
@@ -154,12 +164,6 @@ func (tri *Triangle) GetBound() *bound.Bound {
 func (tri *Triangle) IntersectsBound(*bound.Bound) bool                                       { return true }
 func (tri *Triangle) HasClippingSupport() bool                                                { return false }
 func (tri *Triangle) ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool) { return }
-
-func (tri *Triangle) GetSurface(pt vector.Vector3D) (sp surface.Point) {
-	sp.GeometricNormal = tri.normal
-	// TODO: This is gonna be ugly.
-	return
-}
 
 func (tri *Triangle) GetMaterial() material.Material { return tri.material }
 
