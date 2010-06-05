@@ -57,23 +57,21 @@ func (mesh *Mesh) GetPrimitives() (prims []primitive.Primitive) {
 	return
 }
 
-func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }
-func (mesh *Mesh) SetLight(l light.Light)                              { mesh.light = l }
-
-func (mesh *Mesh) CanSample() bool { return false }
-
-func (mesh *Mesh) EnableSampling() bool {
-	// TODO
-	return false
-}
-
-func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {
-	// TODO
-	return
-}
-
 func (mesh *Mesh) IsVisible() bool   { return !mesh.hidden }
 func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
+
+//func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }
+func (mesh *Mesh) SetLight(l light.Light) { mesh.light = l }
+
+//func (mesh *Mesh) EnableSampling() bool {
+//	// TODO
+//	return false
+//}
+//
+//func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {
+//	// TODO
+//	return
+//}
 
 func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D) {
 	mesh.vertices, mesh.normals = vertices, normals
@@ -264,8 +262,7 @@ func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
 	return triBoxOverlap([3]float{ctr.X, ctr.Y, ctr.Z}, bd.GetHalfSize(), points)
 }
 
-func (tri *Triangle) HasClippingSupport() bool                                                { return false }
-func (tri *Triangle) ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool) { return }
+//func (tri *Triangle) ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool) { return }
 
 func (tri *Triangle) GetMaterial() material.Material { return tri.material }
 

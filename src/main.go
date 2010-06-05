@@ -12,17 +12,17 @@ import (
 	"fmt"
 	"os"
 	"image/png"
-    "runtime"
-    "time"
+	"runtime"
+	"time"
 )
 
 import (
-    "./buildversion"
+	"./buildversion"
 	"./goray/camera"
 	"./goray/scene"
 	"./goray/vector"
-    "./goray/version"
-    "./goray/std/objects/mesh"
+	"./goray/version"
+	"./goray/std/objects/mesh"
 	trivialInt "./goray/std/integrators/trivial"
 )
 
@@ -33,30 +33,30 @@ func printInstructions() {
 }
 
 func printVersion() {
-    fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
-    // Copyright notice
-    fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
-    fmt.Println("Copyright © 2010 Ross Light")
-    fmt.Println()
-    fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
-    fmt.Println("Alfredo de Greef.")
-    fmt.Println("Go rewrite by Ross Light")
-    fmt.Println()
-    fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
-    fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
-    fmt.Println("Public License v3, or (at your option) any later version.")
-    fmt.Println()
-    // Build information
-    if buildversion.Source == "bzr" {
-        fmt.Printf("Built from \"%s\" branch\n", buildversion.BranchNickname)
-        fmt.Printf("  Revision: %s [%s]\n", buildversion.RevNo, buildversion.RevID)
-        if buildversion.CleanWC == 0 {
-            fmt.Printf("  With local modifications\n")
-        }
-    } else {
-        fmt.Println("Built from a source archive")
-    }
-    fmt.Printf("Go runtime: %s\n", runtime.Version())
+	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
+	// Copyright notice
+	fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
+	fmt.Println("Copyright © 2010 Ross Light")
+	fmt.Println()
+	fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
+	fmt.Println("Alfredo de Greef.")
+	fmt.Println("Go rewrite by Ross Light")
+	fmt.Println()
+	fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
+	fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
+	fmt.Println("Public License v3, or (at your option) any later version.")
+	fmt.Println()
+	// Build information
+	if buildversion.Source == "bzr" {
+		fmt.Printf("Built from \"%s\" branch\n", buildversion.BranchNickname)
+		fmt.Printf("  Revision: %s [%s]\n", buildversion.RevNo, buildversion.RevID)
+		if buildversion.CleanWC == 0 {
+			fmt.Printf("  With local modifications\n")
+		}
+	} else {
+		fmt.Println("Built from a source archive")
+	}
+	fmt.Printf("Go runtime: %s\n", runtime.Version())
 }
 
 func main() {
@@ -65,8 +65,8 @@ func main() {
 	showHelp := flag.Bool("help", false, "display this help")
 	format := flag.String("f", "png", "the output format")
 	outputPath := flag.String("o", "goray.png", "path for the output file")
-    width := flag.Int("w", 100, "the output width")
-    height := flag.Int("h", 100, "the output height")
+	width := flag.Int("w", 100, "the output width")
+	height := flag.Int("h", 100, "the output height")
 	debug := flag.Int("d", 0, "set debug verbosity level")
 	showVersion := flag.Bool("v", false, "display the version")
 
@@ -78,15 +78,15 @@ func main() {
 		printInstructions()
 		return
 	case *showVersion:
-        printVersion()
+		printVersion()
 		return
 	}
 
-    // Eventually, we will take an input file.
-//	if flag.NArg() != 1 {
-//		printInstructions()
-//		return
-//	}
+	// Eventually, we will take an input file.
+	//	if flag.NArg() != 1 {
+	//		printInstructions()
+	//		return
+	//	}
 
 	_ = debug
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
@@ -101,50 +101,51 @@ func main() {
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
-    cube := mesh.New(12)
-    cube.SetData([]vector.Vector3D{
-        vector.New(-0.5, -0.5, -0.5),
-        vector.New( 0.5, -0.5, -0.5),
-        vector.New( 0.5,  0.5, -0.5),
-        vector.New(-0.5,  0.5, -0.5),
-        
-        vector.New(-0.5, -0.5,  0.5),
-        vector.New( 0.5, -0.5,  0.5),
-        vector.New( 0.5,  0.5,  0.5),
-        vector.New(-0.5,  0.5,  0.5),
-    }, nil)
-    // Back
-    cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
-    cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))
-    // Top
-    cube.AddTriangle(mesh.NewTriangle(3, 7, 2, cube))
-    cube.AddTriangle(mesh.NewTriangle(6, 2, 7, cube))
-    // Bottom
-    cube.AddTriangle(mesh.NewTriangle(0, 1, 4, cube))
-    cube.AddTriangle(mesh.NewTriangle(5, 4, 1, cube))
-    // Left
-    cube.AddTriangle(mesh.NewTriangle(7, 3, 4, cube))
-    cube.AddTriangle(mesh.NewTriangle(0, 4, 3, cube))
-    // Right
-    cube.AddTriangle(mesh.NewTriangle(6, 5, 2, cube))
-    cube.AddTriangle(mesh.NewTriangle(1, 2, 5, cube))
-    // Front
-    cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
-    cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
-    
+	cube := mesh.New(12)
+	cube.SetData([]vector.Vector3D{
+		vector.New(-0.5, -0.5, -0.5),
+		vector.New(0.5, -0.5, -0.5),
+		vector.New(0.5, 0.5, -0.5),
+		vector.New(-0.5, 0.5, -0.5),
+
+		vector.New(-0.5, -0.5, 0.5),
+		vector.New(0.5, -0.5, 0.5),
+		vector.New(0.5, 0.5, 0.5),
+		vector.New(-0.5, 0.5, 0.5),
+	},
+		nil)
+	// Back
+	cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
+	cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))
+	// Top
+	cube.AddTriangle(mesh.NewTriangle(3, 7, 2, cube))
+	cube.AddTriangle(mesh.NewTriangle(6, 2, 7, cube))
+	// Bottom
+	cube.AddTriangle(mesh.NewTriangle(0, 1, 4, cube))
+	cube.AddTriangle(mesh.NewTriangle(5, 4, 1, cube))
+	// Left
+	cube.AddTriangle(mesh.NewTriangle(7, 3, 4, cube))
+	cube.AddTriangle(mesh.NewTriangle(0, 4, 3, cube))
+	// Right
+	cube.AddTriangle(mesh.NewTriangle(6, 5, 2, cube))
+	cube.AddTriangle(mesh.NewTriangle(1, 2, 5, cube))
+	// Front
+	cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
+	cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
+
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
 	fmt.Println("Rendering...")
-    startTime := time.Nanoseconds()
+	startTime := time.Nanoseconds()
 	outputImage, err := sc.Render()
-    endTime := time.Nanoseconds()
+	endTime := time.Nanoseconds()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
 		return
 	}
-    fmt.Printf("Render finished in %.3fs\n", float(endTime - startTime) * 1e-9)
+	fmt.Printf("Render finished in %.3fs\n", float(endTime-startTime)*1e-9)
 
 	fmt.Println("Writing and finishing...")
 	switch *format {
