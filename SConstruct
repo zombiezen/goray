@@ -40,6 +40,7 @@ goray_packages = [
     'vector',
     'vmap',
     'volume',
+    'version',
 ]
 goray_packages = [env.Go('build/goray/%s.go' % name) for name in goray_packages]
 
