@@ -36,7 +36,7 @@ type Mesh struct {
 func New(ntris int) (mesh *Mesh) {
 	mesh = new(Mesh)
 	mesh.triangles = make([]*Triangle, 0, ntris)
-	mesh.vertices = make([]vector.Vector3D, 0, ntris*3)
+	mesh.vertices = nil
 	mesh.normals = nil
 	return
 }
@@ -65,6 +65,10 @@ func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {
 func (mesh *Mesh) IsVisible() bool   { return !mesh.hidden }
 func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
 
+func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D) {
+	mesh.vertices, mesh.normals = vertices, normals
+}
+
 func (mesh *Mesh) AddTriangle(t *Triangle) {
 	if len(mesh.triangles)+1 > cap(mesh.triangles) {
 		newTris := make([]*Triangle, len(mesh.triangles), cap(mesh.triangles)*2)
@@ -87,13 +91,15 @@ type Triangle struct {
 }
 
 /* NewTriangle creates a new triangle. */
-func NewTriangle(a, b, c int, m *Mesh) *Triangle {
-	return &Triangle{
+func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
+	tri = &Triangle{
 		va: a, vb: b, vc: c,
 		na: -1, nb: -1, nc: -1,
-		//		index: -1,
-		//		mesh:  m,
+		index: -1,
+		mesh:  m,
 	}
+    tri.CalculateNormal()
+    return tri
 }
 
 func (tri *Triangle) getVertices() (a, b, c vector.Vector3D) {
