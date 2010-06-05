@@ -30,9 +30,11 @@ func printInstructions() {
 func main() {
 	var err os.Error
 
-	help := flag.Bool("h", false, "display this help")
+	help := flag.Bool("help", false, "display this help")
 	format := flag.String("f", "png", "the output format")
 	outputPath := flag.String("o", "goray.png", "path for the output file")
+    width := flag.Int("w", 100, "the output width")
+    height := flag.Int("h", 100, "the output height")
 	debug := flag.Int("d", 0, "set debug verbosity level")
 	version := flag.Bool("v", false, "display the version")
 
@@ -48,10 +50,11 @@ func main() {
 		return
 	}
 
-	if flag.NArg() != 1 {
-		printInstructions()
-		return
-	}
+    // Eventually, we will take an input file.
+//	if flag.NArg() != 1 {
+//		printInstructions()
+//		return
+//	}
 
 	_ = debug
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
@@ -66,7 +69,7 @@ func main() {
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
-	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), 640, 480, 1.0, 2.0))
+	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), *width, *height, 1.0, 2.0))
 	sc.AddObject(object.NewPrimitive(primitive.NewSphere(vector.New(0.0, 0.0, 0.0), 1.0, nil)))
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
