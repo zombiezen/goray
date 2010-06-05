@@ -34,7 +34,7 @@ func (c Collision) Hit() bool { return c.Primitive != nil }
 
 /* GetPoint returns the point in world coordinates where the ray intersected. */
 func (c Collision) GetPoint() vector.Vector3D {
-    return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
+	return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
 }
 
 /* Primitive defines a basic 3D entity in a scene. */
@@ -46,28 +46,34 @@ type Primitive interface {
 	   This can be used to implement more precise partitioning.
 	*/
 	IntersectsBound(*bound.Bound) bool
-	/* HasClippingSupport indicates if the object has a clipping implementation. */
-	HasClippingSupport() bool
-	/*
-	   ClipToBound calculates the overlapping bounding box of a given bounding box and the primitive.
-	   It returns true only if a valid clip exists.
-	*/
-	ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool)
 	/*
 	   Intersect checks whether a ray collides with the primitive.
 	   This should not skip intersections outside of [TMin, TMax].
 	*/
 	Intersect(r ray.Ray) Collision
 	/*
-        GetSurface obtains information about a point on the primitive's surface.
-        
-        You can only get the surface point by ray casting to it.  Admittedly, this is slightly inflexible,
-        but it's the only use-case for this method.  The advantage is that Intersect can pass any extra data
-        that it could need to efficiently implement GetSurface in the Collision struct.
-    */
+	   GetSurface obtains information about a point on the primitive's surface.
+
+	   You can only get the surface point by ray casting to it.  Admittedly, this is slightly inflexible,
+	   but it's the only use-case for this method.  The advantage is that Intersect can pass any extra data
+	   that it could need to efficiently implement GetSurface in the Collision struct.
+	*/
 	GetSurface(Collision) surface.Point
 	/* GetMaterial returns the material associated with this primitive. */
 	GetMaterial() material.Material
+}
+
+type Clippable interface {
+	/*
+	   ClipToBound calculates the overlapping bounding box of a given bounding box and the primitive.
+	   It returns true only if a valid clip exists.
+	*/
+	ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool)
+}
+
+type ClippablePrimitive interface {
+	Primitive
+	Clippable
 }
 
 type sphere struct {
@@ -87,16 +93,11 @@ func (s *sphere) GetBound() *bound.Bound {
 }
 
 func (s *sphere) IntersectsBound(b *bound.Bound) bool { return true }
-func (s *sphere) HasClippingSupport() bool            { return false }
 func (s *sphere) GetMaterial() material.Material      { return s.material }
 
-func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
-	return nil, false
-}
-
 func (s *sphere) Intersect(r ray.Ray) (coll Collision) {
-    coll.Ray = r
-    
+	coll.Ray = r
+
 	vf := vector.Sub(r.From(), s.center)
 	ea := r.Dir().LengthSqr()
 	eb := vector.Dot(vf, r.Dir()) * 2.0
