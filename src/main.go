@@ -12,7 +12,11 @@ import (
 	"fmt"
 	"os"
 	"image/png"
+    "runtime"
     "time"
+)
+
+import (
 	"./goray/camera"
 	"./goray/object"
 	"./goray/primitive"
@@ -59,6 +63,10 @@ func main() {
         fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
         fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
         fmt.Println("Public License v3, or (at your option) any later version.")
+        fmt.Println()
+        // Runtime information
+        fmt.Println("Version Information:")
+        fmt.Printf("Built with Go runtime %s\n", runtime.Version())
 		return
 	}
 
