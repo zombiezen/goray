@@ -242,7 +242,7 @@ func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
 /* Intersect returns the surface point that intersects with the given ray. */
-func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) {
+func (s *Scene) Intersect(r ray.Ray) (coll primitive.Collision, sp surface.Point, err os.Error) {
 	dist := r.TMax()
 	if r.TMax() < 0 {
 		dist = fmath.Inf
@@ -252,7 +252,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 		err = os.NewError("Partition map has not been built")
 		return
 	}
-	coll := s.tree.Intersect(r, dist)
+	coll = s.tree.Intersect(r, dist)
 	if !coll.Hit() {
 		return
 	}
