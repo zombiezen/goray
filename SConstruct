@@ -90,6 +90,7 @@ goray_packages = [env.Go('build/goray/%s.go' % name) for name in goray_packages]
 
 std_packages = [
     'integrators/trivial',
+    'objects/mesh',
 ]
 std_packages = [env.Go('build/goray/std/%s.go' % name) for name in std_packages]
 

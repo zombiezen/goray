@@ -125,3 +125,24 @@ func CompMul(v1, v2 Vector3D) Vector3D {
 func CompDiv(v1, v2 Vector3D) Vector3D {
 	return Vector3D{v1.X / v2.X, v1.Y / v2.Y, v1.Z / v2.Z}
 }
+
+/*
+   CreateCS finds two normalized vectors orthogonal to the given one that can be used as a coordinate system.
+
+   This is particularly useful for UV-mapping and the like.
+*/
+func CreateCS(normal Vector3D) (u, v Vector3D) {
+	if normal.X == 0 && normal.Y == 0 {
+		if normal.Z < 0 {
+			u = New(-1.0, 0.0, 0.0)
+		} else {
+			u = New(1.0, 0.0, 0.0)
+		}
+		v = New(0.0, 1.0, 0.0)
+	} else {
+		d := 1.0 / fmath.Sqrt(normal.Y*normal.Y+normal.X*normal.X)
+		u = New(normal.Y*d, -normal.X*d, 0.0)
+		v = Cross(normal, u)
+	}
+	return
+}
