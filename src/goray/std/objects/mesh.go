@@ -8,6 +8,7 @@
 /* The goray/std/objects/mesh package provides mesh objects constructed from triangles. */
 package mesh
 
+import "fmt"
 import "./fmath"
 
 import (
@@ -100,8 +101,13 @@ func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
 		index: -1,
 		mesh:  m,
 	}
-    tri.CalculateNormal()
-    return tri
+	tri.CalculateNormal()
+	return tri
+}
+
+func (tri *Triangle) String() string {
+	a, b, c := tri.getVertices()
+	return fmt.Sprintf("Triangle{%v %v %v N:%v}", a, b, c, tri.normal)
 }
 
 func (tri *Triangle) getVertices() (a, b, c vector.Vector3D) {
