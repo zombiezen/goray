@@ -29,11 +29,11 @@ def generate_buildversion(env, target, source):
 // DO NOT EDIT.
 package buildversion
 
-const source = "bzr"
-const revno = "{revno}"
-const revid = "{revision_id}"
-const branchNickname = "{branch_nick}"
-const cleanWC = {clean}
+const Source = "bzr"
+const RevNo = "{revno}"
+const RevID = "{revision_id}"
+const BranchNickname = "{branch_nick}"
+const CleanWC = {clean}
 """
     bzr_path = get_bzr_path()
     f = open(str(target[0]), 'w')
