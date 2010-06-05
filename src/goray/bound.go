@@ -130,6 +130,10 @@ func (b *Bound) GetXLength() float { return b.g.X - b.a.X }
 func (b *Bound) GetYLength() float { return b.g.Y - b.a.Y }
 func (b *Bound) GetZLength() float { return b.g.Z - b.a.Z }
 
+func (b *Bound) GetHalfSize() [3]float {
+	return [3]float{b.GetXLength() * 0.5, b.GetYLength() * 0.5, b.GetZLength() * 0.5}
+}
+
 /* Include modifies the bounding box so that it contains the specified point */
 func (b *Bound) Include(p vector.Vector3D) {
 	b.a.X = fmath.Min(b.a.X, p.X)
