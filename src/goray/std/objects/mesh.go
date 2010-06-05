@@ -22,11 +22,17 @@ import (
 	"./goray/vector"
 )
 
+/* UV holds a set of texture coordinates. */
+type UV struct {
+	U, V float
+}
+
 /* A Mesh is a collection of triangles. */
 type Mesh struct {
 	triangles []*Triangle
 	vertices  []vector.Vector3D
 	normals   []vector.Vector3D
+	uvs       []UV
 	hasOrco   bool
 	light     light.Light
 	world2obj *matrix.Matrix
@@ -39,6 +45,7 @@ func New(ntris int) (mesh *Mesh) {
 	mesh.triangles = make([]*Triangle, 0, ntris)
 	mesh.vertices = nil
 	mesh.normals = nil
+	mesh.uvs = nil
 	return
 }
 
@@ -85,12 +92,13 @@ func (mesh *Mesh) AddTriangle(t *Triangle) {
 
 /* Triangle stores information for a single triangle. */
 type Triangle struct {
-	va, vb, vc int // va, vb, and vc are the vertex indices in the mesh's array.
-	na, nb, nc int // na, nb, and nc are the normal indices in the mesh's array (if the face is smooth)
-	index      int
-	normal     vector.Vector3D
-	material   material.Material
-	mesh       *Mesh
+	va, vb, vc    int // va, vb, and vc are the vertex indices in the mesh's array.
+	na, nb, nc    int // na, nb, and nc are the normal indices in the mesh's array (if per-vertex normals are enabled).
+	uva, uvb, uvc int // uva, uvb, and uvc are the UV indices in the mesh's array (if UV is enabled).
+	index         int
+	normal        vector.Vector3D
+	material      material.Material
+	mesh          *Mesh
 }
 
 /* NewTriangle creates a new triangle. */
@@ -98,6 +106,7 @@ func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
 	tri = &Triangle{
 		va: a, vb: b, vc: c,
 		na: -1, nb: -1, nc: -1,
+		uva: -1, uvb: -1, uvc: -1,
 		index: -1,
 		mesh:  m,
 	}
@@ -120,6 +129,16 @@ func (tri *Triangle) getNormals() (a, b, c vector.Vector3D) {
 			return tri.mesh.normals[i]
 		}
 		return tri.normal
+	}
+	return f(tri.na), f(tri.nb), f(tri.nc)
+}
+
+func (tri *Triangle) getUVs() (a, b, c UV) {
+	f := func(i int) UV {
+		if i >= 0 && tri.mesh.uvs != nil {
+			return tri.mesh.uvs[i]
+		}
+		return UV{}
 	}
 	return f(tri.na), f(tri.nb), f(tri.nc)
 }
@@ -157,6 +176,7 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 
 func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.GeometricNormal = tri.normal
+	a, b, c := tri.getVertices()
 	dat := coll.UserData.([2]float)
 	// The u and v in intersection code are actually v and w
 	v, w := dat[0], dat[1]
@@ -169,19 +189,36 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 		sp.Normal = tri.normal
 	}
 
-    sp.HasOrco = tri.mesh.hasOrco
+	sp.HasOrco = tri.mesh.hasOrco
 	if tri.mesh.hasOrco {
-        // TODO: Yafaray uses index+1 for each one of the vertices. Why?
-        a, b, c := tri.getVertices()
+		// TODO: Yafaray uses index+1 for each one of the vertices. Why?
 		sp.OrcoPosition = vector.Add(vector.ScalarMul(a, u), vector.ScalarMul(b, v), vector.ScalarMul(c, w))
-        sp.OrcoNormal = vector.Cross(vector.Sub(b, a), vector.Sub(c, a)).Normalize()
+		sp.OrcoNormal = vector.Cross(vector.Sub(b, a), vector.Sub(c, a)).Normalize()
 	} else {
 		sp.OrcoPosition = coll.GetPoint()
 		sp.OrcoNormal = sp.GeometricNormal
 	}
-	// TODO if mesh.hasUV
-	// else...
-	{
+
+	if tri.mesh.uvs != nil {
+		// u, v, and w are actually the barycentric coords, not some UVs.
+		uvA, uvB, uvC := tri.getUVs()
+		sp.U = u*uvA.U + v*uvB.U + w*uvC.U
+		sp.V = u*uvA.V + v*uvB.V + w*uvC.V
+
+		// Calculate world vectors
+		du1, du2 := uvA.U-uvC.U, uvB.U-uvC.U
+		dv1, dv2 := uvA.V-uvC.V, uvB.V-uvC.V
+		det := du1*dv2 - dv1*du2
+
+		if !fmath.Eq(det, 0.0) {
+			invdet := 1.0 / det
+			dp1, dp2 := vector.Sub(a, c), vector.Sub(b, c)
+			sp.WorldU = vector.Sub(vector.ScalarMul(dp1, dv2*invdet), vector.ScalarMul(dp2, dv1*invdet))
+			sp.WorldV = vector.Sub(vector.ScalarMul(dp2, du1*invdet), vector.ScalarMul(dp1, du2*invdet))
+		} else {
+			sp.WorldU, sp.WorldV = vector.New(0, 0, 0), vector.New(0, 0, 0)
+		}
+	} else {
 		a, b, c := tri.getVertices()
 		sp.U, sp.V = u, v
 		sp.WorldU, sp.WorldV = vector.Sub(b, a), vector.Sub(c, a)
