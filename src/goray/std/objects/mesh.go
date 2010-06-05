@@ -138,7 +138,7 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 		return
 	}
 	invDet := 1.0 / det
-	tvec := vector.Cross(r.From(), a)
+	tvec := vector.Sub(r.From(), a)
 	u := vector.Dot(tvec, pvec) * invDet
 	if u < 0.0 || u > 1.0 {
 		return
