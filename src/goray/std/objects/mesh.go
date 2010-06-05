@@ -97,10 +97,11 @@ func (tri *Triangle) getVertices() (a, b, c vector.Vector3D) {
 	return tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 }
 
-func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision, hit bool) {
+func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	// Tomas Möller and Ben Trumbore ray intersection scheme
 	// Ross adds: This is based on an ACM white paper which I don't have access to.
 	// I'm just going to smile, nod, and copy the code.  Code monkey very diligent.
+    coll.Ray = r
 	a, b, c := tri.getVertices()
 
 	edge1, edge2 := vector.Sub(b, a), vector.Sub(c, a)
@@ -121,16 +122,15 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision, hit bool) {
 		return
 	}
 
-	hit = true
     coll.Primitive = tri
 	coll.RayDepth = vector.Dot(edge2, qvec) * invDet
     coll.UserData = interface{}([2]float{u, v})
 	return
 }
 
-func (tri *Triangle) GetSurface(pt vector.Vector3D, userData interface{}) (sp surface.Point) {
+func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.GeometricNormal = tri.normal
-    dat := userData.([2]float)
+    dat := coll.UserData.([2]float)
     _ = dat
 	// TODO: This is gonna be ugly.
 	return

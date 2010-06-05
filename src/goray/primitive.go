@@ -21,8 +21,20 @@ import (
 /* Collision stores information about a ray intersection. */
 type Collision struct {
 	Primitive Primitive
+	Ray       ray.Ray
 	RayDepth  float
 	UserData  interface{}
+}
+
+/*
+   Hit returns whether the ray intersection succeeded.
+   If this method returns false, then the rest of the structure is meaningless.
+*/
+func (c Collision) Hit() bool { return c.Primitive != nil }
+
+/* GetPoint returns the point in world coordinates where the ray intersected. */
+func (c Collision) GetPoint() vector.Vector3D {
+    return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
 }
 
 /* Primitive defines a basic 3D entity in a scene. */
@@ -45,9 +57,15 @@ type Primitive interface {
 	   Intersect checks whether a ray collides with the primitive.
 	   This should not skip intersections outside of [TMin, TMax].
 	*/
-	Intersect(r ray.Ray) (coll Collision, hit bool)
-	/* GetSurface obtains information about a point on the primitive's surface. */
-	GetSurface(pt vector.Vector3D, userData interface{}) surface.Point
+	Intersect(r ray.Ray) Collision
+	/*
+        GetSurface obtains information about a point on the primitive's surface.
+        
+        You can only get the surface point by ray casting to it.  Admittedly, this is slightly inflexible,
+        but it's the only use-case for this method.  The advantage is that Intersect can pass any extra data
+        that it could need to efficiently implement GetSurface in the Collision struct.
+    */
+	GetSurface(Collision) surface.Point
 	/* GetMaterial returns the material associated with this primitive. */
 	GetMaterial() material.Material
 }
@@ -76,7 +94,9 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 	return nil, false
 }
 
-func (s *sphere) Intersect(r ray.Ray) (coll Collision, hit bool) {
+func (s *sphere) Intersect(r ray.Ray) (coll Collision) {
+    coll.Ray = r
+    
 	vf := vector.Sub(r.From(), s.center)
 	ea := r.Dir().LengthSqr()
 	eb := vector.Dot(vf, r.Dir()) * 2.0
@@ -93,24 +113,22 @@ func (s *sphere) Intersect(r ray.Ray) (coll Collision, hit bool) {
 	if coll.RayDepth < r.TMin() {
 		coll.RayDepth = sol2
 		if coll.RayDepth < r.TMin() {
-			coll = Collision{}
 			return
 		}
 	}
-	hit = true
 	coll.Primitive = s
 	return
 }
 
-func (s *sphere) GetSurface(pt vector.Vector3D, userdata interface{}) (sp surface.Point) {
-	normal := vector.Sub(pt, s.center)
+func (s *sphere) GetSurface(coll Collision) (sp surface.Point) {
+	normal := vector.Sub(coll.GetPoint(), s.center)
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()
 	sp.Material = s.material
 	sp.Normal = normal
 	sp.GeometricNormal = normal
 	sp.HasOrco = true
-	sp.Position = pt
+	sp.Position = coll.GetPoint()
 	sp.U = fmath.Atan2(normal.Y, normal.X)*(1.0/math.Pi) + 1
 	sp.V = 1.0 - fmath.Acos(normal.Z)*(1.0/math.Pi)
 	sp.Light = nil
