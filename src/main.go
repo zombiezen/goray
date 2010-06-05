@@ -113,15 +113,26 @@ func main() {
         vector.New( 0.5,  0.5,  0.5),
         vector.New(-0.5,  0.5,  0.5),
     }, nil)
+    // Back
     cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
     cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))
+    // Top
+    cube.AddTriangle(mesh.NewTriangle(3, 7, 2, cube))
+    cube.AddTriangle(mesh.NewTriangle(6, 2, 7, cube))
+    // Bottom
+    cube.AddTriangle(mesh.NewTriangle(0, 1, 4, cube))
+    cube.AddTriangle(mesh.NewTriangle(5, 4, 1, cube))
+    // Left
+    cube.AddTriangle(mesh.NewTriangle(7, 3, 4, cube))
+    cube.AddTriangle(mesh.NewTriangle(0, 4, 3, cube))
+    // Right
+    cube.AddTriangle(mesh.NewTriangle(6, 5, 2, cube))
+    cube.AddTriangle(mesh.NewTriangle(1, 2, 5, cube))
+    // Front
     cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
     cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
-    for _, p := range cube.GetPrimitives() {
-        fmt.Println(p)
-    }
     
-	sc.SetCamera(camera.NewOrtho(vector.New(0.0, 0.0, 10.0), vector.New(0.0, 0.0, 0.0), vector.New(0.0, 1.0, 10.0), *width, *height, 1.0, 2.0))
+	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
