@@ -169,11 +169,14 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 		sp.Normal = tri.normal
 	}
 
+    sp.HasOrco = tri.mesh.hasOrco
 	if tri.mesh.hasOrco {
-		// TODO
+        // TODO: Yafaray uses index+1 for each one of the vertices. Why?
+        a, b, c := tri.getVertices()
+		sp.OrcoPosition = vector.Add(vector.ScalarMul(a, u), vector.ScalarMul(b, v), vector.ScalarMul(c, w))
+        sp.OrcoNormal = vector.Cross(vector.Sub(b, a), vector.Sub(c, a)).Normalize()
 	} else {
 		sp.OrcoPosition = coll.GetPoint()
-		sp.HasOrco = false
 		sp.OrcoNormal = sp.GeometricNormal
 	}
 	// TODO if mesh.hasUV
