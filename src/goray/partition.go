@@ -14,7 +14,6 @@ import (
 	"./goray/primitive"
 	"./goray/render"
 	"./goray/ray"
-	"./goray/vector"
 )
 
 /*
@@ -83,8 +82,7 @@ func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist 
 				return
 			}
 			if depth < maxDepth {
-				h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), coll.RayDepth))
-				sp := coll.Primitive.GetSurface(h, coll.UserData)
+				sp := coll.Primitive.GetSurface(coll.GetPoint(), coll.UserData)
 				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
 				depth++
 			} else {

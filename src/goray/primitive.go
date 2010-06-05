@@ -21,6 +21,7 @@ import (
 /* Collision stores information about a ray intersection. */
 type Collision struct {
 	Primitive Primitive
+	Ray       ray.Ray
 	RayDepth  float
 	UserData  interface{}
 }
@@ -30,6 +31,11 @@ type Collision struct {
    If this method returns false, then the rest of the structure is meaningless.
 */
 func (c Collision) Hit() bool { return c.Primitive != nil }
+
+/* GetPoint returns the point in world coordinates where the ray intersected. */
+func (c Collision) GetPoint() vector.Vector3D {
+    return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
+}
 
 /* Primitive defines a basic 3D entity in a scene. */
 type Primitive interface {
@@ -83,6 +89,8 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 }
 
 func (s *sphere) Intersect(r ray.Ray) (coll Collision) {
+    coll.Ray = r
+    
 	vf := vector.Sub(r.From(), s.center)
 	ea := r.Dir().LengthSqr()
 	eb := vector.Dot(vf, r.Dir()) * 2.0
