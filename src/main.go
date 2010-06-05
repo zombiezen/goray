@@ -41,7 +41,7 @@ func printVersion() {
     fmt.Println()
     fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
     fmt.Println("Alfredo de Greef.")
-    fmt.Println("Port to Go by Ross Light")
+    fmt.Println("Go rewrite by Ross Light")
     fmt.Println()
     fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
     fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
