@@ -101,7 +101,7 @@ func main() {
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
-	cube := mesh.New(12)
+	cube := mesh.New(12, false)
 	cube.SetData([]vector.Vector3D{
 		vector.New(-0.5, -0.5, -0.5),
 		vector.New(0.5, -0.5, -0.5),
@@ -113,7 +113,7 @@ func main() {
 		vector.New(0.5, 0.5, 0.5),
 		vector.New(-0.5, 0.5, 0.5),
 	},
-		nil)
+		nil, nil)
 	// Back
 	cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
 	cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))

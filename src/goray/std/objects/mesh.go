@@ -40,12 +40,13 @@ type Mesh struct {
 }
 
 /* New creates an empty mesh. */
-func New(ntris int) (mesh *Mesh) {
+func New(ntris int, hasOrco bool) (mesh *Mesh) {
 	mesh = new(Mesh)
 	mesh.triangles = make([]*Triangle, 0, ntris)
 	mesh.vertices = nil
 	mesh.normals = nil
 	mesh.uvs = nil
+	mesh.hasOrco = hasOrco
 	return
 }
 
@@ -63,20 +64,26 @@ func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
 //func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }
 func (mesh *Mesh) SetLight(l light.Light) { mesh.light = l }
 
-//func (mesh *Mesh) EnableSampling() bool {
-//	// TODO
-//	return false
-//}
-//
-//func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {
-//	// TODO
-//	return
-//}
+//func (mesh *Mesh) EnableSampling() bool {}
+//func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {}
 
-func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D) {
-	mesh.vertices, mesh.normals = vertices, normals
+/*
+   SetData changes the mesh's data.
+
+   For memory efficiency, the actual data for a mesh isn't stored in the triangles; the data is
+   stored in the mesh.  The triangles simply contain indices that point to parts of the various
+   arrays kept by the mesh.  Because most meshes have connected faces, this means that each
+   vertex is stored once, instead of three times (much better!).
+
+   Both normals and uvs are optional.  If you don't want to enable per-vertex normals or
+   UV coordinates, then pass nil for the corresponding parameter.  Any triangles that don't
+   have per-vertex normals set will use the computed normal.
+*/
+func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D, uvs []UV) {
+	mesh.vertices, mesh.normals, mesh.uvs = vertices, normals, uvs
 }
 
+/* AddTriangle adds a face to the mesh. */
 func (mesh *Mesh) AddTriangle(t *Triangle) {
 	if len(mesh.triangles)+1 > cap(mesh.triangles) {
 		newTris := make([]*Triangle, len(mesh.triangles), cap(mesh.triangles)*2)
@@ -271,6 +278,8 @@ func (tri *Triangle) GetMaterial() material.Material { return tri.material }
 func (tri *Triangle) SetMaterial(mat material.Material) { tri.material = mat }
 func (tri *Triangle) SetNormals(a, b, c int)            { tri.na, tri.nb, tri.nc = a, b, c }
 func (tri *Triangle) ClearNormals()                     { tri.na, tri.nb, tri.nc = -1, -1, -1 }
+func (tri *Triangle) SetUVs(a, b, c int)                { tri.uva, tri.uvb, tri.uvc = a, b, c }
+func (tri *Triangle) ClearUVs()                         { tri.uva, tri.uvb, tri.uvc = -1, -1, -1 }
 func (tri *Triangle) GetNormal() vector.Vector3D        { return tri.normal }
 
 func (tri *Triangle) CalculateNormal() {
