@@ -27,7 +27,7 @@ func (ti *trivial) SetScene(s interface{}) { ti.sc = s.(*scene.Scene) }
 func (ti *trivial) Preprocess() os.Error   { return nil }
 
 func (ti *trivial) Integrate(s *render.State, r ray.Ray) color.AlphaColor {
-	if _, hit, _ := ti.sc.Intersect(r); hit {
+	if coll, _, _ := ti.sc.Intersect(r); coll.Hit() {
 		return color.NewRGBA(1.0, 1.0, 1.0, 1.0)
 	}
 	return color.NewRGBA(0.1, 0.1, 0.1, 0.0)
