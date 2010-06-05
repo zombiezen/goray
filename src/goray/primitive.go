@@ -25,6 +25,12 @@ type Collision struct {
 	UserData  interface{}
 }
 
+/*
+   Hit returns whether the ray intersection succeeded.
+   If this method returns false, then the rest of the structure is meaningless.
+*/
+func (c Collision) Hit() bool { return c.Primitive != nil }
+
 /* Primitive defines a basic 3D entity in a scene. */
 type Primitive interface {
 	/* GetBound returns the bounding box in global (world) coordinates. */
@@ -45,7 +51,7 @@ type Primitive interface {
 	   Intersect checks whether a ray collides with the primitive.
 	   This should not skip intersections outside of [TMin, TMax].
 	*/
-	Intersect(r ray.Ray) (coll Collision, hit bool)
+	Intersect(r ray.Ray) Collision
 	/* GetSurface obtains information about a point on the primitive's surface. */
 	GetSurface(pt vector.Vector3D, userData interface{}) surface.Point
 	/* GetMaterial returns the material associated with this primitive. */
@@ -76,7 +82,7 @@ func (s *sphere) ClipToBound(b [2][3]float, axis int) (*bound.Bound, bool) {
 	return nil, false
 }
 
-func (s *sphere) Intersect(r ray.Ray) (coll Collision, hit bool) {
+func (s *sphere) Intersect(r ray.Ray) (coll Collision) {
 	vf := vector.Sub(r.From(), s.center)
 	ea := r.Dir().LengthSqr()
 	eb := vector.Dot(vf, r.Dir()) * 2.0
@@ -93,11 +99,9 @@ func (s *sphere) Intersect(r ray.Ray) (coll Collision, hit bool) {
 	if coll.RayDepth < r.TMin() {
 		coll.RayDepth = sol2
 		if coll.RayDepth < r.TMin() {
-			coll = Collision{}
 			return
 		}
 	}
-	hit = true
 	coll.Primitive = s
 	return
 }

@@ -23,11 +23,11 @@ import (
 */
 type Partitioner interface {
 	/* Intersect determines the primitive that a ray collides with. */
-	Intersect(r ray.Ray, dist float) (coll primitive.Collision, hit bool)
+	Intersect(r ray.Ray, dist float) primitive.Collision
 	/* IntersectS determines the primitive that a ray collides with for shadow-detection. */
-	IntersectS(r ray.Ray, dist float) (coll primitive.Collision, hit bool)
+	IntersectS(r ray.Ray, dist float) primitive.Collision
 	/* IntersectTS computes the color of a transparent shadow after bouncing around. */
-	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision, hit bool)
+	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) primitive.Collision
 	/* GetBound returns a bounding box that contains all of the primitives in the scene. */
 	GetBound() *bound.Bound
 }
@@ -51,35 +51,33 @@ func NewSimple(prims []primitive.Primitive) Partitioner {
 
 func (s *simple) GetBound() *bound.Bound { return s.bound }
 
-func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
+func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	for _, p := range s.prims {
-		if coll, hit = p.Intersect(r); hit {
+		if coll = p.Intersect(r); coll.Hit() {
 			if coll.RayDepth < dist && coll.RayDepth > r.TMin() {
 				return
 			}
-			coll, hit = primitive.Collision{}, false
 		}
 	}
-	return
+	return primitive.Collision{}
 }
 
-func (s *simple) IntersectS(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
+func (s *simple) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
 	for _, p := range s.prims {
-		if coll, hit = p.Intersect(r); hit {
+		if coll = p.Intersect(r); coll.Hit() {
 			if coll.RayDepth < dist {
 				return
 			}
-			coll, hit = primitive.Collision{}, false
 		}
 	}
-	return
+	return primitive.Collision{}
 }
 
-func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision, hit bool) {
+func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
 	depth := 0
 	for _, p := range s.prims {
-		if info, intersects := p.Intersect(r); intersects && info.RayDepth < dist && info.RayDepth > r.TMin() {
-			hit, coll = true, info
+		if info := p.Intersect(r); info.Hit() && info.RayDepth < dist && info.RayDepth > r.TMin() {
+			coll = info
 			mat := coll.Primitive.GetMaterial()
 			if !mat.IsTransparent() {
 				return
