@@ -58,8 +58,14 @@ type Primitive interface {
 	   This should not skip intersections outside of [TMin, TMax].
 	*/
 	Intersect(r ray.Ray) Collision
-	/* GetSurface obtains information about a point on the primitive's surface. */
-	GetSurface(pt vector.Vector3D, userData interface{}) surface.Point
+	/*
+        GetSurface obtains information about a point on the primitive's surface.
+        
+        You can only get the surface point by ray casting to it.  Admittedly, this is slightly inflexible,
+        but it's the only use-case for this method.  The advantage is that Intersect can pass any extra data
+        that it could need to efficiently implement GetSurface in the Collision struct.
+    */
+	GetSurface(Collision) surface.Point
 	/* GetMaterial returns the material associated with this primitive. */
 	GetMaterial() material.Material
 }
@@ -114,15 +120,15 @@ func (s *sphere) Intersect(r ray.Ray) (coll Collision) {
 	return
 }
 
-func (s *sphere) GetSurface(pt vector.Vector3D, userdata interface{}) (sp surface.Point) {
-	normal := vector.Sub(pt, s.center)
+func (s *sphere) GetSurface(coll Collision) (sp surface.Point) {
+	normal := vector.Sub(coll.GetPoint(), s.center)
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()
 	sp.Material = s.material
 	sp.Normal = normal
 	sp.GeometricNormal = normal
 	sp.HasOrco = true
-	sp.Position = pt
+	sp.Position = coll.GetPoint()
 	sp.U = fmath.Atan2(normal.Y, normal.X)*(1.0/math.Pi) + 1
 	sp.V = 1.0 - fmath.Acos(normal.Z)*(1.0/math.Pi)
 	sp.Light = nil

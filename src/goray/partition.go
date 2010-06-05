@@ -82,7 +82,7 @@ func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist 
 				return
 			}
 			if depth < maxDepth {
-				sp := coll.Primitive.GetSurface(coll.GetPoint(), coll.UserData)
+				sp := coll.Primitive.GetSurface(coll)
 				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
 				depth++
 			} else {

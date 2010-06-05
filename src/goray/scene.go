@@ -256,7 +256,7 @@ func (s *Scene) Intersect(r ray.Ray) (sp surface.Point, hit bool, err os.Error) 
 	if !coll.Hit() {
 		return
 	}
-	sp = coll.Primitive.GetSurface(coll.GetPoint(), coll.UserData)
+	sp = coll.Primitive.GetSurface(coll)
 	sp.Primitive = coll.Primitive
 	return
 }
