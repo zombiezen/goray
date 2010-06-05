@@ -52,6 +52,8 @@ func (mesh *Mesh) GetPrimitives() (prims []primitive.Primitive) {
 func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }
 func (mesh *Mesh) SetLight(l light.Light)                              { mesh.light = l }
 
+func (mesh *Mesh) CanSample() bool { return false }
+
 func (mesh *Mesh) EnableSampling() bool {
 	// TODO
 	return false
