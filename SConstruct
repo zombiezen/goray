@@ -17,7 +17,6 @@ def _add_test(source, test):
 
 # Version info
 def get_bzr_path():
-    bzr_path = None
     for path in os.environ['PATH'].split(os.path.pathsep):
         path = os.path.join(path, 'bzr')
         if os.path.exists(path):
@@ -30,6 +29,7 @@ def generate_buildversion(env, target, source):
 // DO NOT EDIT.
 package buildversion
 
+const source = "bzr"
 const revno = "{revno}"
 const revid = "{revision_id}"
 const branchNickname = "{branch_nick}"
@@ -41,13 +41,18 @@ const cleanWC = {clean}
         if bzr_path:
             subprocess.call([bzr_path, 'version-info', '--custom', '--template', template], stdout=f)
         else:
-            # TODO
+            template = template.replace('{revno}', 'archive')
+            template = template.replace('{revision_id}', 'archive')
+            template = template.replace('{branch_nick}', 'archive')
+            template = template.replace('{clean}', '1')
+            template = template.replace('bzr', 'archive')
             f.write(template)
     finally:
         f.close()
 
 version_file = File('build/buildversion.go')
 Command(version_file, [], generate_buildversion)
+AlwaysBuild(version_file)
 
 build_info_packages = [
     env.Go(version_file),
