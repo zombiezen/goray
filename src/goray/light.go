@@ -36,9 +36,13 @@ type Sample struct {
 
 /* An entity that illuminates a scene. */
 type Light interface {
+	/* GetFlags returns the type of light the light is. */
+	GetFlags() uint
 	/* SetScene sets up a light for use with a scene. */
 	SetScene(scene interface{})
-	/* TotalEnergy returns the light's color energy emitted during a frame */
+	/* NumSamples returns the preferred number of samples for direct lighting. */
+	NumSamples() int
+	/* TotalEnergy returns the light's color energy emitted during a frame. */
 	TotalEnergy() color.Color
 	/* EmitPhoton computes the values necessary for a photon */
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
@@ -46,12 +50,12 @@ type Light interface {
 	EmitSample(s *Sample) (vector.Vector3D, color.Color)
 	/* EmitPdf returns the PDFs for sampling with EmitSample. */
 	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
-	/* NumSamples returns the preferred number of samples for direct lighting. */
-	NumSamples() int
-	/* DiracLight indicates whether the light has a Dirac delta distribution. */
-	IsDirac() bool
-	/* GetFlags returns the type of light the light is. */
-	GetFlags() uint
+	/* CanIlluminate returns whether the light can illuminate a certain point. */
+	CanIlluminate(pt vector.Vector3D) bool
+	/* Illuminate a given surface point, generating a sample. */
+	IllumSample(sp surface.Point, wi ray.Ray, s *Sample) bool
+	/* IllumPdf returns the PDF for sampling with IllumSample. */
+	IllumPdf(sp, spLight surface.Point) float
 }
 
 type Intersecter interface {
@@ -59,13 +63,9 @@ type Intersecter interface {
 	Intersect(r ray.Ray) (dist float, col color.Color, ipdf float, ok bool)
 }
 
-type Illuminator interface {
-	/* CanIlluminate returns whether the light can illuminate a certain point. */
-	//CanIlluminate(pt vector.Vector3D) bool
-	/* Illuminate a given surface point, generating a sample. */
-	IllumSample(sp surface.Point, wi ray.Ray, s *Sample) bool
-	/* Illuminate a given surface point.  Only for Dirac lights. */
+type DiracLight interface {
+	Light
+
+	/* Illuminate a given surface point. */
 	Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, ok bool)
-	/* IllumPdf returns the PDF for sampling with IllumSample. */
-	IllumPdf(sp, spLight surface.Point) float
 }

@@ -46,7 +46,6 @@ func New(pos vector.Vector3D, col color.Color, intensity float) light.Light {
 }
 
 func (l *pointLight) NumSamples() int { return 1 }
-func (l *pointLight) IsDirac() bool   { return true }
 func (l *pointLight) GetFlags() uint  { return light.TypeSingular }
 
 func (l *pointLight) SetScene(scene interface{}) {}
@@ -72,6 +71,8 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 	col = l.color
 	return
 }
+
+func (l *pointLight) CanIlluminate(pt vector.Vector3D) bool { return true }
 
 func (l *pointLight) IllumSample(sp surface.Point, wi ray.Ray, s *light.Sample) (ok bool) {
 	_, ok = l.Illuminate(sp, wi)
