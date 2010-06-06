@@ -10,6 +10,7 @@ package integrator
 
 import (
 	"os"
+    "./goray/camera"
 	"./goray/color"
 	"./goray/ray"
 	"./goray/render"
@@ -19,7 +20,6 @@ import (
 type Integrator interface {
 	SetScene(interface{})
 	Preprocess() os.Error
-	Render() <-chan render.Fragment
 	Integrate(*render.State, ray.Ray) color.AlphaColor
 }
 

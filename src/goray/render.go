@@ -113,3 +113,8 @@ func (i *Image) Acquire(ch <-chan Fragment) {
 		i.data[frag.Y][frag.X].Copy(frag.Color)
 	}
 }
+
+type Renderer interface {
+    Render() <-chan render.Fragment
+}
+
