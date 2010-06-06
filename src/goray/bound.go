@@ -53,12 +53,20 @@ func (b *Bound) Set(a, g vector.Vector3D) { b.a = a; b.g = g }
 
 func (b *Bound) GetMin() vector.Vector3D { return b.a }
 func (b *Bound) GetMax() vector.Vector3D { return b.g }
-func (b *Bound) SetMinX(x float)         { b.a.X = x }
-func (b *Bound) SetMinY(y float)         { b.a.Y = y }
-func (b *Bound) SetMinZ(z float)         { b.a.Z = z }
-func (b *Bound) SetMaxX(x float)         { b.g.X = x }
-func (b *Bound) SetMaxY(y float)         { b.g.Y = y }
-func (b *Bound) SetMaxZ(z float)         { b.g.Z = z }
+
+func (b *Bound) GetMinX() float { return b.a.X }
+func (b *Bound) GetMinY() float { return b.a.Y }
+func (b *Bound) GetMinZ() float { return b.a.Z }
+func (b *Bound) GetMaxX() float { return b.g.X }
+func (b *Bound) GetMaxY() float { return b.g.Y }
+func (b *Bound) GetMaxZ() float { return b.g.Z }
+
+func (b *Bound) SetMinX(x float) { b.a.X = x }
+func (b *Bound) SetMinY(y float) { b.a.Y = y }
+func (b *Bound) SetMinZ(z float) { b.a.Z = z }
+func (b *Bound) SetMaxX(x float) { b.g.X = x }
+func (b *Bound) SetMaxY(y float) { b.g.Y = y }
+func (b *Bound) SetMaxZ(z float) { b.g.Z = z }
 
 /*
    Cross checks whether a given ray crosses the bound.
