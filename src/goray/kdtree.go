@@ -18,28 +18,31 @@ type Tree struct {
 	bound *bound.Bound
 }
 
-type CompareFunc func(v Value, axis int, pivot float) bool
-type AxisFunc func(v Value, axis int) float
+type DimensionFunc func(v Value, axis int) (min, max float)
 
 type buildParams struct {
-	GetAxis           AxisFunc
-	LeftCmp, RightCmp CompareFunc
-	MaxDepth          int
-	LeafSize          int
+	GetDimension DimensionFunc
+	MaxDepth     int
+	LeafSize     int
 }
 
-func getPoint(v Value, getAxis AxisFunc) vector.Vector3D {
-	return vector.New(getAxis(v, 0), getAxis(v, 1), getAxis(v, 2))
+func getBound(v Value, getDim DimensionFunc) *bound.Bound {
+	minX, maxX := getDim(v, 0)
+	minY, maxY := getDim(v, 1)
+	minZ, maxZ := getDim(v, 2)
+	return bound.New(vector.New(minX, minY, minZ), vector.New(maxX, maxY, maxZ))
 }
 
-func New(vals []Value, getAxis AxisFunc, left, right CompareFunc) (tree *Tree) {
-	params := buildParams{getAxis, left, right, 64, 2}
+func (bp buildParams) getBound(v Value) *bound.Bound {
+	return getBound(v, bp.GetDimension)
+}
+
+func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
+	params := buildParams{getDim, 64, 2}
 	if len(vals) > 0 {
-		pt := getPoint(vals[0], getAxis)
-		tree.bound = bound.New(pt, pt)
+		tree.bound = bound.New(getBound(vals[0], getDim).Get())
 		for _, v := range vals[1:] {
-			pt = getPoint(v, getAxis)
-			tree.bound.Include(pt)
+			tree.bound = bound.Union(tree.bound, params.getBound(v))
 		}
 	} else {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
@@ -52,7 +55,8 @@ func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, p
 	axis = bd.GetLargestAxis()
 	data := make([]float, len(vals))
 	for i, v := range vals {
-		data[i] = params.GetAxis(v, axis)
+		min, max := params.GetDimension(v, axis)
+		data[i] = (min + max) / 2
 	}
 	sort.SortFloats(data)
 	pivot = data[len(data)/2]
@@ -70,11 +74,12 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
 	for _, v := range vals {
-		if params.LeftCmp(v, axis, pivot) {
+		vMin, vMax := params.GetDimension(v, axis)
+		if vMin < pivot {
 			left = left[0 : len(left)+1]
 			left[len(left)-1] = v
 		}
-		if params.RightCmp(v, axis, pivot) {
+		if vMin >= pivot || vMax > pivot {
 			right = right[0 : len(right)+1]
 			right[len(right)-1] = v
 		}
