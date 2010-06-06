@@ -76,6 +76,7 @@ goray_packages = [
     'matrix',
     'object',
     'partition',
+    'photon',
     'primitive',
     'ray',
     'render',
