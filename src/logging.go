@@ -52,6 +52,22 @@ func (log *Logger) Logf(level int, format string, args ...interface{}) {
 	log.Handle(BasicRecord{message, level})
 }
 
+func (log *Logger) Debug(format string, args ...interface{}) {
+	log.Log(DebugLevel, sprintv(format, args))
+}
+func (log *Logger) Info(format string, args ...interface{}) {
+	log.Log(InfoLevel, sprintv(format, args))
+}
+func (log *Logger) Warning(format string, args ...interface{}) {
+	log.Log(WarningLevel, sprintv(format, args))
+}
+func (log *Logger) Error(format string, args ...interface{}) {
+	log.Log(ErrorLevel, sprintv(format, args))
+}
+func (log *Logger) Critical(format string, args ...interface{}) {
+	log.Log(CriticalLevel, sprintv(format, args))
+}
+
 func (log *Logger) Handle(rec Record) {
 	log.handlers.Do(func(h interface{}) {
 		h.(Handler).Handle(rec)
