@@ -156,10 +156,18 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 
 func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
 	axis = bd.GetLargestAxis()
-	data := make([]float, len(vals))
-	for i, v := range vals {
+	data := make([]float, 0, len(vals)*2)
+	for _, v := range vals {
 		min, max := params.GetDimension(v, axis)
-		data[i] = (min + max) / 2
+		if fmath.Eq(min, max) {
+			i := len(vals)
+			data = data[0 : len(vals)+1]
+			data[i] = min
+		} else {
+			i := len(vals)
+			data = data[0 : len(vals)+2]
+			data[i], data[i+1] = min, max
+		}
 	}
 	sort.SortFloats(data)
 	pivot = data[len(data)/2]
