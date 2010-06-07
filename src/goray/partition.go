@@ -191,8 +191,12 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 			t = (pivot - r.From().GetComponent(axis)) * invDir.GetComponent(axis)
 
 			// Set up the new exit point
-			// TODO: Fill in the point properly
-			frame := followFrame{farChild, t, vector.New(0, 0, 0)}
+			var pt [3]float
+			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
+			pt[axis] = pivot
+			pt[nextAxis] = r.From().GetComponent(nextAxis) + t*r.Dir().GetComponent(nextAxis)
+			pt[prevAxis] = r.From().GetComponent(prevAxis) + t*r.Dir().GetComponent(prevAxis)
+			frame := followFrame{farChild, t, vector.New(pt[0], pt[1], pt[2])}
 			exitStack.Push(frame)
 		}
 
