@@ -8,6 +8,7 @@
 package kdtree
 
 import (
+	"fmt"
 	"sort"
 	"./goray/bound"
 	"./goray/vector"
@@ -49,7 +50,50 @@ func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
 	tree.root = build(vals, tree.bound, params)
+	fmt.Printf("Tree is %d levels deep\n", tree.depth())
 	return tree
+}
+
+func (tree *Tree) depth() int {
+	var nodeDepth func(Node) int
+	nodeDepth = func(n Node) int {
+		switch node := n.(type) {
+		case *Leaf:
+			return 0
+		case *Interior:
+			leftDepth, rightDepth := nodeDepth(node.left), nodeDepth(node.right)
+			if leftDepth >= rightDepth {
+				return leftDepth + 1
+			} else {
+				return rightDepth + 1
+			}
+		}
+		return 0
+	}
+	return nodeDepth(tree.root)
+}
+
+func (tree *Tree) String() string {
+	var nodeString func(Node, int) string
+	nodeString = func(n Node, indent int) string {
+		tab := "  "
+		indentString := ""
+		for i := 0; i < indent; i++ {
+			indentString += tab
+		}
+		switch node := n.(type) {
+		case *Leaf:
+			return fmt.Sprint(node.values)
+		case *Interior:
+			return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
+				"XYZ"[node.axis], node.pivot,
+				indentString+tab, nodeString(node.left, indent+1),
+				indentString+tab, nodeString(node.right, indent+1),
+				indentString)
+		}
+		return ""
+	}
+	return nodeString(tree.root, 0)
 }
 
 func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
