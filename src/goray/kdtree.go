@@ -8,6 +8,7 @@
 package kdtree
 
 import (
+	container "container/vector"
 	"fmt"
 	"sort"
 	"./fmath"
@@ -44,7 +45,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 
 func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{getDim, 16, 2}
+	params := buildParams{getDim, 16, 2} // TODO: Make this bigger later
 	if len(vals) > 0 {
 		tree.bound = bound.New(getBound(vals[0], getDim).Get())
 		for _, v := range vals[1:] {
@@ -107,7 +108,13 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	axis, pivot := pigeonSplit(vals, bd, params)
+	var axis int
+	var pivot float
+	if len(vals) > 128 {
+		axis, pivot = pigeonSplit(vals, bd, params)
+	} else {
+		axis, pivot = minimalSplit(vals, bd, params)
+	}
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
 	for _, v := range vals {
@@ -170,8 +177,6 @@ func (b pigeonBin) empty() bool { return b.n == 0 }
 
 func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
 	const numBins = 1024
-	const emptyBonus = 0.33
-	const costRatio = 0.35
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
@@ -246,18 +251,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 				// Cost:
 				edget := b.t
 				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
-					l1, l2 := edget-bd.GetMin().GetComponent(axis), bd.GetMax().GetComponent(axis)-edget
-					belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
-					rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
-
-					eb := 0.0
-					if nAbove == 0 {
-						eb = (0.1 + l2/d[axis]) * emptyBonus * rawCosts
-					} else if nBelow == 0 {
-						eb = (0.1 + l1/d[axis]) * emptyBonus * rawCosts
-					}
-
-					cost := costRatio + invTotalSA*(rawCosts-eb)
+					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
 					if cost < bestCost {
 						bestAxis, bestPivot = axis, edget
 					}
@@ -276,6 +270,112 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 		// Reset all bins
 		for i, _ := range bins {
 			bins[i] = pigeonBin{}
+		}
+	}
+
+	return
+}
+
+func computeCost(axis int, bd *bound.Bound, capArea, capPerim, invTotalSA float, nBelow, nAbove int, edget float) float {
+	const emptyBonus = 0.33
+	const costRatio = 0.35
+
+	l1, l2 := edget-bd.GetMin().GetComponent(axis), bd.GetMax().GetComponent(axis)-edget
+	belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
+	rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
+
+	d := 0.0
+	switch axis {
+	case 0:
+		d = bd.GetXLength()
+	case 1:
+		d = bd.GetYLength()
+	case 2:
+		d = bd.GetZLength()
+	}
+
+	eb := 0.0
+	if nAbove == 0 {
+		eb = (0.1 + l2/d) * emptyBonus * rawCosts
+	} else if nBelow == 0 {
+		eb = (0.1 + l1/d) * emptyBonus * rawCosts
+	}
+
+	return costRatio + invTotalSA*(rawCosts-eb)
+}
+
+type boundEdge struct {
+	position float
+	boundEnd int
+}
+
+func (e boundEdge) Less(other interface{}) bool {
+	f, ok := other.(boundEdge)
+	if !ok {
+		return false
+	}
+	if fmath.Eq(e.position, f.position) {
+		return e.boundEnd > f.boundEnd
+	}
+	return e.position < f.position
+}
+
+const (
+	lowerB = iota
+	bothB
+	upperB
+)
+
+func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	bestCost := fmath.Inf
+	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
+	invTotalSA := 0.0
+	if !fmath.Eq(totalSA, 0.0) {
+		invTotalSA = 1.0 / totalSA
+	}
+
+	for axis := 0; axis < 3; axis++ {
+		edges := new(container.Vector)
+		edges.Resize(0, len(vals)*2)
+		for _, v := range vals {
+			min, max := params.GetDimension(v, axis)
+			if fmath.Eq(min, max) {
+				edges.Push(boundEdge{min, bothB})
+			} else {
+				edges.Push(boundEdge{min, lowerB})
+				edges.Push(boundEdge{max, upperB})
+			}
+		}
+		sort.Sort(edges)
+
+		capArea := d[(axis+1)%3] * d[(axis+2)%3]
+		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
+
+		nBelow, nAbove := 0, len(vals)
+		for tmp := range edges.Iter() {
+			e := tmp.(boundEdge)
+			if e.boundEnd == upperB {
+				nAbove--
+			}
+
+			if e.position > bd.GetMin().GetComponent(axis) && e.position < bd.GetMax().GetComponent(axis) {
+				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
+				if cost < bestCost {
+					bestAxis, bestPivot = axis, e.position
+				}
+			}
+
+			if e.boundEnd != upperB {
+				nBelow++
+				if e.boundEnd == bothB {
+					nAbove--
+				}
+			}
+		}
+
+		if nBelow != len(vals) || nAbove != 0 {
+			panic("Cost function mismatch")
 		}
 	}
 
