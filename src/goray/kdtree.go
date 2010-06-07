@@ -38,6 +38,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 }
 
 func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
+	tree = new(Tree)
 	params := buildParams{getDim, 64, 2}
 	if len(vals) > 0 {
 		tree.bound = bound.New(getBound(vals[0], getDim).Get())
