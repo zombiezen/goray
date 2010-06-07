@@ -137,7 +137,7 @@ func main() {
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
-    sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(0, 0, 1), 0.5, nil)})
+    sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
 	fmt.Println("Rendering...")

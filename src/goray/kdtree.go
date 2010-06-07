@@ -5,600 +5,431 @@
 //  Created by Ross Light on 2010-06-02.
 //
 
+/* The goray/kdtree package provides a generic kd-tree implementation. */
 package kdtree
 
 import (
-	"math"
+	container "container/vector"
+	"fmt"
+	"sort"
 	"./fmath"
 )
 
 import (
 	"./goray/bound"
-	"./goray/color"
-	"./goray/partition"
-	"./goray/primitive"
-	"./goray/render"
-	"./goray/ray"
 	"./goray/vector"
 )
 
-const (
-	lowerB = 0
-	upperB = 2
-	bothB  = 1
-)
-
-type boundEdge struct {
-	position     float
-	primitiveNum int
-	end          int
+/* Tree is a generic kd-tree */
+type Tree struct {
+	root  Node
+	bound *bound.Bound
 }
 
-func (edge boundEdge) Less(i interface{}) bool {
-	switch other := i.(type) {
-	case boundEdge:
-		if edge.position == other.position {
-			return edge.end > other.end
-		} else {
-			return edge.position < other.position
+/* A DimensionFunc calculates the range of a value in a particular axis. */
+type DimensionFunc func(v Value, axis int) (min, max float)
+
+type buildParams struct {
+	GetDimension DimensionFunc
+	MaxDepth     int
+	LeafSize     int
+}
+
+func getBound(v Value, getDim DimensionFunc) *bound.Bound {
+	minX, maxX := getDim(v, 0)
+	minY, maxY := getDim(v, 1)
+	minZ, maxZ := getDim(v, 2)
+	return bound.New(vector.New(minX, minY, minZ), vector.New(maxX, maxY, maxZ))
+}
+
+func (bp buildParams) getBound(v Value) *bound.Bound {
+	return getBound(v, bp.GetDimension)
+}
+
+/* New creates a new kd-tree from an unordered collection of values. */
+func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
+	tree = new(Tree)
+	params := buildParams{getDim, 16, 2} // TODO: Make this bigger later
+	if len(vals) > 0 {
+		tree.bound = bound.New(getBound(vals[0], getDim).Get())
+		for _, v := range vals[1:] {
+			tree.bound = bound.Union(tree.bound, params.getBound(v))
 		}
-	}
-	return false
-}
-
-type splitCost struct {
-	bestAxis              int
-	bestOffset            int
-	bestCost, oldCost     float
-	t                     float
-	nBelow, nAbove, nEdge int
-}
-
-const triClipThreshold = 32
-const maxKdStack = 64 // this probably needs to be tweaked for Go
-
-type kdTree struct {
-	costRatio   float // node transversal cost divided by primitive intersection cost
-	emptyBonus  float
-	maxDepth    int
-	maxLeafSize uint
-	treeBound   *bound.Bound
-	nodes       []kdNode
-
-	prims     []primitive.Primitive
-	allBounds []*bound.Bound
-	clip      []int
-	clipData  []float
-
-	// Statistics!
-	depthLimitReached, numBadSplits int
-}
-
-func New(prims []primitive.Primitive, depth, leafSize int, costRatio, emptyBonus float) partition.Partitioner {
-	// Constants
-	const boundFudge = 0.001
-	const clipDataSize = 36
-	// Create tree!
-	tree := &kdTree{costRatio: costRatio, emptyBonus: emptyBonus, maxDepth: depth}
-	tree.nodes = make([]kdNode, 0, 256)
-	// Calculate maximum depth
-	if tree.maxDepth <= 0 {
-		tree.maxDepth = int(7.0 + 1.66*math.Log(float64(len(prims))))
-	}
-	// Calculate leaf size
-	logLeaves := fmath.Log2(float(len(prims)))
-	if leafSize <= 0 {
-		mls := int(logLeaves - 16.0)
-		if mls <= 0 {
-			mls = 1
-		}
-		tree.maxLeafSize = uint(mls)
 	} else {
-		tree.maxLeafSize = uint(leafSize)
+		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
-	// TODO: if (maxDepth > KD_MAX_STACK)
-	if logLeaves > 16.0 {
-		tree.costRatio += 0.25 * (logLeaves - 16.0)
-	}
-	// Calculate bounds
-	tree.allBounds = make([]*bound.Bound, len(prims)+triClipThreshold+1)
-	for i, prim := range prims {
-		b := prim.GetBound()
-		tree.allBounds[i] = b
-		if i > 0 {
-			tree.treeBound = bound.Union(tree.treeBound, b)
-		} else {
-			tree.treeBound = b
-		}
-	}
-	// Slightly increase tree bound to prevent errors with primitives
-	// lying in a bound plane (still slight bug with trees where one dimension is
-	// zero)
-	{
-		a, g := tree.treeBound.Get()
-		fudge := vector.New(
-			tree.treeBound.GetXLength()*boundFudge,
-			tree.treeBound.GetYLength()*boundFudge,
-			tree.treeBound.GetZLength()*boundFudge,
-		)
-		tree.treeBound = bound.New(vector.Sub(a, fudge), vector.Add(g, fudge))
-	}
-	// Get working memory for tree construction
-	leftPrimsSize := len(prims)
-	if triClipThreshold*2 > leftPrimsSize {
-		leftPrimsSize = triClipThreshold * 2
-	}
-	leftPrims := make([]int, leftPrimsSize)
-	rightPrims := make([]int, len(prims)*3) // just a rough guess, allocating worst case is insane!
-	var edges [3][]boundEdge
-	for i, _ := range edges {
-		edges[i] = make([]boundEdge, 514)
-	}
-	tree.clip = make([]int, tree.maxDepth+2)
-	tree.clipData = make([]float, len(tree.clip)*triClipThreshold*clipDataSize)
-	// Prepare data
-	for i, _ := range prims {
-		leftPrims[i] = i
-	}
-	for i, _ := range tree.clip {
-		tree.clip[i] = -1
-	}
-	// Build tree
-	tree.prims = prims
-	tree.build(leftPrims, tree.treeBound, leftPrims, rightPrims, edges, 0, 0)
+	tree.root = build(vals, tree.bound, params)
+	fmt.Printf("Tree is %d levels deep\n", tree.depth())
 	return tree
 }
 
-func (tree *kdTree) build(primNums []int, nodeBound *bound.Bound, leftPrims, rightPrims []int, edges [3][]boundEdge, depth, badRefines int) int {
-	const triClip = false
-	// Ensure that the nodes array can fit at least one more node
-	if len(tree.nodes) == cap(tree.nodes) {
-		newCap := 2 * cap(tree.nodes)
-		if newCap > 0x100000 {
-			newCap += 0x80000
-		}
-		n := make([]kdNode, len(tree.nodes), newCap)
-		copy(n, tree.nodes)
-		tree.nodes = n
-	}
-	if triClip && len(primNums) <= triClipThreshold {
-		// TODO
-	}
-	// << Check if leaf criteria met >>
-	if uint(len(primNums)) <= tree.maxLeafSize || depth >= tree.maxDepth {
-		tree.nodes = tree.nodes[0 : len(tree.nodes)+1]
-		tree.nodes[len(tree.nodes)-1] = newLeaf(primNums)
-		return 0
-	}
-	// << Calculate cost for all axes and choose minimum >>
-	split := splitCost{bestAxis: -1, bestOffset: -1}
-	baseBonus := tree.emptyBonus
-	tree.emptyBonus *= 1.1 - float(depth)/float(tree.maxDepth)
-	switch {
-	case len(primNums) > 128:
-		tree.pigeonMinCost(primNums, nodeBound, &split)
-	case triClip:
-		if len(primNums) > triClipThreshold {
-			tree.minimalCost(primNums, nodeBound, tree.allBounds, edges, &split)
-		} else {
-			// TODO: Check if this is right
-			tree.minimalCost(primNums, nodeBound, tree.allBounds[len(primNums):], edges, &split)
-		}
-	default:
-		tree.minimalCost(primNums, nodeBound, tree.allBounds, edges, &split)
-	}
-	tree.emptyBonus = baseBonus // Restore emptyBonus
-	// << if minimum > leafcost increase bad refines >>
-	if split.bestCost > split.oldCost {
-		badRefines++
-	}
-	if (split.bestCost > 1.6*split.oldCost && len(primNums) < 16) || split.bestAxis == -1 || badRefines == 2 {
-		tree.nodes = tree.nodes[0 : len(tree.nodes)+1]
-		tree.nodes[len(tree.nodes)-1] = newLeaf(primNums)
-		if badRefines == 2 {
-			tree.numBadSplits++
-		}
-		return 0
-	}
-
-	// Allocate more memory, if we need it
-	newRightPrims := rightPrims
-	if len(primNums) > cap(rightPrims) || triClipThreshold*2 > cap(rightPrims) {
-		newRightPrims = make([]int, len(primNums)*3)
-	}
-
-	// Classify primitives with respect to split
-	var splitPos float
-	n0, n1 := 0, 0
-	switch {
-	case len(primNums) > 128: // we did pigeonhole
-		for _, pn := range primNums {
-			bd := tree.allBounds[pn]
-			if a, _ := bd.Get(); a.GetComponent(split.bestAxis) >= split.t {
-				newRightPrims[n1] = pn
-				n1++
+func (tree *Tree) depth() int {
+	var nodeDepth func(Node) int
+	nodeDepth = func(n Node) int {
+		switch node := n.(type) {
+		case *Leaf:
+			return 0
+		case *Interior:
+			leftDepth, rightDepth := nodeDepth(node.left), nodeDepth(node.right)
+			if leftDepth >= rightDepth {
+				return leftDepth + 1
 			} else {
-				leftPrims[n0] = pn
-				n0++
-				if _, g := bd.Get(); g.GetComponent(split.bestAxis) > split.t {
-					newRightPrims[n1] = pn
-					n1++
-				}
+				return rightDepth + 1
 			}
 		}
-		splitPos = split.t
-	case len(primNums) <= triClipThreshold:
-		// TODO
-	default: // we did "normal" cost function
-		partition := func(prims []int, pos *int, i, endVal int) {
-			e := edges[split.bestAxis][*pos]
-			if e.end != endVal {
-				prims[*pos] = e.primitiveNum
-				(*pos)++
-			}
-		}
-		for i := 0; i < split.bestOffset; i++ {
-			partition(leftPrims, &n0, i, upperB)
-		}
-		partition(newRightPrims, &n1, split.bestOffset, bothB)
-		for i := split.bestOffset + 1; i < split.nEdge; i++ {
-			partition(newRightPrims, &n1, i, lowerB)
-		}
-		splitPos = edges[split.bestAxis][split.bestOffset].position
+		return 0
 	}
+	return nodeDepth(tree.root)
+}
 
-	currNode := len(tree.nodes)
-	tree.nodes = tree.nodes[0 : len(tree.nodes)+1]
-	tree.nodes[currNode] = newInterior(split.bestAxis, splitPos)
-	boundL, boundR := bound.New(nodeBound.Get()), bound.New(nodeBound.Get())
-	switch split.bestAxis {
-	case 0:
-		boundL.SetMaxX(splitPos)
-		boundR.SetMinX(splitPos)
-	case 1:
-		boundL.SetMaxY(splitPos)
-		boundR.SetMinY(splitPos)
-	case 2:
-		boundL.SetMaxZ(splitPos)
-		boundR.SetMinZ(splitPos)
+func (tree *Tree) String() string {
+	var nodeString func(Node, int) string
+	nodeString = func(n Node, indent int) string {
+		tab := "  "
+		indentString := ""
+		for i := 0; i < indent; i++ {
+			indentString += tab
+		}
+		switch node := n.(type) {
+		case *Leaf:
+			return fmt.Sprint(node.values)
+		case *Interior:
+			return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
+				"XYZ"[node.axis], node.pivot,
+				indentString+tab, nodeString(node.left, indent+1),
+				indentString+tab, nodeString(node.right, indent+1),
+				indentString)
+		}
+		return ""
 	}
+	return nodeString(tree.root, 0)
+}
 
-	if triClip && len(primNums) <= triClipThreshold {
-		// TODO
+func build(vals []Value, bd *bound.Bound, params buildParams) Node {
+	// If we're within acceptable bounds (or we're just sick of building the tree),
+	// then make a leaf.
+	if len(vals) <= params.LeafSize || params.MaxDepth <= 0 {
+		return newLeaf(vals)
+	}
+	// Pick a pivot
+	var axis int
+	var pivot float
+	if len(vals) > 128 {
+		axis, pivot = pigeonSplit(vals, bd, params)
 	} else {
-		// << Recurse below child >>
-		tree.build(leftPrims[0:n0], boundL, leftPrims, newRightPrims, edges, depth+1, badRefines)
-		// << Recurse above child >>
-		tree.nodes[currNode].(*kdInteriorNode).SetRightChild(len(tree.nodes))
-		tree.build(newRightPrims[0:n1], boundR, leftPrims, newRightPrims[n1:], edges, depth+1, badRefines)
+		axis, pivot = minimalSplit(vals, bd, params)
 	}
-
-	return 1
+	// Sort out values
+	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
+	for _, v := range vals {
+		vMin, vMax := params.GetDimension(v, axis)
+		if vMin < pivot {
+			left = left[0 : len(left)+1]
+			left[len(left)-1] = v
+		}
+		if vMin >= pivot || vMax > pivot {
+			right = right[0 : len(right)+1]
+			right[len(right)-1] = v
+		}
+	}
+	// Calculate new bounds
+	leftBound, rightBound := bound.New(bd.Get()), bound.New(bd.Get())
+	switch axis {
+	case 0:
+		leftBound.SetMaxX(pivot)
+		rightBound.SetMinX(pivot)
+	case 1:
+		leftBound.SetMaxY(pivot)
+		rightBound.SetMinY(pivot)
+	case 2:
+		leftBound.SetMaxZ(pivot)
+		rightBound.SetMinZ(pivot)
+	}
+	// Build subtrees
+	leftChan, rightChan := make(chan Node), make(chan Node)
+	params.MaxDepth--
+	go func() {
+		leftChan <- build(left, leftBound, params)
+	}()
+	go func() {
+		rightChan <- build(right, rightBound, params)
+	}()
+	// Return interior node
+	return newInterior(axis, pivot, <-leftChan, <-rightChan)
 }
 
-type bin struct {
-	n             int
-	cLeft, cRight int
-	cBLeft, cBoth int
-	t             float
+func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
+	axis = bd.GetLargestAxis()
+	data := make([]float, 0, len(vals)*2)
+	for _, v := range vals {
+		min, max := params.GetDimension(v, axis)
+		if fmath.Eq(min, max) {
+			i := len(vals)
+			data = data[0 : len(vals)+1]
+			data[i] = min
+		} else {
+			i := len(vals)
+			data = data[0 : len(vals)+2]
+			data[i], data[i+1] = min, max
+		}
+	}
+	sort.SortFloats(data)
+	pivot = data[len(data)/2]
+	return
 }
 
-func (b bin) Empty() bool { return b.n == 0 }
-func (b *bin) Reset()     { b.n = 0; b.cLeft = 0; b.cRight = 0; b.cBoth = 0; b.cBLeft = 0 }
+type pigeonBin struct {
+	n           int
+	left, right int
+	bleft, both int
+	t           float
+}
 
-func (tree *kdTree) pigeonMinCost(primNums []int, nodeBound *bound.Bound, split *splitCost) {
-	const kdBins = 1024
-	axisLUT := [3][3]int{[3]int{0, 1, 2}, [3]int{1, 2, 0}, [3]int{2, 0, 1}}
+func (b pigeonBin) empty() bool { return b.n == 0 }
 
-	bins := make([]bin, kdBins+1)
-	d := [3]float{nodeBound.GetXLength(), nodeBound.GetYLength(), nodeBound.GetZLength()}
-	split.oldCost = float(len(primNums))
-	split.bestCost = fmath.Inf
-	invTotalSA := 1.0 / (d[0]*d[1] + d[0]*d[2] + d[1]*d[2])
+func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+	const numBins = 1024
+
+	var bins [numBins + 1]pigeonBin
+	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	bestCost := fmath.Inf
+	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
+	invTotalSA := 0.0
+	if !fmath.Eq(totalSA, 0.0) {
+		invTotalSA = 1.0 / totalSA
+	}
 
 	for axis := 0; axis < 3; axis++ {
-		s := kdBins / d[axis]
-		min := nodeBound.GetMin().GetComponent(axis)
-		// Pigeonhole Sort
-		for _, primNum := range primNums {
-			bbox := tree.allBounds[primNum]
-			tLow, tUp := bbox.GetMin().GetComponent(axis), bbox.GetMax().GetComponent(axis)
-			bLeft, bRight := int((tLow-min)*s), int((tUp-min)*s)
-			{
-				clamp := func(b int) int {
-					switch {
-					case b < 0:
-						return 0
-					case b > kdBins:
-						return kdBins
-					}
-					return b
-				}
-				bLeft, bRight = clamp(bLeft), clamp(bRight)
+		s := numBins / d[axis]
+		min := bd.GetMin().GetComponent(axis)
+
+		for _, v := range vals {
+			tLow, tHigh := params.GetDimension(v, axis)
+			bLeft, bRight := int((tLow-min)*s), int((tHigh-min)*s)
+			if bLeft < 0 {
+				bLeft = 0
+			} else if bLeft > numBins {
+				bLeft = numBins
 			}
-			if tLow == tUp {
-				if bins[bLeft].Empty() || tLow >= bins[bLeft].t {
+			if bRight < 0 {
+				bRight = 0
+			} else if bRight > numBins {
+				bRight = numBins
+			}
+
+			if tLow == tHigh {
+				if bins[bLeft].empty() || tLow >= bins[bLeft].t {
 					bins[bLeft].t = tLow
-					bins[bLeft].cBoth++
+					bins[bLeft].both++
 				} else {
-					bins[bLeft].cLeft++
-					bins[bLeft].cRight++
+					bins[bLeft].left++
+					bins[bLeft].right++
 				}
 				bins[bLeft].n += 2
 			} else {
-				switch {
-				case bins[bLeft].Empty() || tLow > bins[bLeft].t:
+				if bins[bLeft].empty() || tLow > bins[bLeft].t {
 					bins[bLeft].t = tLow
-					bins[bLeft].cLeft += bins[bLeft].cBoth + bins[bLeft].cBLeft
-					bins[bLeft].cRight += bins[bLeft].cBoth
-					bins[bLeft].cBoth, bins[bLeft].cBLeft = 0, 1
-				case tLow == bins[bLeft].t:
-					bins[bLeft].cBLeft++
-				default:
-					bins[bLeft].cLeft++
+					bins[bLeft].left += bins[bLeft].both + bins[bLeft].bleft
+					bins[bLeft].right += bins[bLeft].both
+					bins[bLeft].both, bins[bLeft].bleft = 0, 0
+					bins[bLeft].bleft++
+				} else if tLow == bins[bLeft].t {
+					bins[bLeft].bleft++
+				} else {
+					bins[bLeft].left++
 				}
-				bins[bLeft].n++
 
-				bins[bRight].cRight++
-				if bins[bRight].Empty() || tUp > bins[bRight].t {
-					bins[bRight].t = tUp
-					bins[bRight].cLeft += bins[bRight].cBoth + bins[bRight].cBLeft
-					bins[bRight].cRight += bins[bRight].cBoth
-					bins[bRight].cBoth, bins[bRight].cBLeft = 0, 0
+				bins[bLeft].n++
+				bins[bRight].right++
+				if bins[bRight].empty() || tHigh > bins[bRight].t {
+					bins[bRight].t = tHigh
+					bins[bRight].left += bins[bRight].both + bins[bRight].bleft
+					bins[bRight].right += bins[bRight].both
+					bins[bRight].both, bins[bRight].bleft = 0, 0
 				}
 				bins[bRight].n++
 			}
 		}
 
-		capArea := d[axisLUT[1][axis]] * d[axisLUT[2][axis]]
-		capPerim := d[axisLUT[1][axis]] + d[axisLUT[2][axis]]
+		capArea := d[(axis+1)%3] * d[(axis+2)%3]
+		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
 
-		// Accumulate primitives and evaluate cost
-		nBelow, nAbove := 0, len(primNums)
-		for i, b := range bins {
-			if !b.Empty() {
-				nBelow += b.cLeft
-				nAbove -= b.cRight
-				// Cost
+		nBelow, nAbove := 0, len(vals)
+		// Cumulate values and evaluate cost
+		for _, b := range bins {
+			if !b.empty() {
+				nBelow += b.left
+				nAbove -= b.right
+				// Cost:
 				edget := b.t
-				if edget > nodeBound.GetMin().GetComponent(axis) && edget < nodeBound.GetMax().GetComponent(axis) {
-					// Compute cost at ith edge
-					l1 := edget - nodeBound.GetMin().GetComponent(axis)
-					l2 := nodeBound.GetMax().GetComponent(axis) - edget
-					belowSA := capArea + l1*capPerim
-					aboveSA := capArea + l2*capPerim
-					rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
-					eb := 0.0
-					if nAbove == 0 {
-						eb = (0.1 + l2/d[axis]) * tree.emptyBonus * rawCosts
-					} else if nBelow == 0 {
-						eb = (0.1 + l1/d[axis]) * tree.emptyBonus * rawCosts
-					}
-					// Update best split if this is lowest cost so far
-					cost := tree.costRatio + invTotalSA*(rawCosts-eb)
-					if cost < split.bestCost {
-						split.t = edget
-						split.bestCost = cost
-						split.bestAxis = axis
-						split.bestOffset = i // kinda useless...
-						split.nBelow = nBelow
-						split.nAbove = nAbove
+				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
+					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
+					if cost < bestCost {
+						bestAxis, bestPivot = axis, edget
 					}
 				}
-				nBelow += b.cBoth + b.cBLeft
-				nAbove -= b.cBoth
+
+				nBelow += b.both + b.bleft
+				nAbove -= b.both
 			}
 		}
 
-		if nBelow != len(primNums) || nAbove != 0 {
+		if nBelow != len(vals) || nAbove != 0 {
 			// SCREWED.
 			panic("Cost function mismatch")
 		}
 
+		// Reset all bins
 		for i, _ := range bins {
-			bins[i].Reset()
+			bins[i] = pigeonBin{}
 		}
 	}
-}
 
-func (tree *kdTree) minimalCost(primNums []int, nodeBound *bound.Bound, pBounds []*bound.Bound, edges [3][]boundEdge, split *splitCost) {
-	// TODO
-}
-
-type kdStackFrame struct {
-	node kdNode
-	t    float
-	pb   vector.Vector3D
-	prev int
-}
-
-func (tree *kdTree) collide(r ray.Ray, minDist, maxDist float) (<-chan primitive.Collision, chan<- bool) {
-	ch := make(chan primitive.Collision)
-	signal := make(chan bool, 1)
-
-	// Quick check: If we're not even in the ballpark, then don't spawn a
-	// goroutine.
-	var a, b float
-	var crosses bool
-	if a, b, crosses = tree.treeBound.Cross(r.From(), r.Dir(), maxDist); !crosses {
-		close(ch)
-		return ch, signal
-	}
-
-	// Now start the interesting stuff.
-	go func() {
-		defer close(ch) // This channel should last as long as the goroutine.
-
-		var t float
-		invDir := vector.New(1.0/r.Dir().X, 1.0/r.Dir().Y, 1.0/r.Dir().Z)
-		stack := make([]kdStackFrame, maxKdStack)
-		currIndex := 0
-		farIndex := 0
-
-		enterPt := 0
-		stack[enterPt].t = a
-
-		if a >= 0.0 {
-			// Ray with external origin
-			stack[enterPt].pb = vector.Add(r.From(), vector.ScalarMul(r.Dir(), a))
-		} else {
-			// Ray with internal origin
-			stack[enterPt].pb = r.From()
-		}
-
-		// Setup initial entry and exit point in stack
-		exitPt := 1
-		stack[exitPt].t = b
-		stack[exitPt].pb = vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))
-		stack[exitPt].node = nil
-
-		for currIndex != -1 {
-			currNode := tree.nodes[currIndex]
-			if maxDist < stack[enterPt].t {
-				break
-			}
-			for !currNode.IsLeaf() {
-				axis := currNode.(*kdInteriorNode).GetSplitAxis()
-				splitVal := currNode.(*kdInteriorNode).GetSplitPos()
-				if stack[enterPt].pb.GetComponent(axis) <= splitVal {
-					if stack[exitPt].pb.GetComponent(axis) <= splitVal {
-						currIndex++
-						continue
-					} else if stack[exitPt].pb.GetComponent(axis) == splitVal {
-						currIndex = currNode.(*kdInteriorNode).GetRightChild()
-						continue
-					} else {
-						farIndex = currNode.(*kdInteriorNode).GetRightChild()
-						currIndex++
-						currNode = tree.nodes[currIndex]
-					}
-				} else {
-					if splitVal < stack[exitPt].pb.GetComponent(axis) {
-						currIndex = currNode.(*kdInteriorNode).GetRightChild()
-						continue
-					}
-					farIndex = currIndex + 1
-					currIndex = currNode.(*kdInteriorNode).GetRightChild()
-					currNode = tree.nodes[currIndex]
-				}
-				// Traverse both children
-				t = (splitVal - r.From().GetComponent(axis)) * invDir.GetComponent(axis)
-				// Set up the new exit point
-				prevExitPt := exitPt
-				exitPt++
-				// Possibly skip current entry point so not to overwrite the data
-				if exitPt == enterPt {
-					exitPt++
-				}
-				// Push values onto the stack
-				nextAxis := (axis + 1) % 3
-				prevAxis := (axis + 2) % 3
-				stack[exitPt].prev = prevExitPt
-				stack[exitPt].t = t
-				stack[exitPt].node = tree.nodes[farIndex]
-				// TODO: SetAxis?
-				_, _ = nextAxis, prevAxis
-				//stack[exitPt].pb[axis] = splitVal
-			}
-
-			// Check for intersections inside leaf node
-			for _, index := range currNode.(*kdLeafNode).GetPrimitives() {
-				mp := tree.prims[index]
-				coll, hit := mp.Intersect(r)
-				if hit && coll.RayDepth < maxDist && coll.RayDepth > minDist {
-					// It's a hit!  Send it back!
-					ch <- coll
-					// Now check to see whether we can stop.
-					if !<-signal {
-						// Caller wants us to terminate.
-						return
-					}
-				}
-			}
-			enterPt, currIndex = exitPt, exitPt
-			exitPt = stack[enterPt].prev
-		}
-	}()
-	return ch, signal
-}
-
-func (tree *kdTree) Intersect(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
-	ch, signal := tree.collide(r, r.TMin(), dist)
-	signal <- false
-	coll = <-ch
-    if coll.Primitive != nil {
-        hit = true
-    }
-    return
-}
-
-func (tree *kdTree) IntersectS(r ray.Ray, dist float) (coll primitive.Collision, hit bool) {
-	ch, signal := tree.collide(r, r.TMin(), dist)
-	signal <- false
-	coll = <-ch
-    if coll.Primitive != nil {
-        hit = true
-    }
-    return
-}
-
-func (tree *kdTree) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision, hit bool) {
-	ch, signal := tree.collide(r, r.TMin(), dist)
-	filtered := make(map[primitive.Primitive]bool)
-	depth := 0
-	for coll = range ch {
-		hit = true
-		mat := coll.Primitive.GetMaterial()
-		if !mat.IsTransparent() {
-			signal <- false
-			return
-		}
-		if found, _ := filtered[coll.Primitive]; !found {
-			filtered[coll.Primitive] = true
-			if depth < maxDepth {
-				h := vector.Add(r.From(), vector.ScalarMul(r.Dir(), coll.RayDepth))
-				sp := coll.Primitive.GetSurface(h, coll.UserData)
-				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
-				depth++
-			} else {
-				// We've hit the depth limit.  Cut it off.
-				signal <- false
-				return
-			}
-		}
-	}
 	return
 }
 
-func (tree *kdTree) GetBound() *bound.Bound { return tree.treeBound }
+func computeCost(axis int, bd *bound.Bound, capArea, capPerim, invTotalSA float, nBelow, nAbove int, edget float) float {
+	const emptyBonus = 0.33
+	const costRatio = 0.35
 
-type kdNode interface {
+	l1, l2 := edget-bd.GetMin().GetComponent(axis), bd.GetMax().GetComponent(axis)-edget
+	belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
+	rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
+
+	d := 0.0
+	switch axis {
+	case 0:
+		d = bd.GetXLength()
+	case 1:
+		d = bd.GetYLength()
+	case 2:
+		d = bd.GetZLength()
+	}
+
+	eb := 0.0
+	if nAbove == 0 {
+		eb = (0.1 + l2/d) * emptyBonus * rawCosts
+	} else if nBelow == 0 {
+		eb = (0.1 + l1/d) * emptyBonus * rawCosts
+	}
+
+	return costRatio + invTotalSA*(rawCosts-eb)
+}
+
+type boundEdge struct {
+	position float
+	boundEnd int
+}
+
+func (e boundEdge) Less(other interface{}) bool {
+	f, ok := other.(boundEdge)
+	if !ok {
+		return false
+	}
+	if fmath.Eq(e.position, f.position) {
+		return e.boundEnd > f.boundEnd
+	}
+	return e.position < f.position
+}
+
+const (
+	lowerB = iota
+	bothB
+	upperB
+)
+
+func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	bestCost := fmath.Inf
+	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
+	invTotalSA := 0.0
+	if !fmath.Eq(totalSA, 0.0) {
+		invTotalSA = 1.0 / totalSA
+	}
+
+	for axis := 0; axis < 3; axis++ {
+		edges := new(container.Vector)
+		edges.Resize(0, len(vals)*2)
+		for _, v := range vals {
+			min, max := params.GetDimension(v, axis)
+			if fmath.Eq(min, max) {
+				edges.Push(boundEdge{min, bothB})
+			} else {
+				edges.Push(boundEdge{min, lowerB})
+				edges.Push(boundEdge{max, upperB})
+			}
+		}
+		sort.Sort(edges)
+
+		capArea := d[(axis+1)%3] * d[(axis+2)%3]
+		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
+
+		nBelow, nAbove := 0, len(vals)
+		for tmp := range edges.Iter() {
+			e := tmp.(boundEdge)
+			if e.boundEnd == upperB {
+				nAbove--
+			}
+
+			if e.position > bd.GetMin().GetComponent(axis) && e.position < bd.GetMax().GetComponent(axis) {
+				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
+				if cost < bestCost {
+					bestAxis, bestPivot = axis, e.position
+				}
+			}
+
+			if e.boundEnd != upperB {
+				nBelow++
+				if e.boundEnd == bothB {
+					nAbove--
+				}
+			}
+		}
+
+		if nBelow != len(vals) || nAbove != 0 {
+			panic("Cost function mismatch")
+		}
+	}
+
+	return
+}
+
+/* GetRoot returns the root of the kd-tree. */
+func (tree *Tree) GetRoot() Node { return tree.root }
+
+/* GetBound returns a bounding box that encloses all objects in the tree. */
+func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }
+
+/* Value is a type for the individual elements stored in the leaves of the tree. */
+type Value interface{}
+
+/* Node is the common interface for leaf and interior nodes. */
+type Node interface {
 	IsLeaf() bool
 }
 
-type kdInteriorNode struct {
-	division   float
-	axis       int
-	rightChild int
+/* Leaf is the node type that actually stores values. */
+type Leaf struct {
+	values []Value
 }
 
-func newInterior(axis int, d float) *kdInteriorNode {
-	return &kdInteriorNode{division: d, axis: axis}
+func newLeaf(vals []Value) *Leaf      { return &Leaf{vals} }
+func (leaf *Leaf) IsLeaf() bool       { return true }
+func (leaf *Leaf) GetValues() []Value { return leaf.values }
+
+/* Interior is represents a planar split. */
+type Interior struct {
+	axis        int8
+	pivot       float
+	left, right Node
 }
 
-func (node *kdInteriorNode) IsLeaf() bool        { return false }
-func (node *kdInteriorNode) GetSplitPos() float  { return node.division }
-func (node *kdInteriorNode) GetSplitAxis() int   { return node.axis }
-func (node *kdInteriorNode) GetRightChild() int  { return node.rightChild }
-func (node *kdInteriorNode) SetRightChild(i int) { node.rightChild = i }
-
-type kdLeafNode struct {
-	primitives []int
+func newInterior(axis int, pivot float, left, right Node) *Interior {
+	return &Interior{int8(axis), pivot, left, right}
 }
 
-func newLeaf(prims []int) *kdLeafNode {
-	return &kdLeafNode{prims}
-}
-
-func (node *kdLeafNode) IsLeaf() bool         { return false }
-func (node *kdLeafNode) GetPrimitives() []int { return node.primitives }
+func (i *Interior) IsLeaf() bool    { return false }
+func (i *Interior) GetAxis() int    { return int(i.axis) }
+func (i *Interior) GetPivot() float { return i.pivot }
+func (i *Interior) GetLeft() Node   { return i.left }
+func (i *Interior) GetRight() Node  { return i.right }
