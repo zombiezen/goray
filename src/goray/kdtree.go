@@ -5,6 +5,7 @@
 //  Created by Ross Light on 2010-06-02.
 //
 
+/* The goray/kdtree package provides a generic kd-tree implementation. */
 package kdtree
 
 import (
@@ -19,11 +20,13 @@ import (
 	"./goray/vector"
 )
 
+/* Tree is a generic kd-tree */
 type Tree struct {
 	root  Node
 	bound *bound.Bound
 }
 
+/* A DimensionFunc calculates the range of a value in a particular axis. */
 type DimensionFunc func(v Value, axis int) (min, max float)
 
 type buildParams struct {
@@ -43,6 +46,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 	return getBound(v, bp.GetDimension)
 }
 
+/* New creates a new kd-tree from an unordered collection of values. */
 func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 	tree = new(Tree)
 	params := buildParams{getDim, 16, 2} // TODO: Make this bigger later
@@ -390,14 +394,21 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 	return
 }
 
-func (tree *Tree) GetRoot() Node          { return tree.root }
+/* GetRoot returns the root of the kd-tree. */
+func (tree *Tree) GetRoot() Node { return tree.root }
+
+/* GetBound returns a bounding box that encloses all objects in the tree. */
 func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }
 
+/* Value is a type for the individual elements stored in the leaves of the tree. */
 type Value interface{}
+
+/* Node is the common interface for leaf and interior nodes. */
 type Node interface {
 	IsLeaf() bool
 }
 
+/* Leaf is the node type that actually stores values. */
 type Leaf struct {
 	values []Value
 }
@@ -406,6 +417,7 @@ func newLeaf(vals []Value) *Leaf      { return &Leaf{vals} }
 func (leaf *Leaf) IsLeaf() bool       { return true }
 func (leaf *Leaf) GetValues() []Value { return leaf.values }
 
+/* Interior is represents a planar split. */
 type Interior struct {
 	axis        int8
 	pivot       float
