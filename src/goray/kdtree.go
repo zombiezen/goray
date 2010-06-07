@@ -10,6 +10,10 @@ package kdtree
 import (
 	"fmt"
 	"sort"
+	"./fmath"
+)
+
+import (
 	"./goray/bound"
 	"./goray/vector"
 )
@@ -40,7 +44,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 
 func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{getDim, 64, 2}
+	params := buildParams{getDim, 16, 2}
 	if len(vals) > 0 {
 		tree.bound = bound.New(getBound(vals[0], getDim).Get())
 		for _, v := range vals[1:] {
@@ -96,18 +100,6 @@ func (tree *Tree) String() string {
 	return nodeString(tree.root, 0)
 }
 
-func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
-	axis = bd.GetLargestAxis()
-	data := make([]float, len(vals))
-	for i, v := range vals {
-		min, max := params.GetDimension(v, axis)
-		data[i] = (min + max) / 2
-	}
-	sort.SortFloats(data)
-	pivot = data[len(data)/2]
-	return
-}
-
 func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 	// If we're within acceptable bounds (or we're just sick of building the tree),
 	// then make a leaf.
@@ -115,7 +107,7 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	axis, pivot := simpleSplit(vals, bd, params)
+	axis, pivot := pigeonSplit(vals, bd, params)
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
 	for _, v := range vals {
@@ -153,6 +145,141 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 	}()
 	// Return interior node
 	return newInterior(axis, pivot, <-leftChan, <-rightChan)
+}
+
+func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
+	axis = bd.GetLargestAxis()
+	data := make([]float, len(vals))
+	for i, v := range vals {
+		min, max := params.GetDimension(v, axis)
+		data[i] = (min + max) / 2
+	}
+	sort.SortFloats(data)
+	pivot = data[len(data)/2]
+	return
+}
+
+type pigeonBin struct {
+	n           int
+	left, right int
+	bleft, both int
+	t           float
+}
+
+func (b pigeonBin) empty() bool { return b.n == 0 }
+
+func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+	const numBins = 1024
+	const emptyBonus = 0.33
+	const costRatio = 0.35
+
+	var bins [numBins + 1]pigeonBin
+	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	bestCost := fmath.Inf
+	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
+	invTotalSA := 0.0
+	if !fmath.Eq(totalSA, 0.0) {
+		invTotalSA = 1.0 / totalSA
+	}
+
+	for axis := 0; axis < 3; axis++ {
+		s := numBins / d[axis]
+		min := bd.GetMin().GetComponent(axis)
+
+		for _, v := range vals {
+			tLow, tHigh := params.GetDimension(v, axis)
+			bLeft, bRight := int((tLow-min)*s), int((tHigh-min)*s)
+			if bLeft < 0 {
+				bLeft = 0
+			} else if bLeft > numBins {
+				bLeft = numBins
+			}
+			if bRight < 0 {
+				bRight = 0
+			} else if bRight > numBins {
+				bRight = numBins
+			}
+
+			if tLow == tHigh {
+				if bins[bLeft].empty() || tLow >= bins[bLeft].t {
+					bins[bLeft].t = tLow
+					bins[bLeft].both++
+				} else {
+					bins[bLeft].left++
+					bins[bLeft].right++
+				}
+				bins[bLeft].n += 2
+			} else {
+				if bins[bLeft].empty() || tLow > bins[bLeft].t {
+					bins[bLeft].t = tLow
+					bins[bLeft].left += bins[bLeft].both + bins[bLeft].bleft
+					bins[bLeft].right += bins[bLeft].both
+					bins[bLeft].both, bins[bLeft].bleft = 0, 0
+					bins[bLeft].bleft++
+				} else if tLow == bins[bLeft].t {
+					bins[bLeft].bleft++
+				} else {
+					bins[bLeft].left++
+				}
+
+				bins[bLeft].n++
+				bins[bRight].right++
+				if bins[bRight].empty() || tHigh > bins[bRight].t {
+					bins[bRight].t = tHigh
+					bins[bRight].left += bins[bRight].both + bins[bRight].bleft
+					bins[bRight].right += bins[bRight].both
+					bins[bRight].both, bins[bRight].bleft = 0, 0
+				}
+				bins[bRight].n++
+			}
+		}
+
+		capArea := d[(axis+1)%3] * d[(axis+2)%3]
+		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
+
+		nBelow, nAbove := 0, len(vals)
+		// Cumulate values and evaluate cost
+		for _, b := range bins {
+			if !b.empty() {
+				nBelow += b.left
+				nAbove -= b.right
+				// Cost:
+				edget := b.t
+				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
+					l1, l2 := edget-bd.GetMin().GetComponent(axis), bd.GetMax().GetComponent(axis)-edget
+					belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
+					rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
+
+					eb := 0.0
+					if nAbove == 0 {
+						eb = (0.1 + l2/d[axis]) * emptyBonus * rawCosts
+					} else if nBelow == 0 {
+						eb = (0.1 + l1/d[axis]) * emptyBonus * rawCosts
+					}
+
+					cost := costRatio + invTotalSA*(rawCosts-eb)
+					if cost < bestCost {
+						bestAxis, bestPivot = axis, edget
+					}
+				}
+
+				nBelow += b.both + b.bleft
+				nAbove -= b.both
+			}
+		}
+
+		if nBelow != len(vals) || nAbove != 0 {
+			// SCREWED.
+			panic("Cost function mismatch")
+		}
+
+		// Reset all bins
+		for i, _ := range bins {
+			bins[i] = pigeonBin{}
+		}
+	}
+
+	return
 }
 
 func (tree *Tree) GetRoot() Node          { return tree.root }
