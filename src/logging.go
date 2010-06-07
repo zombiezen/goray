@@ -38,6 +38,9 @@ func (log *Logger) AddHandler(handler Handler) {
 }
 
 func sprintv(format string, args []interface{}) string {
+	if len(args) == 0 {
+		return format
+	}
 	callArgs := []reflect.Value{reflect.NewValue(format), reflect.NewValue(args)}
 	sprintf := reflect.NewValue(fmt.Sprintf).(*reflect.FuncValue)
 	return sprintf.Call(callArgs)[0].(*reflect.StringValue).Get()
