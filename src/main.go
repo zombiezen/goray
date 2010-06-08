@@ -151,7 +151,7 @@ func main() {
 	finalizeTime := stopwatch(func() {
 		sc.Update()
 	})
-	logging.MainLog.Info("Finalized in %.3fs", finalizeTime)
+	logging.MainLog.Info("Finalized in %v", finalizeTime)
 
 	logging.MainLog.Info("Rendering...")
 
@@ -163,9 +163,9 @@ func main() {
 		logging.MainLog.Error("Rendering error: %v", err)
 		return
 	}
-	logging.MainLog.Info("Render finished in %.3fs", renderTime)
+	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	logging.MainLog.Info("TOTAL TIME: %.3fs", finalizeTime+renderTime)
+	logging.MainLog.Info("TOTAL TIME: %v", addTime(finalizeTime, renderTime))
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
@@ -179,9 +179,42 @@ func main() {
 	}
 }
 
-func stopwatch(f func()) float {
+type Time float64
+
+func stopwatch(f func()) Time {
 	startTime := time.Nanoseconds()
 	f()
 	endTime := time.Nanoseconds()
-	return float(endTime-startTime) * 1e-9
+	return Time(float64(endTime-startTime) * 1e-9)
+}
+
+func addTime(t1, t2 Time, tn ...Time) Time {
+	accum := float64(t1) + float64(t2)
+	for _, t := range tn {
+		accum += float64(t)
+	}
+	return Time(accum)
+}
+
+func (t Time) Split() (hours, minutes int, seconds float64) {
+	const secondsPerMinute = 60
+	const secondsPerHour = secondsPerMinute * 60
+
+	seconds = float64(t)
+	hours = int(t / secondsPerHour)
+	seconds -= float64(hours * secondsPerHour)
+	minutes = int(seconds / secondsPerMinute)
+	seconds -= float64(minutes * secondsPerMinute)
+	return
+}
+
+func (t Time) String() string {
+	h, m, s := t.Split()
+	switch {
+	case h == 0 && m == 0:
+		return fmt.Sprintf("%.3fs", s)
+	case h == 0:
+		return fmt.Sprintf("%02d:%05.2f", m, s)
+	}
+	return fmt.Sprintf("%d:%02d:%05.2f", h, m, s)
 }
