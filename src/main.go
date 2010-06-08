@@ -94,7 +94,7 @@ func main() {
 	// Set up logging
 	level := logging.InfoLevel - 10*(*debug)
 	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
-    defer logging.MainLog.Finish()
+    defer logging.MainLog.Close()
 
 	// Open output file
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
