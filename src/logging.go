@@ -123,7 +123,7 @@ type writerHandler struct {
 }
 
 func NewWriterHandler(w io.Writer) Handler {
-	handler := &writerHandler{w, make(chan Record, 100), make(chan bool)}
+	handler := &writerHandler{w, make(chan Record, 10), make(chan bool)}
 	go handler.writerTask()
 	return handler
 }
