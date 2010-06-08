@@ -18,14 +18,15 @@ import (
 
 import (
 	"./buildversion"
+	"./logging"
 	"./goray/camera"
 	"./goray/scene"
-    "./goray/object"
+	"./goray/object"
 	"./goray/vector"
 	"./goray/version"
 	trivialInt "./goray/std/integrators/trivial"
 	"./goray/std/objects/mesh"
-    "./goray/std/primitives/sphere"
+	"./goray/std/primitives/sphere"
 )
 
 func printInstructions() {
@@ -90,16 +91,17 @@ func main() {
 	//		return
 	//	}
 
+	logging.MainLog.AddHandler(logging.NewMinLevelFilter(logging.DebugLevel, logging.NewWriterHandler(os.Stdout)))
 	_ = debug
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	defer f.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		logging.MainLog.Critical("Error opening output file: %v", err)
 		return
 	}
 	sc := scene.New()
 
-	fmt.Println("Setting up scene...")
+	logging.MainLog.Info("Setting up scene...")
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
@@ -137,27 +139,28 @@ func main() {
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
-    sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
-	fmt.Println("Rendering...")
+	logging.MainLog.Info("Rendering...")
+
 	startTime := time.Nanoseconds()
 	outputImage, err := sc.Render()
 	endTime := time.Nanoseconds()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
+		logging.MainLog.Error("Rendering error: %v", err)
 		return
 	}
-	fmt.Printf("Render finished in %.3fs\n", float(endTime-startTime)*1e-9)
+	logging.MainLog.Info("Render finished in %.3fs", float(endTime-startTime)*1e-9)
 
-	fmt.Println("Writing and finishing...")
+	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
 	case "png":
 		err = png.Encode(f, outputImage)
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while writing: %v\n", err)
+		logging.MainLog.Critical("Error while writing: %v", err)
 		return
 	}
 }
