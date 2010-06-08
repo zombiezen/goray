@@ -9,7 +9,6 @@ package trivial
 
 import (
 	"os"
-    "./logging"
 	"./goray/color"
 	"./goray/integrator"
 	"./goray/ray"
@@ -29,10 +28,8 @@ func (ti *trivial) Preprocess() os.Error   { return nil }
 
 func (ti *trivial) Integrate(s *render.State, r ray.Ray) color.AlphaColor {
 	if coll, _, _ := ti.sc.Intersect(r); coll.Hit() {
-        logging.MainLog.VerboseDebug("HIT  %v", r)
 		return color.NewRGBA(1.0, 1.0, 1.0, 1.0)
 	}
-    logging.MainLog.VerboseDebug("MISS %v", r)
 	return color.NewRGBA(0.1, 0.1, 0.1, 0.0)
 }
 
