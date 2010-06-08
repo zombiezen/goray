@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	DebugLevel = (iota + 1) * 10
+	VerboseDebugLevel = (iota + 1) * 10
+    DebugLevel
 	InfoLevel
 	WarningLevel
 	ErrorLevel
@@ -55,6 +56,9 @@ func (log *Logger) Logf(level int, format string, args ...interface{}) {
 	log.Handle(BasicRecord{message, level})
 }
 
+func (log *Logger) VerboseDebug(format string, args ...interface{}) {
+	log.Log(VerboseDebugLevel, sprintv(format, args))
+}
 func (log *Logger) Debug(format string, args ...interface{}) {
 	log.Log(DebugLevel, sprintv(format, args))
 }

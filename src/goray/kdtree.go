@@ -59,11 +59,11 @@ func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
 	tree.root = build(vals, tree.bound, params)
-	fmt.Printf("Tree is %d levels deep\n", tree.depth())
 	return tree
 }
 
-func (tree *Tree) depth() int {
+/* Depth returns the number of levels in the tree (excluding leaves). */
+func (tree *Tree) Depth() int {
 	var nodeDepth func(Node) int
 	nodeDepth = func(n Node) int {
 		switch node := n.(type) {

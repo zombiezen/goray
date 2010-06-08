@@ -9,6 +9,7 @@
 package partition
 
 import (
+	"./logging"
 	"./stack"
 	"./goray/bound"
 	"./goray/color"
@@ -119,7 +120,9 @@ func NewKD(prims []primitive.Primitive) Partitioner {
 	for i, p := range prims {
 		vals[i] = p
 	}
-	return &kdPartition{kdtree.New(vals, primGetDim)}
+	tree := kdtree.New(vals, primGetDim)
+	logging.MainLog.Debug("Scene tree is %d levels deep", tree.Depth())
+	return &kdPartition{tree}
 }
 
 type followFrame struct {
