@@ -18,14 +18,16 @@ import (
 
 import (
 	"./buildversion"
+	"./logging"
 	"./goray/camera"
+	"./goray/object"
+	"./goray/render"
 	"./goray/scene"
-    "./goray/object"
 	"./goray/vector"
 	"./goray/version"
 	trivialInt "./goray/std/integrators/trivial"
 	"./goray/std/objects/mesh"
-    "./goray/std/primitives/sphere"
+	"./goray/std/primitives/sphere"
 )
 
 func printInstructions() {
@@ -90,16 +92,25 @@ func main() {
 	//		return
 	//	}
 
-	_ = debug
+	// Set up logging
+	level := logging.InfoLevel - 10*(*debug)
+	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
+	defer logging.MainLog.Close()
+
+	// Open output file
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	defer f.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		logging.MainLog.Critical("Error opening output file: %v", err)
 		return
 	}
 	sc := scene.New()
 
-	fmt.Println("Setting up scene...")
+	logging.MainLog.Info("Setting up scene...")
+	sceneFilter := func(rec logging.Record) logging.Record {
+		return logging.BasicRecord{"  SCENE: " + rec.String(), rec.Level()}
+	}
+	sc.GetLog().AddHandler(logging.Filter{logging.MainLog, sceneFilter})
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
@@ -137,27 +148,77 @@ func main() {
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
-    sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
-	fmt.Println("Rendering...")
-	startTime := time.Nanoseconds()
-	outputImage, err := sc.Render()
-	endTime := time.Nanoseconds()
+	logging.MainLog.Info("Finalizing scene...")
+	finalizeTime := stopwatch(func() {
+		sc.Update()
+	})
+	logging.MainLog.Info("Finalized in %v", finalizeTime)
+
+	logging.MainLog.Info("Rendering...")
+
+	var outputImage *render.Image
+	renderTime := stopwatch(func() {
+		outputImage, err = sc.Render()
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
+		logging.MainLog.Error("Rendering error: %v", err)
 		return
 	}
-	fmt.Printf("Render finished in %.3fs\n", float(endTime-startTime)*1e-9)
+	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	fmt.Println("Writing and finishing...")
+	logging.MainLog.Info("TOTAL TIME: %v", addTime(finalizeTime, renderTime))
+
+	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
 	case "png":
 		err = png.Encode(f, outputImage)
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while writing: %v\n", err)
+		logging.MainLog.Critical("Error while writing: %v", err)
 		return
 	}
+}
+
+type Time float64
+
+func stopwatch(f func()) Time {
+	startTime := time.Nanoseconds()
+	f()
+	endTime := time.Nanoseconds()
+	return Time(float64(endTime-startTime) * 1e-9)
+}
+
+func addTime(t1, t2 Time, tn ...Time) Time {
+	accum := float64(t1) + float64(t2)
+	for _, t := range tn {
+		accum += float64(t)
+	}
+	return Time(accum)
+}
+
+func (t Time) Split() (hours, minutes int, seconds float64) {
+	const secondsPerMinute = 60
+	const secondsPerHour = secondsPerMinute * 60
+
+	seconds = float64(t)
+	hours = int(t / secondsPerHour)
+	seconds -= float64(hours * secondsPerHour)
+	minutes = int(seconds / secondsPerMinute)
+	seconds -= float64(minutes * secondsPerMinute)
+	return
+}
+
+func (t Time) String() string {
+	h, m, s := t.Split()
+	switch {
+	case h == 0 && m == 0:
+		return fmt.Sprintf("%.3fs", s)
+	case h == 0:
+		return fmt.Sprintf("%02d:%05.2f", m, s)
+	}
+	return fmt.Sprintf("%d:%02d:%05.2f", h, m, s)
 }

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"sort"
 	"./fmath"
+	"./logging"
 )
 
 import (
@@ -33,6 +34,7 @@ type buildParams struct {
 	GetDimension DimensionFunc
 	MaxDepth     int
 	LeafSize     int
+	Log          *logging.Logger
 }
 
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
@@ -47,9 +49,9 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 }
 
 /* New creates a new kd-tree from an unordered collection of values. */
-func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
+func New(vals []Value, getDim DimensionFunc, log *logging.Logger) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{getDim, 16, 2} // TODO: Make this bigger later
+	params := buildParams{getDim, 16, 2, log} // TODO: Make this deeper later
 	if len(vals) > 0 {
 		tree.bound = bound.New(getBound(vals[0], getDim).Get())
 		for _, v := range vals[1:] {
@@ -59,11 +61,12 @@ func New(vals []Value, getDim DimensionFunc) (tree *Tree) {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
 	tree.root = build(vals, tree.bound, params)
-	fmt.Printf("Tree is %d levels deep\n", tree.depth())
+	log.Debug("kd-tree is %d levels deep", tree.Depth())
 	return tree
 }
 
-func (tree *Tree) depth() int {
+/* Depth returns the number of levels in the tree (excluding leaves). */
+func (tree *Tree) Depth() int {
 	var nodeDepth func(Node) int
 	nodeDepth = func(n Node) int {
 		switch node := n.(type) {
@@ -276,6 +279,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 		if nBelow != len(vals) || nAbove != 0 {
 			// SCREWED.
+			params.Log.Error("Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 
@@ -387,6 +391,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 		}
 
 		if nBelow != len(vals) || nAbove != 0 {
+			params.Log.Error("Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 	}

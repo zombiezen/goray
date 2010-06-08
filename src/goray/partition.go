@@ -9,7 +9,11 @@
 package partition
 
 import (
+	"./logging"
 	"./stack"
+)
+
+import (
 	"./goray/bound"
 	"./goray/color"
 	"./goray/kdtree"
@@ -114,12 +118,13 @@ func primGetDim(v kdtree.Value, axis int) (min, max float) {
 	return
 }
 
-func NewKD(prims []primitive.Primitive) Partitioner {
+func NewKD(prims []primitive.Primitive, log *logging.Logger) Partitioner {
 	vals := make([]kdtree.Value, len(prims))
 	for i, p := range prims {
 		vals[i] = p
 	}
-	return &kdPartition{kdtree.New(vals, primGetDim)}
+	tree := kdtree.New(vals, primGetDim, log)
+	return &kdPartition{tree}
 }
 
 type followFrame struct {
