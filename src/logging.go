@@ -16,7 +16,7 @@ import (
 
 const (
 	VerboseDebugLevel = (iota + 1) * 10
-    DebugLevel
+	DebugLevel
 	InfoLevel
 	WarningLevel
 	ErrorLevel
@@ -81,6 +81,15 @@ func (log *Logger) Handle(rec Record) {
 	})
 }
 
+func (log *Logger) Finish() {
+	log.handlers.Do(func(h interface{}) {
+		finisher, ok := h.(Finisher)
+		if ok {
+			finisher.Finish()
+		}
+	})
+}
+
 type Record interface {
 	Level() int
 	String() string
@@ -103,13 +112,18 @@ type Handler interface {
 	Handle(Record)
 }
 
+type Finisher interface {
+	Finish()
+}
+
 type writerHandler struct {
 	writer io.Writer
 	ch     chan Record
+	done   chan bool
 }
 
 func NewWriterHandler(w io.Writer) Handler {
-	handler := &writerHandler{w, make(chan Record)}
+	handler := &writerHandler{w, make(chan Record, 100), make(chan bool)}
 	go handler.writerTask()
 	return handler
 }
@@ -118,10 +132,19 @@ func (handler *writerHandler) writerTask() {
 	for rec := range handler.ch {
 		io.WriteString(handler.writer, rec.String()+"\n")
 	}
+	handler.done <- true
 }
 
 func (handler *writerHandler) Handle(rec Record) {
 	handler.ch <- rec
+}
+
+func (handler *writerHandler) Finish() {
+	if handler.ch != nil {
+		close(handler.ch)
+		<-handler.done
+		handler.ch = nil
+	}
 }
 
 type minLevelFilter struct {
@@ -136,5 +159,11 @@ func NewMinLevelFilter(minLevel int, handler Handler) Handler {
 func (handler minLevelFilter) Handle(rec Record) {
 	if rec.Level() >= handler.level {
 		handler.handler.Handle(rec)
+	}
+}
+
+func (handler minLevelFilter) Finish() {
+	if finisher, ok := handler.handler.(Finisher); ok {
+		finisher.Finish()
 	}
 }
