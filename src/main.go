@@ -107,6 +107,10 @@ func main() {
 	sc := scene.New()
 
 	logging.MainLog.Info("Setting up scene...")
+	sceneFilter := func(rec logging.Record) logging.Record {
+		return logging.BasicRecord{"  SCENE: " + rec.String(), rec.Level()}
+	}
+	sc.GetLog().AddHandler(logging.Filter{logging.MainLog, sceneFilter})
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
