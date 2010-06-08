@@ -61,6 +61,7 @@ build_info_packages = [
 # Main build
 root_packages = [
     env.Go('build/fmath.go'),
+    env.Go('build/logging.go'),
     env.Go('build/stack.go'),
 ]
 
@@ -70,7 +71,7 @@ goray_packages = [
     'camera',
     'color',
     'integrator',
-    #'kdtree',
+    'kdtree',
     'light',
     'material',
     'matrix',

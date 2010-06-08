@@ -9,11 +9,18 @@
 package partition
 
 import (
+	"./logging"
+	"./stack"
+)
+
+import (
 	"./goray/bound"
 	"./goray/color"
+	"./goray/kdtree"
 	"./goray/primitive"
 	"./goray/render"
 	"./goray/ray"
+	"./goray/vector"
 )
 
 /*
@@ -89,6 +96,175 @@ func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist 
 				// We've hit the depth limit.  Cut it off.
 				return
 			}
+		}
+	}
+	return
+}
+
+type kdPartition struct {
+	*kdtree.Tree
+}
+
+func primGetDim(v kdtree.Value, axis int) (min, max float) {
+	bd := v.(primitive.Primitive).GetBound()
+	switch axis {
+	case 0:
+		min, max = bd.GetMinX(), bd.GetMaxX()
+	case 1:
+		min, max = bd.GetMinY(), bd.GetMaxY()
+	case 2:
+		min, max = bd.GetMinZ(), bd.GetMaxZ()
+	}
+	return
+}
+
+func NewKD(prims []primitive.Primitive, log *logging.Logger) Partitioner {
+	vals := make([]kdtree.Value, len(prims))
+	for i, p := range prims {
+		vals[i] = p
+	}
+	tree := kdtree.New(vals, primGetDim, log)
+	return &kdPartition{tree}
+}
+
+type followFrame struct {
+	node  kdtree.Node
+	t     float
+	point vector.Vector3D
+}
+
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- primitive.Collision, signal <-chan bool) {
+	defer close(ch)
+
+	var a, b, t float
+	var hit bool
+
+	if a, b, hit = kd.GetBound().Cross(r.From(), r.Dir(), maxDist); !hit {
+		return
+	}
+
+	invDir := r.Dir().Inverse()
+	enterStack := stack.New()
+	{
+		frame := followFrame{t: a}
+		if a >= 0.0 {
+			frame.point = vector.Add(r.From(), vector.ScalarMul(r.Dir(), a))
+		} else {
+			frame.point = r.From()
+		}
+		enterStack.Push(frame)
+	}
+
+	exitStack := enterStack.Copy()
+	exitStack.Push(followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))})
+
+	enter := func() followFrame {
+		frame, _ := enterStack.Top()
+		return frame.(followFrame)
+	}
+	exit := func() followFrame {
+		frame, _ := exitStack.Top()
+		return frame.(followFrame)
+	}
+
+	for currNode := kd.GetRoot(); currNode != nil; {
+		var farChild kdtree.Node
+		// Stop looping if we've passed the maximum distance
+		if enter().t > maxDist {
+			break
+		}
+		// Traverse to the leaves
+		for !currNode.IsLeaf() {
+			currInter := currNode.(*kdtree.Interior)
+			axis := currInter.GetAxis()
+			pivot := currInter.GetPivot()
+
+			if enter().point.GetComponent(axis) <= pivot {
+				currNode = currInter.GetLeft()
+				if exit().point.GetComponent(axis) <= pivot {
+					continue
+				}
+				farChild = currInter.GetRight()
+			} else {
+				currNode = currInter.GetRight()
+				if exit().point.GetComponent(axis) > pivot {
+					continue
+				}
+				farChild = currInter.GetLeft()
+			}
+
+			t = (pivot - r.From().GetComponent(axis)) * invDir.GetComponent(axis)
+
+			// Set up the new exit point
+			var pt [3]float
+			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
+			pt[axis] = pivot
+			pt[nextAxis] = r.From().GetComponent(nextAxis) + t*r.Dir().GetComponent(nextAxis)
+			pt[prevAxis] = r.From().GetComponent(prevAxis) + t*r.Dir().GetComponent(prevAxis)
+			frame := followFrame{farChild, t, vector.New(pt[0], pt[1], pt[2])}
+			exitStack.Push(frame)
+		}
+
+		// Okay, we've reached a leaf.
+		// Now check for any intersections.
+		for _, v := range currNode.(*kdtree.Leaf).GetValues() {
+			p := v.(primitive.Primitive)
+			if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
+				ch <- coll
+				// Should we continue?
+				if !(<-signal) {
+					return
+				}
+			}
+		}
+
+		// Update stack
+		enterStack = exitStack.Copy()
+		topExit, _ := exitStack.Pop()
+		currNode = topExit.(followFrame).node
+	}
+}
+
+func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
+	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
+	signal <- false
+	go kd.followRay(r, r.TMin(), dist, ch, signal)
+	for coll = range ch {
+		return coll
+	}
+	return
+}
+
+func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
+	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
+	signal <- false
+	go kd.followRay(r, 0.0, dist, ch, signal)
+	for coll = range ch {
+		return coll
+	}
+	return
+}
+
+func (kd *kdPartition) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
+	ch, signal := make(chan primitive.Collision), make(chan bool)
+	defer func() { signal <- false; close(signal) }()
+
+	go kd.followRay(r, r.TMin(), dist, ch, signal)
+	depth := 0
+	hitList := make(map[primitive.Primitive]bool)
+	for coll = range ch {
+		mat := coll.Primitive.GetMaterial()
+		if !mat.IsTransparent() {
+			return
+		}
+		if hit, _ := hitList[coll.Primitive]; !hit {
+			hitList[coll.Primitive] = true
+			if depth >= maxDepth {
+				return
+			}
+			sp := coll.Primitive.GetSurface(coll)
+			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
+			depth++
 		}
 	}
 	return

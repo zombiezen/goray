@@ -12,6 +12,7 @@ import (
 	vecarray "container/vector"
 	"os"
 	"./fmath"
+	"./logging"
 	"./stack"
 )
 
@@ -73,6 +74,8 @@ type Scene struct {
 		smoothAngle float
 	}
 
+	log *logging.Logger
+
 	objects        map[ObjectID]object.Object3D
 	meshes         map[ObjectID]objData
 	materials      map[string]material.Material
@@ -96,6 +99,8 @@ type Scene struct {
 /* New creates a new scene */
 func New() *Scene {
 	s := new(Scene)
+	s.log = logging.NewLogger()
+
 	s.aaSamples = 1
 	s.aaPasses = 1
 	s.aaThreshold = 0.05
@@ -115,6 +120,8 @@ func New() *Scene {
 	return s
 }
 
+func (s *Scene) GetLog() *logging.Logger { return s.log }
+
 func (s *Scene) currState() int {
 	cs, _ := s.state.stack.Top()
 	return cs.(int)
@@ -126,6 +133,7 @@ func (s *Scene) StartGeometry() (err os.Error) {
 		return os.NewError("Scene asked to start geometry in wrong mode")
 	}
 	s.state.stack.Push(stateGeometry)
+	s.log.VerboseDebug("Starting geometry")
 	return
 }
 
@@ -135,6 +143,7 @@ func (s *Scene) EndGeometry() (err os.Error) {
 		return os.NewError("Scene asked to end geometry in wrong mode")
 	}
 	s.state.stack.Pop()
+	s.log.VerboseDebug("Geometry finished")
 	return
 }
 
@@ -285,6 +294,8 @@ func (s *Scene) Update() (err os.Error) {
 		return os.NewError("Scene has no camera")
 	}
 
+	s.log.Debug("Performing scene update...")
+
 	if s.state.changes&changeGeom != 0 {
 		// We've changed the scene's geometry.  We need to rebuild the tree.
 		s.tree = nil
@@ -308,11 +319,13 @@ func (s *Scene) Update() (err os.Error) {
 				pos += len(pl)
 			}
 		}
+		s.log.Debug("Geometry collected, %d primitives", len(prims))
 		// Do tree building
 		if len(prims) > 0 {
-			//s.tree = kdtree.New(prims, -1, 1, 0.8, 0.33)
-			s.tree = partition.NewSimple(prims)
+			s.log.Debug("Building kd-tree...")
+			s.tree = partition.NewKD(prims, s.log)
 			s.sceneBound = s.tree.GetBound()
+			s.log.Debug("Built kd-tree")
 		}
 	}
 
@@ -327,6 +340,8 @@ func (s *Scene) Update() (err os.Error) {
 			bgLight.SetScene(s)
 		}
 	}
+
+	s.log.Debug("Set up lights")
 
 	if s.surfIntegrator == nil {
 		return os.NewError("Scene has no surface integrator")
