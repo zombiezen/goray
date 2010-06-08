@@ -20,8 +20,9 @@ import (
 	"./buildversion"
 	"./logging"
 	"./goray/camera"
-	"./goray/scene"
 	"./goray/object"
+	"./goray/render"
+	"./goray/scene"
 	"./goray/vector"
 	"./goray/version"
 	trivialInt "./goray/std/integrators/trivial"
@@ -94,7 +95,7 @@ func main() {
 	// Set up logging
 	level := logging.InfoLevel - 10*(*debug)
 	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
-    defer logging.MainLog.Close()
+	defer logging.MainLog.Close()
 
 	// Open output file
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
@@ -146,16 +147,25 @@ func main() {
 	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
+	logging.MainLog.Info("Finalizing scene...")
+	finalizeTime := stopwatch(func() {
+		sc.Update()
+	})
+	logging.MainLog.Info("Finalized in %.3fs", finalizeTime)
+
 	logging.MainLog.Info("Rendering...")
 
-	startTime := time.Nanoseconds()
-	outputImage, err := sc.Render()
-	endTime := time.Nanoseconds()
+	var outputImage *render.Image
+	renderTime := stopwatch(func() {
+		outputImage, err = sc.Render()
+	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)
 		return
 	}
-	logging.MainLog.Info("Render finished in %.3fs", float(endTime-startTime)*1e-9)
+	logging.MainLog.Info("Render finished in %.3fs", renderTime)
+
+	logging.MainLog.Info("TOTAL TIME: %.3fs", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
@@ -167,4 +177,11 @@ func main() {
 		logging.MainLog.Critical("Error while writing: %v", err)
 		return
 	}
+}
+
+func stopwatch(f func()) float {
+	startTime := time.Nanoseconds()
+	f()
+	endTime := time.Nanoseconds()
+	return float(endTime-startTime) * 1e-9
 }
