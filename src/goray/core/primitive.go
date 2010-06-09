@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/primitive package provides the basic components of a scene. */
+/* The primitive package provides the basic components of a scene. */
 package primitive
 
 import (

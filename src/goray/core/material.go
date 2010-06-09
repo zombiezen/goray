@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-24.
 //
 
-/* The goray/material package provides a set of interfaces for dealing with object materials. */
+/* The material package provides a set of interfaces for dealing with object materials. */
 package material
 
 import (

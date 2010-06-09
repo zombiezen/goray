@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/integrator package provides the interface for rendering methods. */
+/* The integrator package provides the interface for rendering methods. */
 package integrator
 
 import (

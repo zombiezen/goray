@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
+/* The partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
 package partition
 
 import (

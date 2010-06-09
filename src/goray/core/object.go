@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/object package provides an object type—a collection of primitives. */
+/* The object package provides an object type—a collection of primitives. */
 package object
 
 import (

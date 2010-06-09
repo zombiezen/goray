@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/scene package provides the basic mechanism for establishing an environment to render. */
+/* The scene package provides the basic mechanism for establishing an environment to render. */
 package scene
 
 import (

@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-27.
 //
 
-/* The goray/matrix package gives a type for representing and manipulating a 4x4 transformation matrix. */
+/* The matrix package gives a type for representing and manipulating a 4x4 transformation matrix. */
 package matrix
 
 import (

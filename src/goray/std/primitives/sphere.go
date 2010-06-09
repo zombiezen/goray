@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-06-05.
 //
 
-/* The goray/std/primitives/sphere package provides a spherical primitive */
+/* The sphere package provides a spherical primitive */
 package sphere
 
 import (

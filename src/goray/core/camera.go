@@ -6,7 +6,7 @@
 //
 
 /*
-   The goray/camera package defines a common interface for cameras, along with a
+   The camera package defines a common interface for cameras, along with a
    simple orthographic camera.
 */
 package camera

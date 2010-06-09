@@ -6,7 +6,7 @@
 //
 
 /*
-   The goray/bound package provides a bounding box type, along with various
+   The bound package provides a bounding box type, along with various
    manipulation operaions.
 */
 package bound

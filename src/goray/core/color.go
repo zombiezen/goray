@@ -6,7 +6,8 @@
 //
 
 /*
-   The goray/color package provides abstracted color.
+   The color package provides abstracted color.
+   
    This interface specifically differes from the image.Color interfaces because the render
    uses floating point math.  Also, colors in this package are not clamped to [0, 1], they
    are clamped to [0, Inf).

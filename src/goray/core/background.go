@@ -6,8 +6,7 @@
 //
 
 /*
-   The goray/background package provides an interface for a rendering
-   background.
+   The background package provides an interface for a rendering background.
 */
 package background
 

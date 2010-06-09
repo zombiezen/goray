@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/ray package contains data structures for describing rays. */
+/* The ray package contains data structures for describing rays. */
 package ray
 
 import "fmt"

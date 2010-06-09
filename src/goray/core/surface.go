@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/surface package provides structures for representing the surface of an object. */
+/* The surface package provides structures for representing the surface of an object. */
 package surface
 
 import (

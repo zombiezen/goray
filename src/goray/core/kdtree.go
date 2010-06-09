@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-06-02.
 //
 
-/* The goray/kdtree package provides a generic kd-tree implementation. */
+/* The kdtree package provides a generic kd-tree implementation. */
 package kdtree
 
 import (

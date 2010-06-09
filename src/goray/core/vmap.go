@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-28.
 //
 
-/* The goray/vmap package provides a type for efficiently storing per-vertex data. */
+/* The vmap package provides a type for efficiently storing per-vertex data. */
 package vmap
 
 import (

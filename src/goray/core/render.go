@@ -5,7 +5,7 @@
 //  Created by Ross Light on 2010-05-27.
 //
 
-/* The goray/render package provides the infrastructure for rendering an image.  It cannot render an image itself. */
+/* The render package provides the infrastructure for rendering an image.  It cannot render an image itself. */
 package render
 
 import (
