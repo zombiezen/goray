@@ -8,15 +8,16 @@
 /*
    The logging package provides a logging system similar to Python's.
 
-   The core part of the logging package is the Handler interface, which simply receives
-   a log record.  The power of this package comes in the fact that you can chain handlers
-   together.  For example, the minimum level filter only allows messages above a certain
-   level to trickle down to the output; the filter could be connected directly to an output
-   handler or it may be connected to another filter handler.
+   The core part of the logging package is the Handler interface, which simply
+   receives a log record.  The power of this package comes in the fact that you
+   can chain handlers together.  For example, the minimum level filter only
+   allows messages above a certain level to trickle down to the output; the
+   filter could be connected directly to an output handler or it may be
+   connected to another filter handler.
 
-   Interestingly, the top-level Logger objects themselves implement the Handler interface,
-   which means you can chain logs together.  Complicated configurations can be accomplished
-   with just a few handlers.
+   Interestingly, the top-level Logger objects themselves implement the Handler
+   interface, which means you can chain logs together.  Complicated
+   configurations can be accomplished with just a few handlers.
 */
 package logging
 
@@ -53,6 +54,63 @@ func sprintv(format string, args []interface{}) string {
 	return sprintf.Call(callArgs)[0].(*reflect.StringValue).Get()
 }
 
+/* Record defines a simple log record. */
+type Record interface {
+	Level() int
+	String() string
+}
+
+/* StringRecord is a simple, info-level record. */
+type StringRecord string
+
+func (rec StringRecord) Level() int     { return InfoLevel }
+func (rec StringRecord) String() string { return string(rec) }
+
+/* BasicRecord stores a message and a level. */
+type BasicRecord struct {
+	Message      string
+	MessageLevel int
+}
+
+func (rec BasicRecord) Level() int     { return rec.MessageLevel }
+func (rec BasicRecord) String() string { return rec.Message }
+
+/* Handler defines an interface for handling a single record. */
+type Handler interface {
+	Handle(Record)
+}
+
+func shortcut(level int, log Handler, format string, args []interface{}) {
+	if log != nil {
+		log.Handle(BasicRecord{sprintv(format, args), level})
+	}
+}
+
+/* VerboseDebug is a shortcut for sending a record to a handler at VerboseDebugLevel. */
+func VerboseDebug(log Handler, format string, args ...interface{}) {
+	shortcut(VerboseDebugLevel, log, format, args)
+}
+/* Debug is a shortcut for sending a record to a handler at DebugLevel. */
+func Debug(log Handler, format string, args ...interface{}) {
+	shortcut(DebugLevel, log, format, args)
+}
+/* Info is a shortcut for sending a record to a handler at InfoLevel. */
+func Info(log Handler, format string, args ...interface{}) {
+	shortcut(InfoLevel, log, format, args)
+}
+/* Warning is a shortcut for sending a record to a handler at WarningLevel. */
+func Warning(log Handler, format string, args ...interface{}) {
+	shortcut(WarningLevel, log, format, args)
+}
+/* Error is a shortcut for sending a record to a handler at ErrorLevel. */
+func Error(log Handler, format string, args ...interface{}) {
+	shortcut(ErrorLevel, log, format, args)
+}
+/* Critical is a shortcut for sending a record to a handler at CriticalLevel. */
+func Critical(log Handler, format string, args ...interface{}) {
+	shortcut(CriticalLevel, log, format, args)
+}
+
 /* Logger dispatches records to a set of handlers. */
 type Logger struct {
 	handlers vector.Vector
@@ -82,27 +140,27 @@ func (log *Logger) Logf(level int, format string, args ...interface{}) {
 
 /* VerboseDebug is a shortcut for Logf(VerboseDebugLevel). */
 func (log *Logger) VerboseDebug(format string, args ...interface{}) {
-	log.Log(VerboseDebugLevel, sprintv(format, args))
+	VerboseDebug(log, format, args)
 }
 /* Debug is a shortcut for Logf(DebugLevel). */
 func (log *Logger) Debug(format string, args ...interface{}) {
-	log.Log(DebugLevel, sprintv(format, args))
+	Debug(log, format, args)
 }
 /* Info is a shortcut for Logf(InfoLevel). */
 func (log *Logger) Info(format string, args ...interface{}) {
-	log.Log(InfoLevel, sprintv(format, args))
+	Info(log, format, args)
 }
 /* Warning is a shortcut for Logf(WarningLevel). */
 func (log *Logger) Warning(format string, args ...interface{}) {
-	log.Log(WarningLevel, sprintv(format, args))
+	Warning(log, format, args)
 }
 /* Error is a shortcut for Logf(ErrorLevel). */
 func (log *Logger) Error(format string, args ...interface{}) {
-	log.Log(ErrorLevel, sprintv(format, args))
+	Error(log, format, args)
 }
 /* Critical is a shortcut for Logf(CriticalLevel). */
 func (log *Logger) Critical(format string, args ...interface{}) {
-	log.Log(CriticalLevel, sprintv(format, args))
+	Critical(log, format, args)
 }
 
 /* Handle dispatches a record to the logger's handlers. */
@@ -122,32 +180,6 @@ func (log *Logger) Close() os.Error {
 	})
 	// TODO: Collect all errors
 	return nil
-}
-
-/* Record defines a simple log record. */
-type Record interface {
-	Level() int
-	String() string
-}
-
-/* StringRecord is a simple, info-level record. */
-type StringRecord string
-
-func (rec StringRecord) Level() int     { return InfoLevel }
-func (rec StringRecord) String() string { return string(rec) }
-
-/* BasicRecord stores a message and a level. */
-type BasicRecord struct {
-	Message      string
-	MessageLevel int
-}
-
-func (rec BasicRecord) Level() int     { return rec.MessageLevel }
-func (rec BasicRecord) String() string { return rec.Message }
-
-/* Handler defines an interface for handling a single record. */
-type Handler interface {
-	Handle(Record)
 }
 
 type writerHandler struct {
