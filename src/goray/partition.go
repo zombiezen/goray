@@ -9,18 +9,18 @@
 package partition
 
 import (
-	"./logging"
-	"./stack"
+	"logging"
+	"stack"
 )
 
 import (
-	"./goray/bound"
-	"./goray/color"
-	"./goray/kdtree"
-	"./goray/primitive"
-	"./goray/render"
-	"./goray/ray"
-	"./goray/vector"
+	"goray/bound"
+	"goray/color"
+	"goray/kdtree"
+	"goray/primitive"
+	"goray/render"
+	"goray/ray"
+	"goray/vector"
 )
 
 /*

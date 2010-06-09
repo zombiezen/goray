@@ -9,7 +9,7 @@
 package ray
 
 import "fmt"
-import "./goray/vector"
+import "goray/vector"
 
 type Ray interface {
 	// From returns where the ray originated

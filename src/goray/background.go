@@ -12,10 +12,10 @@
 package background
 
 import (
-	"./goray/color"
-	"./goray/light"
-	"./goray/ray"
-	"./goray/render"
+	"goray/color"
+	"goray/light"
+	"goray/ray"
+	"goray/render"
 )
 
 /* A rendering background */

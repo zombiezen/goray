@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"image"
 	"math"
-	"./fmath"
+	"fmath"
 )
 
 /* Alpha defines anything that has an alpha channel. */

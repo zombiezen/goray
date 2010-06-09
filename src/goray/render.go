@@ -12,8 +12,8 @@ import (
 	"image"
 	"rand"
 	"time"
-	"./goray/color"
-	"./goray/vector"
+	"goray/color"
+	"goray/vector"
 )
 
 /* State stores information concerning the current rendering state */

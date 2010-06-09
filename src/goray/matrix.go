@@ -11,8 +11,8 @@ package matrix
 import (
 	"fmt"
 	"math"
-	"./fmath"
-	"./goray/vector"
+	"fmath"
+	"goray/vector"
 )
 
 const dim = 4

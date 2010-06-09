@@ -17,17 +17,17 @@ import (
 )
 
 import (
-	"./buildversion"
-	"./logging"
-	"./goray/camera"
-	"./goray/object"
-	"./goray/render"
-	"./goray/scene"
-	"./goray/vector"
-	"./goray/version"
-	trivialInt "./goray/std/integrators/trivial"
-	"./goray/std/objects/mesh"
-	"./goray/std/primitives/sphere"
+	"buildversion"
+	"logging"
+	"goray/camera"
+	"goray/object"
+	"goray/render"
+	"goray/scene"
+	"goray/vector"
+	"goray/version"
+	trivialInt "goray/std/integrators/trivial"
+	"goray/std/objects/mesh"
+	"goray/std/primitives/sphere"
 )
 
 func printInstructions() {

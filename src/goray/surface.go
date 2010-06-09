@@ -9,8 +9,8 @@
 package surface
 
 import (
-	"./goray/ray"
-	"./goray/vector"
+	"goray/ray"
+	"goray/vector"
 )
 
 /* Point represents a single point on an object's surface. */

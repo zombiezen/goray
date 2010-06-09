@@ -9,15 +9,15 @@
 package sphere
 
 import "math"
-import "./fmath"
+import "fmath"
 
 import (
-	"./goray/bound"
-	"./goray/material"
-	"./goray/primitive"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/bound"
+	"goray/material"
+	"goray/primitive"
+	"goray/ray"
+	"goray/surface"
+	"goray/vector"
 )
 
 type sphere struct {

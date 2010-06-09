@@ -13,17 +13,17 @@
 package mesh
 
 import "fmt"
-import "./fmath"
+import "fmath"
 
 import (
-	"./goray/bound"
-	"./goray/light"
-	"./goray/material"
-	"./goray/matrix"
-	"./goray/primitive"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/bound"
+	"goray/light"
+	"goray/material"
+	"goray/matrix"
+	"goray/primitive"
+	"goray/ray"
+	"goray/surface"
+	"goray/vector"
 )
 
 /* UV holds a set of texture coordinates. */

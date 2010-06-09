@@ -9,15 +9,15 @@ package point
 
 import (
 	"math"
-	"./fmath"
+	"fmath"
 )
 
 import (
-	"./goray/color"
-	"./goray/light"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/color"
+	"goray/light"
+	"goray/ray"
+	"goray/surface"
+	"goray/vector"
 )
 
 type pointLight struct {

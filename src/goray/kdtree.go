@@ -12,13 +12,13 @@ import (
 	container "container/vector"
 	"fmt"
 	"sort"
-	"./fmath"
-	"./logging"
+	"fmath"
+	"logging"
 )
 
 import (
-	"./goray/bound"
-	"./goray/vector"
+	"goray/bound"
+	"goray/vector"
 )
 
 /* Tree is a generic kd-tree */
