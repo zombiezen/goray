@@ -34,7 +34,7 @@ type buildParams struct {
 	GetDimension DimensionFunc
 	MaxDepth     int
 	LeafSize     int
-	Log          *logging.Logger
+	Log          logging.Handler
 }
 
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
@@ -49,7 +49,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 }
 
 /* New creates a new kd-tree from an unordered collection of values. */
-func New(vals []Value, getDim DimensionFunc, log *logging.Logger) (tree *Tree) {
+func New(vals []Value, getDim DimensionFunc, log logging.Handler) (tree *Tree) {
 	tree = new(Tree)
 	params := buildParams{getDim, 16, 2, log} // TODO: Make this deeper later
 	if len(vals) > 0 {
@@ -61,7 +61,7 @@ func New(vals []Value, getDim DimensionFunc, log *logging.Logger) (tree *Tree) {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
 	tree.root = build(vals, tree.bound, params)
-	log.Debug("kd-tree is %d levels deep", tree.Depth())
+	logging.Debug(log, "kd-tree is %d levels deep", tree.Depth())
 	return tree
 }
 
@@ -279,7 +279,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 		if nBelow != len(vals) || nAbove != 0 {
 			// SCREWED.
-			params.Log.Error("Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+			logging.Error(params.Log, "Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 
@@ -391,7 +391,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 		}
 
 		if nBelow != len(vals) || nAbove != 0 {
-			params.Log.Error("Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+			logging.Error(params.Log, "Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 	}
