@@ -56,6 +56,7 @@ build_info_packages = [
 root_packages = [
     env.Go('build/goray/fmath.go'),
     env.Go('build/goray/logging.go'),
+    env.Go('build/goray/time.go'),
     env.Go('build/goray/stack.go'),
 ]
 
