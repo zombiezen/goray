@@ -9,10 +9,10 @@
 package light
 
 import (
-	"goray/color"
-	"goray/ray"
-	"goray/surface"
-	"goray/vector"
+	"goray/core/color"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 const (

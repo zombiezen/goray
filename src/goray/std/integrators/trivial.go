@@ -9,12 +9,12 @@ package trivial
 
 import (
 	"os"
-	"goray/color"
-	"goray/integrator"
-	"goray/ray"
-	"goray/render"
-	"goray/scene"
-	"goray/vector"
+	"goray/core/color"
+	"goray/core/integrator"
+	"goray/core/ray"
+	"goray/core/render"
+	"goray/core/scene"
+	"goray/core/vector"
 )
 
 type trivial struct {

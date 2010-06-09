@@ -10,9 +10,9 @@ package integrator
 
 import (
 	"os"
-	"goray/color"
-	"goray/ray"
-	"goray/render"
+	"goray/core/color"
+	"goray/core/ray"
+	"goray/core/render"
 )
 
 /* A rendering system */

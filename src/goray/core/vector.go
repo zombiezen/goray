@@ -9,7 +9,7 @@
 package vector
 
 import "fmt"
-import "fmath"
+import "goray/fmath"
 
 /*
    Vector3D represents a three-dimensional vector.

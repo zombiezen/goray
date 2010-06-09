@@ -54,12 +54,12 @@ build_info_packages = [
 
 # Main build
 root_packages = [
-    env.Go('build/fmath.go'),
-    env.Go('build/logging.go'),
-    env.Go('build/stack.go'),
+    env.Go('build/goray/fmath.go'),
+    env.Go('build/goray/logging.go'),
+    env.Go('build/goray/stack.go'),
 ]
 
-goray_packages = [
+core_packages = [
     'background',
     'bound',
     'camera',
@@ -81,7 +81,7 @@ goray_packages = [
     'volume',
     'version',
 ]
-goray_packages = [env.Go('build/goray/%s.go' % name) for name in goray_packages]
+core_packages = [env.Go('build/goray/core/%s.go' % name) for name in core_packages]
 
 std_packages = [
     'integrators/trivial',
@@ -91,9 +91,9 @@ std_packages = [
 ]
 std_packages = [env.Go('build/goray/std/%s.go' % name) for name in std_packages]
 
-packages = build_info_packages + root_packages + goray_packages + std_packages
+packages = build_info_packages + root_packages + core_packages + std_packages
 Alias('lib', packages)
-Alias('core', root_packages + goray_packages)
+Alias('core', core_packages)
 Alias('std', std_packages)
 
 program = env.GoProgram('bin/goray', 'build/main.go')

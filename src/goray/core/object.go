@@ -9,8 +9,8 @@
 package object
 
 import (
-	"goray/primitive"
-	"goray/vector"
+	"goray/core/primitive"
+	"goray/core/vector"
 )
 
 /* Object3D is a collection of primitives. */

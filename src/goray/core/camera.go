@@ -12,8 +12,8 @@
 package camera
 
 import (
-	"goray/ray"
-	"goray/vector"
+	"goray/core/ray"
+	"goray/core/vector"
 )
 
 /* A viewpoint of a scene */

@@ -8,16 +8,15 @@
 /* The goray/std/primitives/sphere package provides a spherical primitive */
 package sphere
 
-import "math"
-import "fmath"
-
 import (
-	"goray/bound"
-	"goray/material"
-	"goray/primitive"
-	"goray/ray"
-	"goray/surface"
-	"goray/vector"
+	"math"
+	"goray/fmath"
+	"goray/core/bound"
+	"goray/core/material"
+	"goray/core/primitive"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 type sphere struct {

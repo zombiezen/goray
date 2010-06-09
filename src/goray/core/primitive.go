@@ -9,11 +9,11 @@
 package primitive
 
 import (
-	"goray/bound"
-	"goray/material"
-	"goray/ray"
-	"goray/surface"
-	"goray/vector"
+	"goray/core/bound"
+	"goray/core/material"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 /* Collision stores information about a ray intersection. */

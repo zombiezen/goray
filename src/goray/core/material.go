@@ -9,11 +9,11 @@
 package material
 
 import (
-	"goray/color"
-	"goray/render"
-	"goray/ray"
-	"goray/surface"
-	"goray/vector"
+	"goray/core/color"
+	"goray/core/render"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 /* VolumeHandler defines a type that handles light scattering. */

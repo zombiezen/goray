@@ -9,11 +9,11 @@
 package volume
 
 import (
-	"goray/bound"
-	"goray/color"
-	"goray/light"
-	"goray/ray"
-	"goray/vector"
+	"goray/core/bound"
+	"goray/core/color"
+	"goray/core/light"
+	"goray/core/ray"
+	"goray/core/vector"
 )
 
 /* Region defines a volumetric effect */

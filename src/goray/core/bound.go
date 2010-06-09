@@ -13,8 +13,8 @@ package bound
 
 import (
 	"fmt"
-	"fmath"
-	"goray/vector"
+	"goray/fmath"
+	"goray/core/vector"
 )
 
 /*
