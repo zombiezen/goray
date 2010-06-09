@@ -6,14 +6,8 @@ import subprocess
 test_build = ('test' in COMMAND_LINE_TARGETS)
 
 # Set up environment
-env = Environment(TOOLS=['default', 'go'], GOBUILDDIR='build')
+env = Environment(TOOLS=['default', 'go'], GOLIBPATH=['build'])
 env.VariantDir('build', 'src')
-
-test_sources = []
-def _add_test(source, test):
-    if test_build:
-        source.append(test)
-    test_sources.append(test)
 
 # Version info
 def get_bzr_path():
@@ -105,15 +99,3 @@ Alias('std', std_packages)
 program = env.GoProgram('bin/goray', 'build/main.go')
 
 Default(packages + [program])
-
-# Testing
-#testenv = env.Clone(ENV=os.environ)
-#testenv.GoTests('bin/_gotest.go', test_sources)
-#test_package = testenv.Go('bin/_gotest.go')
-#test_harness = testenv.GoProgram('bin/_gotest', [test_package] + packages)
-#AlwaysBuild(testenv.Alias('test', [test_harness], 'bin/_gotest'))
-#if test_build:
-    #AlwaysBuild('bin/_gotest.go')
-    #AlwaysBuild(test_harness)
-    #AlwaysBuild(packages)
-    #testenv.Decider('make')
