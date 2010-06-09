@@ -1,19 +1,19 @@
 //
-//  goray/material.go
+//  goray/core/material.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-24.
 //
 
-/* The goray/material package provides a set of interfaces for dealing with object materials. */
+/* The material package provides a set of interfaces for dealing with object materials. */
 package material
 
 import (
-	"./goray/color"
-	"./goray/render"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/core/color"
+	"goray/core/render"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 /* VolumeHandler defines a type that handles light scattering. */

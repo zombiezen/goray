@@ -13,21 +13,22 @@ import (
 	"os"
 	"image/png"
 	"runtime"
-	"time"
+	"syscall"
 )
 
 import (
-	"./buildversion"
-	"./logging"
-	"./goray/camera"
-	"./goray/object"
-	"./goray/render"
-	"./goray/scene"
-	"./goray/vector"
-	"./goray/version"
-	trivialInt "./goray/std/integrators/trivial"
-	"./goray/std/objects/mesh"
-	"./goray/std/primitives/sphere"
+	"buildversion"
+	"goray/logging"
+	"goray/time"
+	"goray/core/camera"
+	"goray/core/object"
+	"goray/core/render"
+	"goray/core/scene"
+	"goray/core/vector"
+	"goray/core/version"
+	trivialInt "goray/std/integrators/trivial"
+	"goray/std/objects/mesh"
+	"goray/std/primitives/sphere"
 )
 
 func printInstructions() {
@@ -61,6 +62,7 @@ func printVersion() {
 		fmt.Println("Built from a source archive")
 	}
 	fmt.Printf("Go runtime: %s\n", runtime.Version())
+	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
 }
 
 func main() {
@@ -152,7 +154,7 @@ func main() {
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
 	logging.MainLog.Info("Finalizing scene...")
-	finalizeTime := stopwatch(func() {
+	finalizeTime := time.Stopwatch(func() {
 		sc.Update()
 	})
 	logging.MainLog.Info("Finalized in %v", finalizeTime)
@@ -160,7 +162,7 @@ func main() {
 	logging.MainLog.Info("Rendering...")
 
 	var outputImage *render.Image
-	renderTime := stopwatch(func() {
+	renderTime := time.Stopwatch(func() {
 		outputImage, err = sc.Render()
 	})
 	if err != nil {
@@ -169,7 +171,7 @@ func main() {
 	}
 	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	logging.MainLog.Info("TOTAL TIME: %v", addTime(finalizeTime, renderTime))
+	logging.MainLog.Info("TOTAL TIME: %v", time.Add(finalizeTime, renderTime))
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
@@ -181,44 +183,4 @@ func main() {
 		logging.MainLog.Critical("Error while writing: %v", err)
 		return
 	}
-}
-
-type Time float64
-
-func stopwatch(f func()) Time {
-	startTime := time.Nanoseconds()
-	f()
-	endTime := time.Nanoseconds()
-	return Time(float64(endTime-startTime) * 1e-9)
-}
-
-func addTime(t1, t2 Time, tn ...Time) Time {
-	accum := float64(t1) + float64(t2)
-	for _, t := range tn {
-		accum += float64(t)
-	}
-	return Time(accum)
-}
-
-func (t Time) Split() (hours, minutes int, seconds float64) {
-	const secondsPerMinute = 60
-	const secondsPerHour = secondsPerMinute * 60
-
-	seconds = float64(t)
-	hours = int(t / secondsPerHour)
-	seconds -= float64(hours * secondsPerHour)
-	minutes = int(seconds / secondsPerMinute)
-	seconds -= float64(minutes * secondsPerMinute)
-	return
-}
-
-func (t Time) String() string {
-	h, m, s := t.Split()
-	switch {
-	case h == 0 && m == 0:
-		return fmt.Sprintf("%.3fs", s)
-	case h == 0:
-		return fmt.Sprintf("%02d:%05.2f", m, s)
-	}
-	return fmt.Sprintf("%d:%02d:%05.2f", h, m, s)
 }

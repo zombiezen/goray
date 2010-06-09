@@ -1,5 +1,5 @@
 //
-//  goray/photon.go
+//  goray/core/photon.go
 //  goray
 //
 //  Created by Ross Light on 2010-06-06
@@ -8,8 +8,8 @@
 package photon
 
 import (
-	"./goray/color"
-	"./goray/vector"
+	"goray/core/color"
+	"goray/core/vector"
 )
 
 type Photon struct {

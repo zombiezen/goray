@@ -1,26 +1,26 @@
 //
-//  goray/partition.go
+//  goray/core/partition.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
+/* The partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
 package partition
 
 import (
-	"./logging"
-	"./stack"
+	"goray/logging"
+	"goray/stack"
 )
 
 import (
-	"./goray/bound"
-	"./goray/color"
-	"./goray/kdtree"
-	"./goray/primitive"
-	"./goray/render"
-	"./goray/ray"
-	"./goray/vector"
+	"goray/core/bound"
+	"goray/core/color"
+	"goray/core/kdtree"
+	"goray/core/primitive"
+	"goray/core/render"
+	"goray/core/ray"
+	"goray/core/vector"
 )
 
 /*

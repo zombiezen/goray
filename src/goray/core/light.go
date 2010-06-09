@@ -1,18 +1,18 @@
 //
-//  goray/light.go
+//  goray/core/light.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/light package provides an interface for an entity that provides light. */
+/* The light package provides an interface for an entity that provides light. */
 package light
 
 import (
-	"./goray/color"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/core/color"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 const (

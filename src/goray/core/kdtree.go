@@ -1,24 +1,24 @@
 //
-//  goray/kdtree.go
+//  goray/core/kdtree.go
 //  goray
 //
 //  Created by Ross Light on 2010-06-02.
 //
 
-/* The goray/kdtree package provides a generic kd-tree implementation. */
+/* The kdtree package provides a generic kd-tree implementation. */
 package kdtree
 
 import (
 	container "container/vector"
 	"fmt"
 	"sort"
-	"./fmath"
-	"./logging"
+	"goray/fmath"
+	"goray/logging"
 )
 
 import (
-	"./goray/bound"
-	"./goray/vector"
+	"goray/core/bound"
+	"goray/core/vector"
 )
 
 /* Tree is a generic kd-tree */

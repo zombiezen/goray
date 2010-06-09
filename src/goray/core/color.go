@@ -1,12 +1,13 @@
 //
-//  goray/color.go
+//  goray/core/color.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-22.
 //
 
 /*
-   The goray/color package provides abstracted color.
+   The color package provides abstracted color.
+   
    This interface specifically differes from the image.Color interfaces because the render
    uses floating point math.  Also, colors in this package are not clamped to [0, 1], they
    are clamped to [0, Inf).
@@ -17,7 +18,7 @@ import (
 	"fmt"
 	"image"
 	"math"
-	"./fmath"
+	"goray/fmath"
 )
 
 /* Alpha defines anything that has an alpha channel. */

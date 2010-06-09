@@ -1,19 +1,19 @@
 //
-//  goray/camera.go
+//  goray/core/camera.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
 /*
-   The goray/camera package defines a common interface for cameras, along with a
+   The camera package defines a common interface for cameras, along with a
    simple orthographic camera.
 */
 package camera
 
 import (
-	"./goray/ray"
-	"./goray/vector"
+	"goray/core/ray"
+	"goray/core/vector"
 )
 
 /* A viewpoint of a scene */

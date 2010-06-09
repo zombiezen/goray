@@ -1,18 +1,18 @@
 //
-//  goray/integrator.go
+//  goray/core/integrator.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/integrator package provides the interface for rendering methods. */
+/* The integrator package provides the interface for rendering methods. */
 package integrator
 
 import (
 	"os"
-	"./goray/color"
-	"./goray/ray"
-	"./goray/render"
+	"goray/core/color"
+	"goray/core/ray"
+	"goray/core/render"
 )
 
 /* A rendering system */

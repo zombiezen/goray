@@ -1,15 +1,15 @@
 //
-//  goray/vector.go
+//  goray/core/vector.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-22.
 //
 
-/* The goray/vector package provides a three-dimensional vector type and various operations on it. */
+/* The vector package provides a three-dimensional vector type and various operations on it. */
 package vector
 
 import "fmt"
-import "./fmath"
+import "goray/fmath"
 
 /*
    Vector3D represents a three-dimensional vector.

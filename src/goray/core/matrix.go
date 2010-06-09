@@ -1,18 +1,18 @@
 //
-//  goray/matrix.go
+//  goray/core/matrix.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-27.
 //
 
-/* The goray/matrix package gives a type for representing and manipulating a 4x4 transformation matrix. */
+/* The matrix package gives a type for representing and manipulating a 4x4 transformation matrix. */
 package matrix
 
 import (
 	"fmt"
 	"math"
-	"./fmath"
-	"./goray/vector"
+	"goray/fmath"
+	"goray/core/vector"
 )
 
 const dim = 4

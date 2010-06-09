@@ -1,20 +1,20 @@
 //
-//  goray/bound.go
+//  goray/core/bound.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
 /*
-   The goray/bound package provides a bounding box type, along with various
+   The bound package provides a bounding box type, along with various
    manipulation operaions.
 */
 package bound
 
 import (
 	"fmt"
-	"./fmath"
-	"./goray/vector"
+	"goray/fmath"
+	"goray/core/vector"
 )
 
 /*
