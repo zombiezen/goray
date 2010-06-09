@@ -1,5 +1,5 @@
 //
-//  goray/kdtree.go
+//  goray/core/kdtree.go
 //  goray
 //
 //  Created by Ross Light on 2010-06-02.

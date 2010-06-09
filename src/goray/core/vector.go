@@ -1,5 +1,5 @@
 //
-//  goray/vector.go
+//  goray/core/vector.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-22.

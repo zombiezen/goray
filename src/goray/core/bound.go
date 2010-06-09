@@ -1,5 +1,5 @@
 //
-//  goray/bound.go
+//  goray/core/bound.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.

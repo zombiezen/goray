@@ -1,5 +1,5 @@
 //
-//  goray/color.go
+//  goray/core/color.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-22.
