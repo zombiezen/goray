@@ -13,6 +13,7 @@ import (
 	"os"
 	"image/png"
 	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -61,6 +62,7 @@ func printVersion() {
 		fmt.Println("Built from a source archive")
 	}
 	fmt.Printf("Go runtime: %s\n", runtime.Version())
+	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
 }
 
 func main() {
