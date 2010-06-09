@@ -9,6 +9,7 @@ package photon
 
 import (
 	"goray/core/color"
+	"goray/core/kdtree"
 	"goray/core/vector"
 )
 
@@ -37,11 +38,11 @@ type PhotonMap struct {
 	paths        int
 	fresh        bool
 	searchRadius float
-	//tree
+	tree         *kdtree.Tree
 }
 
 func NewMap() *PhotonMap {
-	return &PhotonMap{make([]*Photon, 0), 0, false, 1.0}
+	return &PhotonMap{photons: make([]*Photon, 0), searchRadius: 1.0}
 }
 
 func (pm *PhotonMap) GetNumPaths() int   { return pm.paths }
@@ -56,12 +57,32 @@ func (pm *PhotonMap) AddPhoton(p *Photon) {
 	}
 	pm.photons = pm.photons[0 : sliceLen+1]
 	pm.photons[sliceLen] = p
+	pm.fresh = false
 }
 
 func (pm *PhotonMap) Clear() {
 	pm.photons = pm.photons[0:0]
-	//pm.tree = nil
+	pm.tree = nil
 	pm.fresh = false
 }
 
 func (pm *PhotonMap) Ready() bool { return pm.fresh }
+
+func photonGetDim(v kdtree.Value, axis int) (min, max float) {
+	photon := v.(*Photon)
+	min = photon.position.GetComponent(axis)
+	max = min
+	return
+}
+
+func (pm *PhotonMap) Update() {
+	pm.tree = nil
+	if len(pm.photons) > 0 {
+		values := make([]kdtree.Value, len(pm.photons))
+		for i, _ := range values {
+			values[i] = pm.photons[i]
+		}
+		pm.tree = kdtree.New(values, photonGetDim, nil)
+		pm.fresh = true
+	}
+}
