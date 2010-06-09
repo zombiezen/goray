@@ -1,5 +1,5 @@
 //
-//  fmath.go
+//  goray/fmath.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.

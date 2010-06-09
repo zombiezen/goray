@@ -1,37 +1,37 @@
 //
-//  goray/scene.go
+//  goray/core/scene.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/scene package provides the basic mechanism for establishing an environment to render. */
+/* The scene package provides the basic mechanism for establishing an environment to render. */
 package scene
 
 import (
 	vecarray "container/vector"
 	"os"
-	"./fmath"
-	"./logging"
-	"./stack"
+	"goray/fmath"
+	"goray/logging"
+	"goray/stack"
 )
 
 import (
-	"./goray/background"
-	"./goray/bound"
-	"./goray/camera"
-	"./goray/integrator"
-	"./goray/light"
-	"./goray/material"
-	"./goray/object"
-	"./goray/partition"
-	"./goray/primitive"
-	"./goray/ray"
-	"./goray/render"
-	"./goray/surface"
-	"./goray/vector"
-	"./goray/vmap"
-	"./goray/volume"
+	"goray/core/background"
+	"goray/core/bound"
+	"goray/core/camera"
+	"goray/core/integrator"
+	"goray/core/light"
+	"goray/core/material"
+	"goray/core/object"
+	"goray/core/partition"
+	"goray/core/primitive"
+	"goray/core/ray"
+	"goray/core/render"
+	"goray/core/surface"
+	"goray/core/vector"
+	"goray/core/vmap"
+	"goray/core/volume"
 )
 
 const (

@@ -1,5 +1,5 @@
 //
-//  goray/version.go
+//  goray/core/version.go
 //  goray
 //
 //  Created by Ross Light on 2010-06-04.

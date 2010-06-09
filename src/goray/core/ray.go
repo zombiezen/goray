@@ -1,15 +1,15 @@
 //
-//  goray/ray.go
+//  goray/core/ray.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/ray package contains data structures for describing rays. */
+/* The ray package contains data structures for describing rays. */
 package ray
 
 import "fmt"
-import "./goray/vector"
+import "goray/core/vector"
 
 type Ray interface {
 	// From returns where the ray originated

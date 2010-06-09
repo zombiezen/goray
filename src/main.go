@@ -13,21 +13,22 @@ import (
 	"os"
 	"image/png"
 	"runtime"
+	"syscall"
 	"time"
 )
 
 import (
-	"./buildversion"
-	"./logging"
-	"./goray/camera"
-	"./goray/object"
-	"./goray/render"
-	"./goray/scene"
-	"./goray/vector"
-	"./goray/version"
-	trivialInt "./goray/std/integrators/trivial"
-	"./goray/std/objects/mesh"
-	"./goray/std/primitives/sphere"
+	"buildversion"
+	"goray/logging"
+	"goray/core/camera"
+	"goray/core/object"
+	"goray/core/render"
+	"goray/core/scene"
+	"goray/core/vector"
+	"goray/core/version"
+	trivialInt "goray/std/integrators/trivial"
+	"goray/std/objects/mesh"
+	"goray/std/primitives/sphere"
 )
 
 func printInstructions() {
@@ -61,6 +62,7 @@ func printVersion() {
 		fmt.Println("Built from a source archive")
 	}
 	fmt.Printf("Go runtime: %s\n", runtime.Version())
+	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
 }
 
 func main() {

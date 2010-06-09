@@ -1,16 +1,16 @@
 //
-//  goray/object.go
+//  goray/core/object.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/object package provides an object type—a collection of primitives. */
+/* The object package provides an object type—a collection of primitives. */
 package object
 
 import (
-	"./goray/primitive"
-	"./goray/vector"
+	"goray/core/primitive"
+	"goray/core/vector"
 )
 
 /* Object3D is a collection of primitives. */
