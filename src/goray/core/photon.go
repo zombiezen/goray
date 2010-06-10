@@ -33,7 +33,7 @@ func (p *Photon) SetDirection(v vector.Vector3D) { p.direction = v }
 
 func (p *Photon) SetColor(c color.Color) { p.color = c }
 
-type PhotonMap struct {
+type Map struct {
 	photons      []*Photon
 	paths        int
 	fresh        bool
@@ -41,14 +41,14 @@ type PhotonMap struct {
 	tree         *kdtree.Tree
 }
 
-func NewMap() *PhotonMap {
-	return &PhotonMap{photons: make([]*Photon, 0), searchRadius: 1.0}
+func NewMap() *Map {
+	return &Map{photons: make([]*Photon, 0), searchRadius: 1.0}
 }
 
-func (pm *PhotonMap) GetNumPaths() int   { return pm.paths }
-func (pm *PhotonMap) SetNumPaths(np int) { pm.paths = np }
+func (pm *Map) GetNumPaths() int   { return pm.paths }
+func (pm *Map) SetNumPaths(np int) { pm.paths = np }
 
-func (pm *PhotonMap) AddPhoton(p *Photon) {
+func (pm *Map) AddPhoton(p *Photon) {
 	sliceLen := len(pm.photons)
 	if cap(pm.photons) < sliceLen+1 {
 		newPhotons := make([]*Photon, sliceLen, (sliceLen+1)*2)
@@ -60,13 +60,13 @@ func (pm *PhotonMap) AddPhoton(p *Photon) {
 	pm.fresh = false
 }
 
-func (pm *PhotonMap) Clear() {
+func (pm *Map) Clear() {
 	pm.photons = pm.photons[0:0]
 	pm.tree = nil
 	pm.fresh = false
 }
 
-func (pm *PhotonMap) Ready() bool { return pm.fresh }
+func (pm *Map) Ready() bool { return pm.fresh }
 
 func photonGetDim(v kdtree.Value, axis int) (min, max float) {
 	photon := v.(*Photon)
@@ -75,7 +75,7 @@ func photonGetDim(v kdtree.Value, axis int) (min, max float) {
 	return
 }
 
-func (pm *PhotonMap) Update() {
+func (pm *Map) Update() {
 	pm.tree = nil
 	if len(pm.photons) > 0 {
 		values := make([]kdtree.Value, len(pm.photons))
