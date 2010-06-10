@@ -36,6 +36,12 @@ type VolumeIntegrator interface {
 	Transmittance(scene *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor
 }
 
+/*
+	Render is an easy way of creating an image from a scene.
+
+	Render will update the scene, create a new image, and then use one of the
+	integration functions to write to the image.
+*/
 func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Image) {
 	s.Update()
 	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
@@ -44,6 +50,7 @@ func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Imag
 	return
 }
 
+/* RenderPixel creates a fragment for a position in the image. */
 func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
@@ -60,6 +67,7 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	return render.Fragment{X: x, Y: y, Color: color}
 }
 
+/* BlockIntegrate integrates an image in small batches. */
 func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
 	const numWorkers = 100
 	cam := s.GetCamera()
