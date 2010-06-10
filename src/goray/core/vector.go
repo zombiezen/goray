@@ -1,15 +1,15 @@
 //
-//  goray/vector.go
+//  goray/core/vector.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-22.
 //
 
-/* The goray/vector package provides a three-dimensional vector type and various operations on it. */
+/* The vector package provides a three-dimensional vector type and various operations on it. */
 package vector
 
 import "fmt"
-import "./fmath"
+import "goray/fmath"
 
 /*
    Vector3D represents a three-dimensional vector.
@@ -39,6 +39,20 @@ func (v Vector3D) LengthSqr() float { return v.X*v.X + v.Y*v.Y + v.Z*v.Z }
 
 /* Abs returns a new vector with all positive components. */
 func (v Vector3D) Abs() Vector3D { return Vector3D{fmath.Abs(v.X), fmath.Abs(v.Y), fmath.Abs(v.Z)} }
+
+/* Inverse returns a new vector that is the result of 1.0 / v.GetComponent(i) for all i.  Any zero value is left as zero. */
+func (v Vector3D) Inverse() (r Vector3D) {
+	if !fmath.Eq(v.X, 0.0) {
+		r.X = 1.0 / v.X
+	}
+	if !fmath.Eq(v.Y, 0.0) {
+		r.Y = 1.0 / v.Y
+	}
+	if !fmath.Eq(v.Z, 0.0) {
+		r.Z = 1.0 / v.Z
+	}
+	return
+}
 
 /* IsZero indicates whether the vector is the zero vector. */
 func (v Vector3D) IsZero() bool { return v.X == 0 && v.Y == 0 && v.Z == 0 }

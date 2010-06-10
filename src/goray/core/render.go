@@ -1,19 +1,19 @@
 //
-//  goray/render.go
+//  goray/core/render.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-27.
 //
 
-/* The goray/render package provides the infrastructure for rendering an image.  It cannot render an image itself. */
+/* The render package provides the infrastructure for rendering an image.  It cannot render an image itself. */
 package render
 
 import (
 	"image"
 	"rand"
 	"time"
-	"./goray/color"
-	"./goray/vector"
+	"goray/core/color"
+	"goray/core/vector"
 )
 
 /* State stores information concerning the current rendering state */
@@ -115,6 +115,5 @@ func (i *Image) Acquire(ch <-chan Fragment) {
 }
 
 type Renderer interface {
-    Render() <-chan render.Fragment
+    Render() <-chan Fragment
 }
-

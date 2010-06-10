@@ -1,16 +1,16 @@
 //
-//  goray/surface.go
+//  goray/core/surface.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The goray/surface package provides structures for representing the surface of an object. */
+/* The surface package provides structures for representing the surface of an object. */
 package surface
 
 import (
-	"./goray/ray"
-	"./goray/vector"
+	"goray/core/ray"
+	"goray/core/vector"
 )
 
 /* Point represents a single point on an object's surface. */

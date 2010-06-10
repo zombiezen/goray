@@ -1,21 +1,20 @@
 //
-//  goray/background.go
+//  goray/core/background.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-28.
 //
 
 /*
-   The goray/background package provides an interface for a rendering
-   background.
+   The background package provides an interface for a rendering background.
 */
 package background
 
 import (
-	"./goray/color"
-	"./goray/light"
-	"./goray/ray"
-	"./goray/render"
+	"goray/core/color"
+	"goray/core/light"
+	"goray/core/ray"
+	"goray/core/render"
 )
 
 /* A rendering background */

@@ -13,19 +13,22 @@ import (
 	"os"
 	"image/png"
 	"runtime"
-	"time"
+	"syscall"
 )
 
 import (
-	"./buildversion"
-	"./goray/camera"
-	"./goray/scene"
-    "./goray/object"
-	"./goray/vector"
-	"./goray/version"
-	trivialInt "./goray/std/integrators/trivial"
-	"./goray/std/objects/mesh"
-    "./goray/std/primitives/sphere"
+	"buildversion"
+	"goray/logging"
+	"goray/time"
+	"goray/core/camera"
+	"goray/core/object"
+	"goray/core/render"
+	"goray/core/scene"
+	"goray/core/vector"
+	"goray/core/version"
+	trivialInt "goray/std/integrators/trivial"
+	"goray/std/objects/mesh"
+	"goray/std/primitives/sphere"
 )
 
 func printInstructions() {
@@ -59,6 +62,7 @@ func printVersion() {
 		fmt.Println("Built from a source archive")
 	}
 	fmt.Printf("Go runtime: %s\n", runtime.Version())
+	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
 }
 
 func main() {
@@ -90,16 +94,25 @@ func main() {
 	//		return
 	//	}
 
-	_ = debug
+	// Set up logging
+	level := logging.InfoLevel - 10*(*debug)
+	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
+	defer logging.MainLog.Close()
+
+	// Open output file
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	defer f.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		logging.MainLog.Critical("Error opening output file: %v", err)
 		return
 	}
 	sc := scene.New()
 
-	fmt.Println("Setting up scene...")
+	logging.MainLog.Info("Setting up scene...")
+	sceneFilter := func(rec logging.Record) logging.Record {
+		return logging.BasicRecord{"  SCENE: " + rec.String(), rec.Level()}
+	}
+	sc.GetLog().AddHandler(logging.Filter{logging.MainLog, sceneFilter})
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
@@ -137,27 +150,37 @@ func main() {
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
-    sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(0, 0, 1), 0.5, nil)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 	sc.SetSurfaceIntegrator(trivialInt.New())
 
-	fmt.Println("Rendering...")
-	startTime := time.Nanoseconds()
-	outputImage, err := sc.Render()
-	endTime := time.Nanoseconds()
+	logging.MainLog.Info("Finalizing scene...")
+	finalizeTime := time.Stopwatch(func() {
+		sc.Update()
+	})
+	logging.MainLog.Info("Finalized in %v", finalizeTime)
+
+	logging.MainLog.Info("Rendering...")
+
+	var outputImage *render.Image
+	renderTime := time.Stopwatch(func() {
+		outputImage, err = sc.Render()
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Rendering error: %v\n", err)
+		logging.MainLog.Error("Rendering error: %v", err)
 		return
 	}
-	fmt.Printf("Render finished in %.3fs\n", float(endTime-startTime)*1e-9)
+	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	fmt.Println("Writing and finishing...")
+	logging.MainLog.Info("TOTAL TIME: %v", time.Add(finalizeTime, renderTime))
+
+	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
 	case "png":
 		err = png.Encode(f, outputImage)
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while writing: %v\n", err)
+		logging.MainLog.Critical("Error while writing: %v", err)
 		return
 	}
 }

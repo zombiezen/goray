@@ -1,20 +1,20 @@
 //
-//  goray/bound.go
+//  goray/core/bound.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
 /*
-   The goray/bound package provides a bounding box type, along with various
+   The bound package provides a bounding box type, along with various
    manipulation operaions.
 */
 package bound
 
 import (
 	"fmt"
-	"./fmath"
-	"./goray/vector"
+	"goray/fmath"
+	"goray/core/vector"
 )
 
 /*
@@ -53,12 +53,20 @@ func (b *Bound) Set(a, g vector.Vector3D) { b.a = a; b.g = g }
 
 func (b *Bound) GetMin() vector.Vector3D { return b.a }
 func (b *Bound) GetMax() vector.Vector3D { return b.g }
-func (b *Bound) SetMinX(x float)         { b.a.X = x }
-func (b *Bound) SetMinY(y float)         { b.a.Y = y }
-func (b *Bound) SetMinZ(z float)         { b.a.Z = z }
-func (b *Bound) SetMaxX(x float)         { b.g.X = x }
-func (b *Bound) SetMaxY(y float)         { b.g.Y = y }
-func (b *Bound) SetMaxZ(z float)         { b.g.Z = z }
+
+func (b *Bound) GetMinX() float { return b.a.X }
+func (b *Bound) GetMinY() float { return b.a.Y }
+func (b *Bound) GetMinZ() float { return b.a.Z }
+func (b *Bound) GetMaxX() float { return b.g.X }
+func (b *Bound) GetMaxY() float { return b.g.Y }
+func (b *Bound) GetMaxZ() float { return b.g.Z }
+
+func (b *Bound) SetMinX(x float) { b.a.X = x }
+func (b *Bound) SetMinY(y float) { b.a.Y = y }
+func (b *Bound) SetMinZ(z float) { b.a.Z = z }
+func (b *Bound) SetMaxX(x float) { b.g.X = x }
+func (b *Bound) SetMaxY(y float) { b.g.Y = y }
+func (b *Bound) SetMaxZ(z float) { b.g.Z = z }
 
 /*
    Cross checks whether a given ray crosses the bound.
@@ -129,6 +137,17 @@ func (b *Bound) GetVolume() float {
 func (b *Bound) GetXLength() float { return b.g.X - b.a.X }
 func (b *Bound) GetYLength() float { return b.g.Y - b.a.Y }
 func (b *Bound) GetZLength() float { return b.g.Z - b.a.Z }
+
+func (b *Bound) GetLargestAxis() int {
+	x, y, z := b.GetXLength(), b.GetYLength(), b.GetZLength()
+	switch {
+	case z > y && z > x:
+		return 2
+	case y > z && y > x:
+		return 1
+	}
+	return 0
+}
 
 func (b *Bound) GetHalfSize() [3]float {
 	return [3]float{b.GetXLength() * 0.5, b.GetYLength() * 0.5, b.GetZLength() * 0.5}

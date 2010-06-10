@@ -6,24 +6,23 @@
 //
 
 /*
-   The goray/std/objects/mesh package provides mesh objects constructed from triangles.
+   The mesh package provides mesh objects constructed from triangles.
 
    The basic workflow for making a working mesh is: create the mesh, set the mesh's data, then add the triangles.
 */
 package mesh
 
-import "fmt"
-import "./fmath"
-
 import (
-	"./goray/bound"
-	"./goray/light"
-	"./goray/material"
-	"./goray/matrix"
-	"./goray/primitive"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"fmt"
+	"goray/fmath"
+	"goray/core/bound"
+	"goray/core/light"
+	"goray/core/material"
+	"goray/core/matrix"
+	"goray/core/primitive"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 /* UV holds a set of texture coordinates. */

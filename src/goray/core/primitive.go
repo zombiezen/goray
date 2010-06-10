@@ -1,19 +1,19 @@
 //
-//  goray/primitive.go
+//  goray/core/primitive.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
 //
 
-/* The goray/primitive package provides the basic components of a scene. */
+/* The primitive package provides the basic components of a scene. */
 package primitive
 
 import (
-	"./goray/bound"
-	"./goray/material"
-	"./goray/ray"
-	"./goray/surface"
-	"./goray/vector"
+	"goray/core/bound"
+	"goray/core/material"
+	"goray/core/ray"
+	"goray/core/surface"
+	"goray/core/vector"
 )
 
 /* Collision stores information about a ray intersection. */
