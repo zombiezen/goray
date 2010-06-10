@@ -8,7 +8,6 @@
 package directlight
 
 import (
-	"os"
 	"goray/core/background"
 	"goray/core/color"
 	"goray/core/integrator"
@@ -19,8 +18,6 @@ import (
 )
 
 type directLighting struct {
-	scene *scene.Scene
-
     background background.Background
 	transparentShadows bool
 	shadowDepth, rayDepth int
@@ -51,20 +48,13 @@ func New(transparentShadows bool, shadowDepth, rayDepth int) integrator.SurfaceI
 
 func (dl *directLighting) SurfaceIntegrator() {}
 
-func (dl *directLighting) SetScene(s interface{}) { dl.scene = s.(*scene.Scene) }
-
-func (dl *directLighting) Preprocess() (err os.Error) {
-	dl.background = dl.scene.GetBackground()
+func (dl *directLighting) Preprocess(sc *scene.Scene) {
+	dl.background = sc.GetBackground()
 	// TODO: Get lights
 	return
 }
 
-func (dl *directLighting) Integrate(state *render.State, r ray.Ray) color.AlphaColor {
+func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor {
 	// TODO
 	return color.NewRGBA(0.0, 0.0, 0.0, 0.0)
-}
-
-func (dl *directLighting) Render() <-chan render.Fragment {
-	// TODO?
-	return nil
 }

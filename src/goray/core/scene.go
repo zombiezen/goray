@@ -9,18 +9,15 @@
 package scene
 
 import (
-	vecarray "container/vector"
+	container "container/vector"
 	"os"
+
 	"goray/fmath"
 	"goray/logging"
-	"goray/stack"
-)
 
-import (
 	"goray/core/background"
 	"goray/core/bound"
 	"goray/core/camera"
-	"goray/core/integrator"
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/object"
@@ -30,31 +27,22 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
-	"goray/core/vmap"
 	"goray/core/volume"
 )
 
 const (
-	stateReady = iota
-	stateGeometry
-	stateObject
-	stateVmap
+	objectsChanged = 1 << iota
+	lightsChanged
+	otherChange
 )
 
-const (
-	changeGeom = 1 << iota
-	changeLight
-	changeOther
+type changeSet uint
 
-	changeNone = 0
-	changeAll  = changeGeom | changeLight | changeOther
-)
-
-type objData struct {
-	points   []vector.Vector3D
-	normals  []vector.Vector3D
-	dataType int
-}
+func (c changeSet) IsClear() bool           { return c == 0 }
+func (c changeSet) Has(flag changeSet) bool { return c&changeSet(flag) != 0 }
+func (c *changeSet) Mark(flag changeSet)    { *c |= changeSet(flag) }
+func (c *changeSet) SetAll()                { *c = ^changeSet(0) }
+func (c *changeSet) Clear()                 { *c = 0 }
 
 type ObjectID uint
 
@@ -64,35 +52,23 @@ type ObjectID uint
    add entities, and render an image.
 */
 type Scene struct {
-	state struct {
-		stack       *stack.Stack
-		changes     uint
-		nextFreeID  ObjectID
-		currObj     *objData
-		currVmap    *vmap.VMap
-		orco        bool
-		smoothAngle float
-	}
+	changes    changeSet
+	nextFreeID ObjectID
 
 	log *logging.Logger
 
 	objects        map[ObjectID]object.Object3D
-	meshes         map[ObjectID]objData
 	materials      map[string]material.Material
-	volumes        vecarray.Vector
-	lights         vecarray.Vector
-	vmaps          map[int]int
-	tree           partition.Partitioner
+	volumes        container.Vector
+	lights         container.Vector
+	partitioner    partition.Partitioner
 	camera         camera.Camera
 	background     background.Background
-	volIntegrator  integrator.VolumeIntegrator
-	surfIntegrator integrator.SurfaceIntegrator
 	sceneBound     *bound.Bound
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
 	aaThreshold         float
-	mode                int
 	doDepth             bool
 }
 
@@ -106,66 +82,16 @@ func New() *Scene {
 	s.aaThreshold = 0.05
 
 	s.objects = make(map[ObjectID]object.Object3D)
-	s.meshes = make(map[ObjectID]objData)
 	s.materials = make(map[string]material.Material)
-	s.volumes = make(vecarray.Vector, 0)
-	s.lights = make(vecarray.Vector, 0)
-	s.vmaps = make(map[int]int)
+	s.volumes = make(container.Vector, 0)
+	s.lights = make(container.Vector, 0)
 
-	s.state.changes = changeAll
-	s.state.stack = stack.New()
-	s.state.stack.Push(stateReady)
-	s.state.nextFreeID = 1
-	s.state.currObj = nil
+	s.changes.SetAll()
+	s.nextFreeID = 1
 	return s
 }
 
 func (s *Scene) GetLog() *logging.Logger { return s.log }
-
-func (s *Scene) currState() int {
-	cs, _ := s.state.stack.Top()
-	return cs.(int)
-}
-
-/* StartGeometry puts the scene in geometry creation mode. */
-func (s *Scene) StartGeometry() (err os.Error) {
-	if s.currState() != stateReady {
-		return os.NewError("Scene asked to start geometry in wrong mode")
-	}
-	s.state.stack.Push(stateGeometry)
-	s.log.VerboseDebug("Starting geometry")
-	return
-}
-
-/* EndGeometry finishes geometry creation mode. */
-func (s *Scene) EndGeometry() (err os.Error) {
-	if s.currState() != stateGeometry {
-		return os.NewError("Scene asked to end geometry in wrong mode")
-	}
-	s.state.stack.Pop()
-	s.log.VerboseDebug("Geometry finished")
-	return
-}
-
-//func (s *Scene) StartTriMesh(vertices, triangles int, hasOrco, hasUV bool, meshType int) (bool, ObjectID) {
-//
-//}
-//
-//func (s *Scene) EndTriMesh() bool {
-//
-//}
-//
-//func (s *Scene) AddVertex(p Vector3D) int {
-//
-//}
-//
-//func (s *Scene) AddTriangle(a, b, c int, mat Material) bool {
-//
-//}
-//
-//func (s *Scene) AddUVTriangle(a, b, c int, uvA, uvB, uvC int, mat Material) bool {
-//
-//}
 
 /* AddLight adds a light to the scene. */
 func (s *Scene) AddLight(l light.Light) (err os.Error) {
@@ -173,7 +99,7 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 		return os.NewError("Attempted to insert nil light")
 	}
 	s.lights.Push(l)
-	s.state.changes |= changeLight
+	s.changes.Mark(lightsChanged)
 	return
 }
 
@@ -184,14 +110,15 @@ func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
 
 /* AddObject adds a three-dimensional object to the scene. */
 func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
-	id = s.state.nextFreeID
+	id = s.nextFreeID
 	if _, found := s.objects[id]; found {
 		err = os.NewError("Internal error: allocated ID is already in use")
 		return
 	}
 	// Add into map
 	s.objects[id] = obj
-	s.state.nextFreeID++
+	s.nextFreeID++
+	s.changes.Mark(objectsChanged)
 	return
 }
 
@@ -231,20 +158,6 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
-/* SetSurfaceIntegrator changes the integrator used for evaluating surfaces. */
-func (s *Scene) SetSurfaceIntegrator(i integrator.SurfaceIntegrator) {
-	s.surfIntegrator = i
-	s.surfIntegrator.SetScene(s)
-	s.state.changes |= changeOther
-}
-
-/* SetVolumeIntegrator changes the integrator used for evaluating volumes. */
-func (s *Scene) SetVolumeIntegrator(i integrator.VolumeIntegrator) {
-	s.volIntegrator = i
-	s.volIntegrator.SetScene(s)
-	s.state.changes |= changeOther
-}
-
 /* GetSceneBound returns a bounding box that contains every object in the scene. */
 func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
 
@@ -256,12 +169,12 @@ func (s *Scene) Intersect(r ray.Ray) (coll primitive.Collision, sp surface.Point
 	if r.TMax() < 0 {
 		dist = fmath.Inf
 	}
-	// Intersect with tree
-	if s.tree == nil {
+	// Intersect with partitioner
+	if s.partitioner == nil {
 		err = os.NewError("Partition map has not been built")
 		return
 	}
-	coll = s.tree.Intersect(r, dist)
+	coll = s.partitioner.Intersect(r, dist)
 	if !coll.Hit() {
 		return
 	}
@@ -272,7 +185,7 @@ func (s *Scene) Intersect(r ray.Ray) (coll primitive.Collision, sp surface.Point
 
 /* IsShadowed returns whether a ray will cast a shadow. */
 func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
-	if s.tree == nil {
+	if s.partitioner == nil {
 		return false
 	}
 	r.SetFrom(vector.Add(r.From(), vector.ScalarMul(r.Dir(), r.TMin())))
@@ -281,7 +194,7 @@ func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
 	if r.TMax() >= 0 {
 		dist = r.TMax() - 2*r.TMin()
 	}
-	coll := s.tree.IntersectS(r, dist)
+	coll := s.partitioner.IntersectS(r, dist)
 	return coll.Hit()
 }
 
@@ -296,9 +209,9 @@ func (s *Scene) Update() (err os.Error) {
 
 	s.log.Debug("Performing scene update...")
 
-	if s.state.changes&changeGeom != 0 {
-		// We've changed the scene's geometry.  We need to rebuild the tree.
-		s.tree = nil
+	if s.changes.Has(objectsChanged) {
+		// We've changed the scene's geometry.  We need to rebuild the partitioner.
+		s.partitioner = nil
 		// Collect primitives
 		var prims []primitive.Primitive
 		{
@@ -320,11 +233,11 @@ func (s *Scene) Update() (err os.Error) {
 			}
 		}
 		s.log.Debug("Geometry collected, %d primitives", len(prims))
-		// Do tree building
+		// Do partition building
 		if len(prims) > 0 {
 			s.log.Debug("Building kd-tree...")
-			s.tree = partition.NewKD(prims, s.log)
-			s.sceneBound = s.tree.GetBound()
+			s.partitioner = partition.NewKD(prims, s.log)
+			s.sceneBound = s.partitioner.GetBound()
 			s.log.Debug("Built kd-tree")
 		}
 	}
@@ -343,33 +256,6 @@ func (s *Scene) Update() (err os.Error) {
 
 	s.log.Debug("Set up lights")
 
-	if s.surfIntegrator == nil {
-		return os.NewError("Scene has no surface integrator")
-	}
-
-	if s.state.changes != changeNone {
-		if err = s.surfIntegrator.Preprocess(); err != nil {
-			return
-		}
-		if s.volIntegrator != nil {
-			if err = s.volIntegrator.Preprocess(); err != nil {
-				return
-			}
-		}
-	}
-	s.state.changes = changeNone
-	return
-}
-
-/* Render creates an image of the scene. */
-func (s *Scene) Render() (img *render.Image, err os.Error) {
-	err = s.Update()
-	if err != nil {
-		return
-	}
-
-	img = render.NewImage(s.camera.ResolutionX(), s.camera.ResolutionY())
-	ch := s.surfIntegrator.Render()
-	img.Acquire(ch)
+	s.changes.Clear()
 	return
 }
