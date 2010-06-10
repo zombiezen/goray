@@ -21,6 +21,7 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/core/camera"
+	"goray/core/integrator"
 	"goray/core/object"
 	"goray/core/render"
 	"goray/core/scene"
@@ -151,7 +152,6 @@ func main() {
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
 	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
-	sc.SetSurfaceIntegrator(trivialInt.New())
 
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
@@ -162,8 +162,11 @@ func main() {
 	logging.MainLog.Info("Rendering...")
 
 	var outputImage *render.Image
+	renderFilter := func(rec logging.Record) logging.Record {
+		return logging.BasicRecord{"  RENDER: " + rec.String(), rec.Level()}
+	}
 	renderTime := time.Stopwatch(func() {
-		outputImage, err = sc.Render()
+		outputImage = integrator.Render(sc, trivialInt.New(), logging.Filter{logging.MainLog, renderFilter})
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)

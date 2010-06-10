@@ -18,7 +18,6 @@ import (
 	"goray/core/background"
 	"goray/core/bound"
 	"goray/core/camera"
-	"goray/core/integrator"
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/object"
@@ -65,8 +64,6 @@ type Scene struct {
 	partitioner    partition.Partitioner
 	camera         camera.Camera
 	background     background.Background
-	volIntegrator  integrator.VolumeIntegrator
-	surfIntegrator integrator.SurfaceIntegrator
 	sceneBound     *bound.Bound
 
 	aaSamples, aaPasses int
@@ -159,20 +156,6 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 		s.aaIncSamples = s.aaSamples
 	}
 	s.aaThreshold = threshold
-}
-
-/* SetSurfaceIntegrator changes the integrator used for evaluating surfaces. */
-func (s *Scene) SetSurfaceIntegrator(i integrator.SurfaceIntegrator) {
-	s.surfIntegrator = i
-	s.surfIntegrator.SetScene(s)
-	s.changes.Mark(otherChange)
-}
-
-/* SetVolumeIntegrator changes the integrator used for evaluating volumes. */
-func (s *Scene) SetVolumeIntegrator(i integrator.VolumeIntegrator) {
-	s.volIntegrator = i
-	s.volIntegrator.SetScene(s)
-	s.changes.Mark(otherChange)
 }
 
 /* GetSceneBound returns a bounding box that contains every object in the scene. */
@@ -273,33 +256,6 @@ func (s *Scene) Update() (err os.Error) {
 
 	s.log.Debug("Set up lights")
 
-	if s.surfIntegrator == nil {
-		return os.NewError("Scene has no surface integrator")
-	}
-
-	if !s.changes.IsClear() {
-		if err = s.surfIntegrator.Preprocess(); err != nil {
-			return
-		}
-		if s.volIntegrator != nil {
-			if err = s.volIntegrator.Preprocess(); err != nil {
-				return
-			}
-		}
-	}
 	s.changes.Clear()
-	return
-}
-
-/* Render creates an image of the scene. */
-func (s *Scene) Render() (img *render.Image, err os.Error) {
-	err = s.Update()
-	if err != nil {
-		return
-	}
-
-	img = render.NewImage(s.camera.ResolutionX(), s.camera.ResolutionY())
-	ch := s.surfIntegrator.Render()
-	img.Acquire(ch)
 	return
 }
