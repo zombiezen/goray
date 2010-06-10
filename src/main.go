@@ -21,6 +21,7 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/core/camera"
+	"goray/core/color"
 	"goray/core/integrator"
 	"goray/core/object"
 	"goray/core/render"
@@ -28,6 +29,7 @@ import (
 	"goray/core/vector"
 	"goray/core/version"
 	"goray/std/integrators/directlight"
+	debugMaterial "goray/std/materials/debug"
 	"goray/std/objects/mesh"
 	"goray/std/primitives/sphere"
 )
@@ -130,28 +132,37 @@ func main() {
 		vector.New(-0.5, 0.5, 0.5),
 	},
 		nil, nil)
-	// Back
-	cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))
-	// Top
-	cube.AddTriangle(mesh.NewTriangle(3, 7, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(6, 2, 7, cube))
-	// Bottom
-	cube.AddTriangle(mesh.NewTriangle(0, 1, 4, cube))
-	cube.AddTriangle(mesh.NewTriangle(5, 4, 1, cube))
-	// Left
-	cube.AddTriangle(mesh.NewTriangle(7, 3, 4, cube))
-	cube.AddTriangle(mesh.NewTriangle(0, 4, 3, cube))
-	// Right
-	cube.AddTriangle(mesh.NewTriangle(6, 5, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(1, 2, 5, cube))
-	// Front
-	cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
-	cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
+	faces := [][3]int{
+		// Back
+		[3]int{0, 3, 2},
+		[3]int{0, 2, 1},
+		// Top
+		[3]int{3, 7, 2},
+		[3]int{6, 2, 7},
+		// Bottom
+		[3]int{0, 1, 4},
+		[3]int{5, 4, 1},
+		// Left
+		[3]int{7, 3, 4},
+		[3]int{0, 4, 3},
+		// Right
+		[3]int{6, 5, 2},
+		[3]int{1, 2, 5},
+		// Front
+		[3]int{4, 6, 7},
+		[3]int{5, 6, 4},
+	}
+	
+	mat := debugMaterial.New(color.NewRGB(1.0, 0.0, 0.0))
+	for _, fdata := range faces {
+		face := mesh.NewTriangle(fdata[0], fdata[1], fdata[2], cube)
+		face.SetMaterial(mat)
+		cube.AddTriangle(face)
+	}
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
 	sc.AddObject(cube)
-	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, mat)})
 
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {

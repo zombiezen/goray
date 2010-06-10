@@ -89,6 +89,7 @@ std_packages = [
     'integrators/directlight',
     'integrators/trivial',
     'lights/point',
+	'materials/debug',
     'objects/mesh',
     'primitives/sphere',
 ]
