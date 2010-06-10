@@ -60,16 +60,23 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 }
 
 func BlockIntegrate(s *scene.Scene, in Integrator) <-chan render.Fragment {
-	const numWorkers = 20
+	const numWorkers = 5
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment)
+	ch := make(chan render.Fragment, numWorkers)
 	go func() {
-		signals := make([]chan bool, numWorkers)
+		defer close(ch)
+		// Set up end signals
+		signals := make([]chan bool, numWorkers * 2)
+		for i, _ := range signals {
+			signals[i] = make(chan bool)
+		}
+		// Calculate the number of batches needed
 		batchCount := w * h / numWorkers
 		if w*h%numWorkers != 0 {
 			batchCount++
 		}
+
 		for batch := 0; batch < batchCount; batch++ {
 			// Start new batch
 			for i := 0; i < numWorkers; i++ {
@@ -78,7 +85,7 @@ func BlockIntegrate(s *scene.Scene, in Integrator) <-chan render.Fragment {
 					break
 				}
 				go func(pixelNum int, finish chan<- bool) {
-					ch <- RenderPixel(s, in, pixelNum%w, pixelNum/h)
+					ch <- RenderPixel(s, in, pixelNum%w, pixelNum/w)
 					finish <- true
 				}(pixelNum, signals[i])
 			}
