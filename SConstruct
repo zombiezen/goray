@@ -86,6 +86,7 @@ core_packages = [
 core_packages = [env.Go('build/goray/core/%s.go' % name) for name in core_packages]
 
 std_packages = [
+    'integrators/directlight',
     'integrators/trivial',
     'lights/point',
     'objects/mesh',
