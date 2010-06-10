@@ -57,14 +57,14 @@ type Scene struct {
 
 	log *logging.Logger
 
-	objects        map[ObjectID]object.Object3D
-	materials      map[string]material.Material
-	volumes        container.Vector
-	lights         container.Vector
-	partitioner    partition.Partitioner
-	camera         camera.Camera
-	background     background.Background
-	sceneBound     *bound.Bound
+	objects     map[ObjectID]object.Object3D
+	materials   map[string]material.Material
+	volumes     container.Vector
+	lights      container.Vector
+	partitioner partition.Partitioner
+	camera      camera.Camera
+	background  background.Background
+	sceneBound  *bound.Bound
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
@@ -101,6 +101,16 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	s.lights.Push(l)
 	s.changes.Mark(lightsChanged)
 	return
+}
+
+/* GetLights returns all of the lights added to the scene. */
+func (s *Scene) GetLights() []light.Light {
+	temp := make([]light.Light, s.lights.Len())
+	it := s.lights.Iter()
+	for i, val := 0, <-it; !closed(it); i, val = i+1, <-it {
+		temp[i] = val.(light.Light)
+	}
+	return temp
 }
 
 /* AddMaterial adds a material to the scene. */
