@@ -67,6 +67,21 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	return render.Fragment{X: x, Y: y, Color: color}
 }
 
+/* SimpleIntegrate integrates an image one pixel at a time. */
+func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
+	ch := make(chan render.Fragment, 200)
+	go func() {
+		defer close(ch)
+		w, h := s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY()
+		for x := 0; x < w; x++ {
+			for y := 0; y < h; y++ {
+				ch <- RenderPixel(s, in, x, y)
+			}
+		}
+	}()
+	return ch
+}
+
 /* BlockIntegrate integrates an image in small batches. */
 func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
 	const numWorkers = 100
