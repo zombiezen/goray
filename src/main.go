@@ -27,7 +27,7 @@ import (
 	"goray/core/scene"
 	"goray/core/vector"
 	"goray/core/version"
-	trivialInt "goray/std/integrators/trivial"
+	"goray/std/integrators/directlight"
 	"goray/std/objects/mesh"
 	"goray/std/primitives/sphere"
 )
@@ -166,7 +166,7 @@ func main() {
 		return logging.BasicRecord{"  RENDER: " + rec.String(), rec.Level()}
 	}
 	renderTime := time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, trivialInt.New(), logging.Filter{logging.MainLog, renderFilter})
+		outputImage = integrator.Render(sc, directlight.New(false, 3, 10), logging.Filter{logging.MainLog, renderFilter})
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)
