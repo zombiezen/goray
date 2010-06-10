@@ -9,27 +9,27 @@
 package integrator
 
 import (
-	"os"
-	"goray/core/camera"
 	"goray/core/color"
 	"goray/core/ray"
 	"goray/core/render"
+	"goray/core/scene"
 )
 
-/* A rendering system */
+/* An Integrator renders rays. */
 type Integrator interface {
-	SetScene(interface{})
-	Preprocess() os.Error
-	Integrate(*render.State, ray.Ray) color.AlphaColor
+	Preprocess(scene *scene.Scene)
+	Integrate(scene *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor
 }
 
+/* A SurfaceIntegrator renders rays by casting onto solid objects. */
 type SurfaceIntegrator interface {
 	Integrator
 	SurfaceIntegrator()
 }
 
+/* A VolumeIntegrator renders rays by casting onto volumetric regions. */
 type VolumeIntegrator interface {
 	Integrator
 	VolumeIntegrator()
-	Transmittance(*render.State, ray.Ray) color.AlphaColor
+	Transmittance(scene *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor
 }
