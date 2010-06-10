@@ -162,8 +162,11 @@ func main() {
 	logging.MainLog.Info("Rendering...")
 
 	var outputImage *render.Image
+	renderFilter := func(rec logging.Record) logging.Record {
+		return logging.BasicRecord{"  RENDER: " + rec.String(), rec.Level()}
+	}
 	renderTime := time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, trivialInt.New())
+		outputImage = integrator.Render(sc, trivialInt.New(), logging.Filter{logging.MainLog, renderFilter})
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)

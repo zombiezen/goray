@@ -9,6 +9,7 @@
 package integrator
 
 import (
+	"goray/logging"
 	"goray/core/color"
 	"goray/core/ray"
 	"goray/core/render"
@@ -35,10 +36,10 @@ type VolumeIntegrator interface {
 	Transmittance(scene *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor
 }
 
-func Render(s *scene.Scene, i Integrator) (img *render.Image) {
+func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Image) {
 	s.Update()
 	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
-	ch := BlockIntegrate(s, i)
+	ch := BlockIntegrate(s, i, log)
 	img.Acquire(ch)
 	return
 }
@@ -59,40 +60,42 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	return render.Fragment{X: x, Y: y, Color: color}
 }
 
-func BlockIntegrate(s *scene.Scene, in Integrator) <-chan render.Fragment {
-	const numWorkers = 5
+func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
+	const numWorkers = 100
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment, numWorkers)
+	ch := make(chan render.Fragment, numWorkers*2)
 	go func() {
 		defer close(ch)
 		// Set up end signals
-		signals := make([]chan bool, numWorkers * 2)
+		signals := make([]chan bool, numWorkers)
 		for i, _ := range signals {
 			signals[i] = make(chan bool)
 		}
 		// Calculate the number of batches needed
-		batchCount := w * h / numWorkers
-		if w*h%numWorkers != 0 {
+		batchCount, extras := w*h/numWorkers, w*h%numWorkers
+		if extras > 0 {
 			batchCount++
 		}
 
 		for batch := 0; batch < batchCount; batch++ {
+			// If this is the last batch, scale down accordingly.
+			if extras > 0 && batch == batchCount-1 {
+				signals = signals[0:extras]
+			}
 			// Start new batch
-			for i := 0; i < numWorkers; i++ {
+			for i := 0; i < len(signals); i++ {
 				pixelNum := batch*numWorkers + i
-				if pixelNum >= w*h {
-					break
-				}
 				go func(pixelNum int, finish chan<- bool) {
 					ch <- RenderPixel(s, in, pixelNum%w, pixelNum/w)
 					finish <- true
 				}(pixelNum, signals[i])
 			}
 			// Join goroutines
-			for i := 0; i < numWorkers; i++ {
-				<-signals[i]
+			for _, sig := range signals {
+				<-sig
 			}
+			logging.Debug(log, "Finished batch %d of %d (%d pixels)", batch+1, batchCount, len(signals))
 		}
 	}()
 	return ch
