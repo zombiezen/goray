@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+Import('env')
+
+packages = [
+    env.Go('fmath.go'),
+    env.Go('logging.go'),
+    env.Go('time.go'),
+    env.Go('stack.go'),
+]
+
+subpackages = SConscript(['core/SConscript', 'std/SConscript'], exports='env')
+
+all_packages = Flatten([packages, subpackages])
+
+Return('all_packages')

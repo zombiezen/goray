@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+Import('env')
+
+packages = [
+    env.Go('background'),
+    env.Go('bound'),
+    env.Go('camera'),
+    env.Go('color'),
+    env.Go('integrator'),
+    env.Go('kdtree'),
+    env.Go('light'),
+    env.Go('material'),
+    env.Go('matrix'),
+    env.Go('object'),
+    env.Go('partition'),
+    env.Go('primitive'),
+    env.Go('ray'),
+    env.Go('render'),
+    env.Go('scene'),
+    env.Go('surface'),
+    env.Go('vector'),
+    env.Go('vmap'),
+    env.Go('volume'),
+    env.Go('version'),
+]
+
+Return('packages')
