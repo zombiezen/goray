@@ -53,53 +53,6 @@ build_info_packages = [
 ]
 
 # Main build
-root_packages = [
-    env.Go('build/goray/fmath.go'),
-    env.Go('build/goray/logging.go'),
-    env.Go('build/goray/time.go'),
-    env.Go('build/goray/stack.go'),
-]
-
-core_packages = [
-    'background',
-    'bound',
-    'camera',
-    'color',
-    'integrator',
-    'kdtree',
-    'light',
-    'material',
-    'matrix',
-    'object',
-    'partition',
-    'photon',
-    'primitive',
-    'ray',
-    'render',
-    'scene',
-    'surface',
-    'vector',
-    'vmap',
-    'volume',
-    'version',
-]
-core_packages = [env.Go('build/goray/core/%s.go' % name) for name in core_packages]
-
-std_packages = [
-    'integrators/directlight',
-    'integrators/trivial',
-    'lights/point',
-	'materials/debug',
-    'objects/mesh',
-    'primitives/sphere',
-]
-std_packages = [env.Go('build/goray/std/%s.go' % name) for name in std_packages]
-
-packages = build_info_packages + root_packages + core_packages + std_packages
-Alias('lib', packages)
-Alias('core', core_packages)
-Alias('std', std_packages)
-
+lib = SConscript('src/goray/SConscript', exports='env', variant_dir='build/goray')
 program = env.GoProgram('bin/goray', 'build/main.go')
-
-Default(packages + [program])
+Default([lib, program])
