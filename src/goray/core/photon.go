@@ -8,6 +8,8 @@
 package photon
 
 import (
+	"container/heap"
+	"goray/stack"
 	"goray/core/color"
 	"goray/core/kdtree"
 	"goray/core/vector"
@@ -82,7 +84,128 @@ func (pm *Map) Update() {
 		for i, _ := range values {
 			values[i] = pm.photons[i]
 		}
+		// TODO: Make leaves only contain one photon
 		pm.tree = kdtree.New(values, photonGetDim, nil)
 		pm.fresh = true
+	}
+}
+
+type GatherResult struct {
+	Photon   *Photon
+	Distance float
+}
+
+type gatherHeap []GatherResult
+
+func (h gatherHeap) Len() int { return len(h) }
+func (h gatherHeap) Cap() int { return cap(h) }
+
+func (h gatherHeap) Less(i, j int) bool {
+	// This is a max heap.
+	data := []GatherResult(h)
+	return data[i].Distance >= data[j].Distance
+}
+
+func (h *gatherHeap) Swap(i, j int) {
+	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
+}
+
+func (h *gatherHeap) Add(val GatherResult) {
+	if len(*h) < cap(*h) {
+		h.Push(val)
+		if len(*h) == cap(*h) {
+			heap.Init(h)
+		}
+	} else {
+		heap.Pop(h)
+		heap.Push(h, val)
+	}
+}
+
+func (h *gatherHeap) Push(val interface{}) {
+	data := []GatherResult(*h)
+	oldSize := len(data)
+	if oldSize+1 > cap(data) {
+		temp := make([]GatherResult, oldSize, (oldSize+1)*2)
+		copy(temp, data)
+		data = temp
+	}
+	data = data[0 : oldSize+1]
+	data[oldSize] = val.(GatherResult)
+	*h = data
+}
+
+func (h *gatherHeap) Pop() (val interface{}) {
+	data := []GatherResult(*h)
+	val = data[len(data)-1]
+	*h = data[0 : len(data)-1]
+	return
+}
+
+func (pm *Map) Gather(p vector.Vector3D, nLookup uint, maxDist float) []GatherResult {
+	resultHeap := make(gatherHeap, 0, nLookup)
+
+	ch, distCh := make(chan GatherResult), make(chan float)
+	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	distCh <- maxDist
+
+	for gresult := range ch {
+		resultHeap.Add(gresult)
+	}
+	return resultHeap
+}
+
+func (pm *Map) FindNearest(p, n vector.Vector3D, dist float) (nearest *Photon) {
+	ch, distCh := make(chan GatherResult), make(chan float)
+	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	distCh <- dist
+
+	for gresult := range ch {
+		if vector.Dot(gresult.Photon.GetDirection(), n) > 0 {
+			nearest, dist = gresult.Photon, gresult.Distance
+		}
+		distCh <- dist
+	}
+	return
+}
+
+func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float, root kdtree.Node) {
+	defer close(ch)
+	st := stack.New()
+	st.Push(root)
+	maxDistSqr := <-distCh
+
+	next := func() (kdtree.Node, bool) {
+		top, empty := st.Pop()
+		return top.(kdtree.Node), empty
+	}
+
+	for currNode, empty := next(); !empty; currNode, empty = next() {
+		if currNode.IsLeaf() {
+			leaf := currNode.(*kdtree.Leaf)
+			phot := leaf.GetValues()[0].(*Photon)
+			v := vector.Sub(phot.position, p)
+			distSqr := v.LengthSqr()
+			if distSqr < maxDistSqr {
+				ch <- GatherResult{phot, distSqr}
+				maxDistSqr = <-distCh
+			}
+			continue
+		}
+
+		currInt := currNode.(*kdtree.Interior)
+		axis := currInt.GetAxis()
+		dist2 := p.GetComponent(axis) - currInt.GetPivot()
+		dist2 *= dist2
+
+		primaryChild, altChild := currInt.GetLeft(), currInt.GetRight()
+		if p.GetComponent(axis) > currInt.GetPivot() {
+			primaryChild, altChild = altChild, primaryChild
+		}
+
+		if dist2 < maxDistSqr {
+			st.Push(altChild)
+		}
+		st.Push(primaryChild)
 	}
 }
