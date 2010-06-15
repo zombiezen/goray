@@ -7,7 +7,7 @@
 
 /*
    The color package provides abstracted color.
-   
+
    This interface specifically differes from the image.Color interfaces because the render
    uses floating point math.  Also, colors in this package are not clamped to [0, 1], they
    are clamped to [0, Inf).
@@ -58,13 +58,13 @@ func (c RGB) GetG() float { return c.G }
 func (c RGB) GetB() float { return c.B }
 
 func quantizeComponent(f float) uint32 {
-	temp := uint64(f * math.MaxUint32)
-	if temp > math.MaxUint32 {
-		return math.MaxUint32
+	temp := uint32(f * math.MaxUint16)
+	if temp > math.MaxUint16 {
+		return math.MaxUint16
 	} else if temp < 0 {
 		return 0
 	}
-	return uint32(temp)
+	return temp
 }
 
 func (c RGB) RGBA() (r, g, b, a uint32) {
