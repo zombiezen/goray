@@ -5,6 +5,7 @@ Import('env')
 packages = [
     env.Go('integrators/directlight'),
     env.Go('integrators/trivial'),
+    env.Go('integrators/util'),
     env.Go('lights/point'),
     env.Go('materials/debug'),
     env.Go('objects/mesh'),
