@@ -142,7 +142,7 @@ func (h *gatherHeap) Pop() (val interface{}) {
 	return
 }
 
-func (pm *Map) Gather(p vector.Vector3D, nLookup uint, maxDist float) []GatherResult {
+func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float) []GatherResult {
 	resultHeap := make(gatherHeap, 0, nLookup)
 
 	ch, distCh := make(chan GatherResult), make(chan float)
