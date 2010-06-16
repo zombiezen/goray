@@ -14,6 +14,7 @@ import (
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/photon"
+	"goray/core/ray"
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/surface"
@@ -21,8 +22,39 @@ import (
 )
 
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
-func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) color.Color {
-	return nil
+func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
+	col = color.NewRGB(0, 0, 0)
+	lightRay := ray.New()
+	lightRay.SetFrom(sp.Position)
+	mat := sp.Material.(material.Material)
+	
+	for _, l := range lights {
+		if diracLight, ok := l.(light.DiracLight); ok {
+			// Light with delta distribution
+			if lcol, ok := diracLight.Illuminate(sp, lightRay); ok {
+				// Shadowed
+				lightRay.SetTMin(0.0005) // TODO: Add a smart self-bias value
+				var shadowed bool
+				if trShad {
+					// TODO
+				} else {
+					shadowed = sc.IsShadowed(state, lightRay)
+				}
+				if !shadowed {
+					if trShad {
+						//lcol = color.Mul(lcol, scol)
+					}
+					surfCol := mat.Eval(state, sp, wo, lightRay.Dir(), material.BSDFAll)
+					//TODO: transmitCol
+					col = color.Add(col, color.ScalarMul(color.Mul(surfCol, lcol), fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))))
+				}
+			}
+		} else {
+			// Area light, etc.
+			// TODO
+		}
+	}
+	return
 }
 
 func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo vector.Vector3D, nSearch int, radius float) (sum color.Color) {

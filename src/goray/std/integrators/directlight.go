@@ -17,6 +17,7 @@ import (
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/vector"
+	"goray/std/integrators/util"
 )
 
 type directLighting struct {
@@ -88,8 +89,9 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 		// Contribution of light-emitting surfaces
 		col = color.Add(col, mat.Emit(state, sp, wo))
+		// Normal lighting
 		if bsdfs&(material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive) != 0 {
-			// TODO
+			col = color.Add(col, util.EstimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))
 		}
 		if bsdfs&(material.BSDFDiffuse|material.BSDFGlossy) != 0 {
 			// TODO
