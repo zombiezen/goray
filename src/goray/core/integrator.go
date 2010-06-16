@@ -45,6 +45,7 @@ type VolumeIntegrator interface {
 func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Image) {
 	s.Update()
 	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
+	i.Preprocess(s)
 	ch := BlockIntegrate(s, i, log)
 	img.Acquire(ch)
 	return
