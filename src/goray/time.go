@@ -31,15 +31,6 @@ func Stopwatch(f func()) Time {
 /* Time is a type that represents a duration of time. */
 type Time float64
 
-/* Add returns the sum of two or more Time values. */
-func Add(t1, t2 Time, tn ...Time) Time {
-	accum := float64(t1) + float64(t2)
-	for _, t := range tn {
-		accum += float64(t)
-	}
-	return Time(accum)
-}
-
 /* Split returns the components of the time in hours, minutes, and seconds. */
 func (t Time) Split() (hours, minutes int, seconds float64) {
 	seconds = float64(t)
