@@ -154,7 +154,7 @@ func main() {
 		[3]int{5, 6, 4},
 	}
 	
-	mat := debugMaterial.New(color.NewRGB(1.0, 0.0, 0.0))
+	mat := debugMaterial.New(color.NewRGB(1.0, 1.0, 1.0))
 	for _, fdata := range faces {
 		face := mesh.NewTriangle(fdata[0], fdata[1], fdata[2], cube)
 		face.SetMaterial(mat)
@@ -162,9 +162,11 @@ func main() {
 	}
 
 	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
-	sc.AddLight(pointLight.New(vector.New(0.0, 5.0, 0.0), color.NewRGB(1.0, 1.0, 1.0), 100.0))
+	sc.AddLight(pointLight.New(vector.New(10.0,  0.0,  0.0), color.NewRGB(1.0, 0.0, 0.0), 200.0))
+	sc.AddLight(pointLight.New(vector.New( 0.0, 10.0,  0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
+	sc.AddLight(pointLight.New(vector.New( 0.0,  0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
 	sc.AddObject(cube)
-	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, mat)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.5, mat)})
 
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
