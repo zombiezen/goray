@@ -5,6 +5,7 @@ Import('env')
 packages = [
     env.Go('fmath.go'),
     env.Go('logging.go'),
+    env.Go('montecarlo.go'),
     env.Go('time.go'),
     env.Go('stack.go'),
 ]
