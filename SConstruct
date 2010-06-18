@@ -3,15 +3,21 @@
 import os
 import subprocess
 
-test_build = ('test' in COMMAND_LINE_TARGETS)
-
 # Set up environment
+variables = Variables()
+variables.Add(BoolVariable('testing', "Set to build the unit tests", False))
 env = Environment(
     TOOLS=['default', 'go'],
     GOLOCALHELPER='build/scons-go-helper',
-    GOLIBPATH=['build'],
+    variables=variables,
 )
-env.VariantDir('build', 'src')
+env['GOSTRIPTESTS'] = not env['testing']
+if env['testing']:
+    var_dir = 'build/tests'
+else:
+    var_dir = 'build'
+env.Append(GOLIBPATH=[var_dir])
+env.VariantDir(var_dir, 'src')
 
 # Version info
 def get_bzr_path():
@@ -52,11 +58,14 @@ version_file = File('build/buildversion.go')
 Command(version_file, [], generate_buildversion)
 AlwaysBuild(version_file)
 
-build_info_packages = [
-    env.Go(version_file),
-]
+env.Go(version_file)
 
 # Main build
-lib = SConscript('src/goray/SConscript', exports='env', variant_dir='build/goray')
+lib = SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray')
 program = env.GoProgram('bin/goray', 'build/main.go')
-Default([lib, program])
+
+if env['testing']:
+    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', lib))
+    Default(test_suite)
+else:
+    Default(lib, program)
