@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	Second = 1
-	Minute = 60 * Second
-	Hour   = 60 * Minute
-	Day    = 24 * Hour
+	Nanosecond = 1e-9
+	Second     = 1
+	Minute     = 60 * Second
+	Hour       = 60 * Minute
+	Day        = 24 * Hour
 )
 
 /* Stopwatch calls a function and returns how long it took for the function to return. */
@@ -25,7 +26,7 @@ func Stopwatch(f func()) Time {
 	startTime := stdtime.Nanoseconds()
 	f()
 	endTime := stdtime.Nanoseconds()
-	return Time(float64(endTime-startTime) * 1e-9)
+	return Time(float64(endTime-startTime) * Nanosecond)
 }
 
 /* Time is a type that represents a duration of time. */

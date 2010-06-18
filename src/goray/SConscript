@@ -5,7 +5,7 @@ Import('env')
 root_packages = [
     env.Go('fmath.go'),
     env.Go('logging.go'),
-    env.Go('time.go'),
+    env.Go('time', Glob('time/*.go')),
     env.Go('stack', Glob('stack/*.go')),
 ]
 
