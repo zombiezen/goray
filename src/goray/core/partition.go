@@ -159,11 +159,11 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 	exitStack.Push(followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))})
 
 	enter := func() followFrame {
-		frame, _ := enterStack.Top()
+		frame := enterStack.Top()
 		return frame.(followFrame)
 	}
 	exit := func() followFrame {
-		frame, _ := exitStack.Top()
+		frame := exitStack.Top()
 		return frame.(followFrame)
 	}
 
@@ -220,7 +220,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 
 		// Update stack
 		enterStack = exitStack.Copy()
-		topExit, _ := exitStack.Pop()
+		topExit := exitStack.Pop()
 		currNode = topExit.(followFrame).node
 	}
 }
