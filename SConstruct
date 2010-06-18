@@ -6,7 +6,11 @@ import subprocess
 test_build = ('test' in COMMAND_LINE_TARGETS)
 
 # Set up environment
-env = Environment(TOOLS=['default', 'go'], GOLIBPATH=['build'])
+env = Environment(
+    TOOLS=['default', 'go'],
+    GOLOCALHELPER='build/scons-go-helper',
+    GOLIBPATH=['build'],
+)
 env.VariantDir('build', 'src')
 
 # Version info
