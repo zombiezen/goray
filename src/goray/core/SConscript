@@ -19,7 +19,7 @@ packages = [
     env.Go('render'),
     env.Go('scene'),
     env.Go('surface'),
-    env.Go('vector'),
+    env.Go('vector', Glob('vector/*.go')),
     env.Go('vmap'),
     env.Go('volume'),
     env.Go('version'),
