@@ -79,7 +79,7 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (enter, leave float
 	p := vector.Sub(from, a0)
 	lmin, lmax := -1.0, -1.0
 
-	if ray.X != 0 {
+	if !fmath.Eq(ray.X, 0) {
 		tmp1 := -p.X / ray.X
 		tmp2 := ((a1.X - a0.X) - p.X) / ray.X
 		if tmp1 > tmp2 {
@@ -87,10 +87,11 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (enter, leave float
 		}
 		lmin, lmax = tmp1, tmp2
 		if lmax < 0 || lmin > dist {
+			crosses = false
 			return
 		}
 	}
-	if ray.Y != 0 {
+	if !fmath.Eq(ray.Y, 0) {
 		tmp1 := -p.Y / ray.Y
 		tmp2 := ((a1.Y - a0.Y) - p.Y) / ray.Y
 		if tmp1 > tmp2 {
@@ -102,11 +103,12 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (enter, leave float
 		if tmp2 < lmax || lmax < 0 {
 			lmax = tmp2
 			if lmax < 0 || lmin > dist {
+				crosses = false
 				return
 			}
 		}
 	}
-	if ray.Z != 0 {
+	if !fmath.Eq(ray.Z, 0) {
 		tmp1 := -p.Z / ray.Z
 		tmp2 := ((a1.Z - a0.Z) - p.Z) / ray.Z
 		if tmp1 > tmp2 {
@@ -118,14 +120,15 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float) (enter, leave float
 		if tmp2 < lmax || lmax < 0 {
 			lmax = tmp2
 		}
-		if lmin <= lmax && lmax >= 0 && lmin <= dist {
-			enter = lmin
-			leave = lmax
-			crosses = true
-			return
-		}
 	}
 
+	if lmin <= lmax && lmax >= 0 && lmin <= dist {
+		enter, leave = lmin, lmax
+		crosses = true
+		return
+	}
+
+	crosses = false
 	return
 }
 
