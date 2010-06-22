@@ -59,24 +59,25 @@ func (s *simple) GetBound() *bound.Bound { return s.bound }
 
 func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	for _, p := range s.prims {
-		if coll = p.Intersect(r); coll.Hit() {
-			if coll.RayDepth < dist && coll.RayDepth > r.TMin() {
-				return
+		if newColl := p.Intersect(r); newColl.Hit() {
+			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin() && (!coll.Hit() || newColl.RayDepth < coll.RayDepth) {
+				coll = newColl
 			}
 		}
 	}
-	return primitive.Collision{}
+	return
 }
 
 func (s *simple) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
 	for _, p := range s.prims {
-		if coll = p.Intersect(r); coll.Hit() {
-			if coll.RayDepth < dist {
+		if newColl := p.Intersect(r); newColl.Hit() {
+			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin() {
+				coll = newColl
 				return
 			}
 		}
 	}
-	return primitive.Collision{}
+	return
 }
 
 func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
@@ -133,7 +134,7 @@ type followFrame struct {
 	point vector.Vector3D
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- primitive.Collision, signal <-chan bool) {
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- primitive.Collision) {
 	defer close(ch)
 
 	var a, b, t float
@@ -211,10 +212,6 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 			p := v.(primitive.Primitive)
 			if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
 				ch <- coll
-				// Should we continue?
-				if !(<-signal) {
-					return
-				}
 			}
 		}
 
@@ -226,9 +223,8 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
-	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
-	signal <- false
-	go kd.followRay(r, r.TMin(), dist, ch, signal)
+	ch := make(chan primitive.Collision)
+	go kd.followRay(r, r.TMin(), dist, ch)
 	for newColl := range ch {
 		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
 			coll = newColl
@@ -238,9 +234,8 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 }
 
 func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
-	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
-	signal <- false
-	go kd.followRay(r, 0.0, dist, ch, signal)
+	ch := make(chan primitive.Collision)
+	go kd.followRay(r, r.TMin(), dist, ch)
 	for newColl := range ch {
 		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
 			coll = newColl
@@ -250,10 +245,9 @@ func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collisi
 }
 
 func (kd *kdPartition) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
-	ch, signal := make(chan primitive.Collision), make(chan bool)
-	defer func() { signal <- false; close(signal) }()
+	ch := make(chan primitive.Collision)
 
-	go kd.followRay(r, r.TMin(), dist, ch, signal)
+	go kd.followRay(r, r.TMin(), dist, ch)
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
 	for coll = range ch {
