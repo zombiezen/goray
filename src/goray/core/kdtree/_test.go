@@ -18,7 +18,7 @@ func dim(v Value, axis int) (min, max float) {
 	return
 }
 
-func newPointTree(pts []vector.Vector3D, opts BuildOptions) *Tree {
+func newPointTree(pts []vector.Vector3D, opts Options) *Tree {
 	vals := make([]Value, len(pts))
 	for i, p := range pts {
 		vals[i] = p
@@ -26,7 +26,7 @@ func newPointTree(pts []vector.Vector3D, opts BuildOptions) *Tree {
 	return New(vals, opts)
 }
 
-func newBoxTree(boxes []*bound.Bound, opts BuildOptions) *Tree {
+func newBoxTree(boxes []*bound.Bound, opts Options) *Tree {
 	vals := make([]Value, len(boxes))
 	for i, b := range boxes {
 		vals[i] = b

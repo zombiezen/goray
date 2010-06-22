@@ -37,8 +37,8 @@ const (
 	DefaultFaultTolerance = 2
 )
 
-/* BuildOptions allows you to tune the parameters of kd-tree construction. */
-type BuildOptions struct {
+/* Options allows you to tune the parameters of kd-tree construction. */
+type Options struct {
 	GetDimension   DimensionFunc
 	SplitFunc      SplitFunc
 	Log            logging.Handler
@@ -47,9 +47,9 @@ type BuildOptions struct {
 	FaultTolerance uint // FaultTolerance specifies the number of bad splits before a branch is considered a fault.
 }
 
-/* MakeOptions creates a new set of BuildOptions with some reasonable defaults. */
-func MakeOptions(f DimensionFunc, log logging.Handler) BuildOptions {
-	return BuildOptions{
+/* MakeOptions creates a new set of build options with some reasonable defaults. */
+func MakeOptions(f DimensionFunc, log logging.Handler) Options {
+	return Options{
 		GetDimension:   f,
 		SplitFunc:      DefaultSplit,
 		Log:            log,
@@ -61,7 +61,7 @@ func MakeOptions(f DimensionFunc, log logging.Handler) BuildOptions {
 
 /* BuildState holds information for building a level of a kd-tree. */
 type BuildState struct {
-	BuildOptions
+	Options
 	OldCost    float
 	BadRefines uint
 }
@@ -71,7 +71,7 @@ func (state BuildState) getBound(v Value) *bound.Bound {
 }
 
 /* New creates a new kd-tree from an unordered collection of values. */
-func New(vals []Value, opts BuildOptions) (tree *Tree) {
+func New(vals []Value, opts Options) (tree *Tree) {
 	tree = new(Tree)
 	state := BuildState{opts, float(len(vals)), 0}
 	if len(vals) > 0 {
