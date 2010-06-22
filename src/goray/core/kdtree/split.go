@@ -15,18 +15,29 @@ import (
 	"goray/core/bound"
 )
 
-func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
+type SplitFunc func([]Value, *bound.Bound, BuildState) (axis int, pivot float, cost float)
+
+func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float, cost float) {
+	const pigeonThreshold = 128
+
+	if len(vals) > pigeonThreshold {
+		return PigeonSplit(vals, bd, state)
+	}
+	return MinimalSplit(vals, bd, state)
+}
+
+func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float, cost float) {
 	axis = bd.GetLargestAxis()
 	data := make([]float, 0, len(vals)*2)
 	for _, v := range vals {
-		min, max := params.GetDimension(v, axis)
+		min, max := state.GetDimension(v, axis)
 		if fmath.Eq(min, max) {
-			i := len(vals)
-			data = data[0 : len(vals)+1]
+			i := len(data)
+			data = data[0 : len(data)+1]
 			data[i] = min
 		} else {
-			i := len(vals)
-			data = data[0 : len(vals)+2]
+			i := len(data)
+			data = data[0 : len(data)+2]
 			data[i], data[i+1] = min, max
 		}
 	}
@@ -35,7 +46,7 @@ func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, p
 	return
 }
 
-func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float, bestCost float) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
@@ -46,7 +57,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost := fmath.Inf
+	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
 	if !fmath.Eq(totalSA, 0.0) {
@@ -58,7 +69,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 		min := bd.GetMin().GetComponent(axis)
 
 		for _, v := range vals {
-			tLow, tHigh := params.GetDimension(v, axis)
+			tLow, tHigh := state.GetDimension(v, axis)
 			bLeft, bRight := int((tLow-min)*s), int((tHigh-min)*s)
 			if bLeft < 0 {
 				bLeft = 0
@@ -119,7 +130,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
 					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
 					if cost < bestCost {
-						bestAxis, bestPivot = axis, edget
+						bestAxis, bestPivot, bestCost = axis, edget, cost
 					}
 				}
 
@@ -130,7 +141,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 		if nBelow != len(vals) || nAbove != 0 {
 			// SCREWED.
-			logging.Error(params.Log, "Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+			logging.Error(state.Log, "Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 
@@ -193,9 +204,9 @@ const (
 	upperB
 )
 
-func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float, bestCost float) {
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost := fmath.Inf
+	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
 	if !fmath.Eq(totalSA, 0.0) {
@@ -206,7 +217,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 		edges := new(container.Vector)
 		edges.Resize(0, len(vals)*2)
 		for _, v := range vals {
-			min, max := params.GetDimension(v, axis)
+			min, max := state.GetDimension(v, axis)
 			if fmath.Eq(min, max) {
 				edges.Push(boundEdge{min, bothB})
 			} else {
@@ -229,7 +240,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 			if e.position > bd.GetMin().GetComponent(axis) && e.position < bd.GetMax().GetComponent(axis) {
 				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
 				if cost < bestCost {
-					bestAxis, bestPivot = axis, e.position
+					bestAxis, bestPivot, bestCost = axis, e.position, cost
 				}
 			}
 
@@ -242,7 +253,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 		}
 
 		if nBelow != len(vals) || nAbove != 0 {
-			logging.Error(params.Log, "Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+			logging.Error(state.Log, "Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
 			panic("Cost function mismatch")
 		}
 	}
