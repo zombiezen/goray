@@ -77,10 +77,10 @@ func TestSmallTree(t *testing.T) {
 	}
 	root := tree.root.(*Interior)
 	if root.GetAxis() != 0 {
-		t.Error("Wrong split axis (got %d)", root.GetAxis())
+		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
 	}
 	if root.GetPivot() != 1 {
-		t.Error("Wrong pivot value (got %.2f)", root.GetPivot())
+		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
 	}
 
 	if root.GetLeft() != nil {
