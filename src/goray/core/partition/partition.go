@@ -1,5 +1,5 @@
 //
-//  goray/core/partition.go
+//  goray/core/partition/partition.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
@@ -11,9 +11,6 @@ package partition
 import (
 	"goray/logging"
 	"goray/stack"
-)
-
-import (
 	"goray/core/bound"
 	"goray/core/color"
 	"goray/core/kdtree"

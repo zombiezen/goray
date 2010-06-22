@@ -13,7 +13,7 @@ packages = [
     env.Go('material'),
     env.Go('matrix'),
     env.Go('object'),
-    env.Go('partition'),
+    env.Go('partition', Glob('partition/*.go')),
     env.Go('primitive'),
     env.Go('ray'),
     env.Go('render'),
