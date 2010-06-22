@@ -32,12 +32,12 @@ func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, piv
 	for _, v := range vals {
 		min, max := state.GetDimension(v, axis)
 		if fmath.Eq(min, max) {
-			i := len(vals)
-			data = data[0 : len(vals)+1]
+			i := len(data)
+			data = data[0 : len(data)+1]
 			data[i] = min
 		} else {
-			i := len(vals)
-			data = data[0 : len(vals)+2]
+			i := len(data)
+			data = data[0 : len(data)+2]
 			data[i], data[i+1] = min, max
 		}
 	}
