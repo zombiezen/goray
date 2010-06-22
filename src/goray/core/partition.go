@@ -229,8 +229,10 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
 	signal <- false
 	go kd.followRay(r, r.TMin(), dist, ch, signal)
-	for coll = range ch {
-		return coll
+	for newColl := range ch {
+		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
+			coll = newColl
+		}
 	}
 	return
 }
@@ -239,8 +241,10 @@ func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collisi
 	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
 	signal <- false
 	go kd.followRay(r, 0.0, dist, ch, signal)
-	for coll = range ch {
-		return coll
+	for newColl := range ch {
+		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
+			coll = newColl
+		}
 	}
 	return
 }
