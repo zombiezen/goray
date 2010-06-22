@@ -4,7 +4,7 @@ Import('env')
 
 packages = [
     env.Go('background'),
-    env.Go('bound'),
+    env.Go('bound', Glob('bound/*.go')),
     env.Go('camera'),
     env.Go('color'),
     env.Go('integrator'),
