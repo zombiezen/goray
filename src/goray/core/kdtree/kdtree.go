@@ -31,12 +31,30 @@ func getBound(v Value, getDim DimensionFunc) *bound.Bound {
 	return bound.New(vector.New(minX, minY, minZ), vector.New(maxX, maxY, maxZ))
 }
 
+const (
+	DefaultMaxDepth       = 64
+	DefaultLeafSize       = 2
+	DefaultFaultTolerance = 2
+)
+
 /* BuildOptions allows you to tune the parameters of kd-tree construction. */
 type BuildOptions struct {
-	GetDimension DimensionFunc
-	Log          logging.Handler
-	MaxDepth     int
-	LeafSize     int
+	GetDimension   DimensionFunc
+	Log            logging.Handler
+	MaxDepth       int  // MaxDepth limits how many levels the tree can have
+	LeafSize       int  // LeafSize is the desired leaf size.  Some leaves may not obey this size.
+	FaultTolerance uint // FaultTolerance specifies the number of bad splits before a branch is considered a fault.
+}
+
+/* MakeOptions creates a new set of BuildOptions with some reasonable defaults. */
+func MakeOptions(f DimensionFunc, log logging.Handler) BuildOptions {
+	return BuildOptions{
+		GetDimension:   f,
+		Log:            log,
+		MaxDepth:       DefaultMaxDepth,
+		LeafSize:       DefaultLeafSize,
+		FaultTolerance: DefaultFaultTolerance,
+	}
 }
 
 type buildParams struct {
@@ -128,9 +146,9 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 	if cost > params.OldCost {
 		params.BadRefines++
 	}
-	if (cost > params.OldCost*1.6 && len(vals) < 16) || params.BadRefines >= 2 {
+	if (cost > params.OldCost*1.6 && len(vals) < 16) || params.BadRefines >= params.FaultTolerance {
 		// We've done some *bad* splitting.  Just leaf it.
-		logging.Warning(params.Log, "Bad split")
+		logging.Debug(params.Log, "Faulted %d values", len(vals))
 		return newLeaf(vals)
 	}
 	// Sort out values
