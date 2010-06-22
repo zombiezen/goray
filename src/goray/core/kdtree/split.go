@@ -15,7 +15,9 @@ import (
 	"goray/core/bound"
 )
 
-func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float) {
+type splitFunc func([]Value, *bound.Bound, buildParams) (axis int, pivot float, cost float)
+
+func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float, cost float) {
 	axis = bd.GetLargestAxis()
 	data := make([]float, 0, len(vals)*2)
 	for _, v := range vals {
@@ -35,7 +37,7 @@ func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, p
 	return
 }
 
-func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float, bestCost float) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
@@ -46,7 +48,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost := fmath.Inf
+	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
 	if !fmath.Eq(totalSA, 0.0) {
@@ -119,7 +121,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
 					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
 					if cost < bestCost {
-						bestAxis, bestPivot = axis, edget
+						bestAxis, bestPivot, bestCost = axis, edget, cost
 					}
 				}
 
@@ -193,9 +195,9 @@ const (
 	upperB
 )
 
-func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
+func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float, bestCost float) {
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost := fmath.Inf
+	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
 	if !fmath.Eq(totalSA, 0.0) {
@@ -229,7 +231,7 @@ func minimalSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis i
 			if e.position > bd.GetMin().GetComponent(axis) && e.position < bd.GetMax().GetComponent(axis) {
 				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
 				if cost < bestCost {
-					bestAxis, bestPivot = axis, e.position
+					bestAxis, bestPivot, bestCost = axis, e.position, cost
 				}
 			}
 

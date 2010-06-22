@@ -29,6 +29,8 @@ type buildParams struct {
 	MaxDepth     int
 	LeafSize     int
 	Log          logging.Handler
+	OldCost      float
+	BadRefines   uint
 }
 
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
@@ -45,7 +47,7 @@ func (bp buildParams) getBound(v Value) *bound.Bound {
 /* New creates a new kd-tree from an unordered collection of values. */
 func New(vals []Value, getDim DimensionFunc, log logging.Handler) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{getDim, 16, 2, log} // TODO: Make this deeper later
+	params := buildParams{getDim, 16, 2, log, float(len(vals)), 0} // TODO: Make this deeper later
 	if len(vals) > 0 {
 		tree.bound = bound.New(getBound(vals[0], getDim).Get())
 		for _, v := range vals[1:] {
@@ -109,12 +111,22 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	var axis int
-	var pivot float
-	if len(vals) > 128 {
-		axis, pivot = pigeonSplit(vals, bd, params)
-	} else {
-		axis, pivot = minimalSplit(vals, bd, params)
+	var f splitFunc
+	switch {
+	case len(vals) > 128:
+		f = pigeonSplit
+	default:
+		f = minimalSplit
+	}
+	axis, pivot, cost := f(vals, bd, params)
+	// Is this bad?
+	if cost > params.OldCost {
+		params.BadRefines++
+	}
+	if (cost > params.OldCost * 1.6 && len(vals) < 16) || params.BadRefines >= 2 {
+		// We've done some *bad* splitting.  Just leaf it.
+		logging.Warning(params.Log, "Bad split")
+		return newLeaf(vals)
 	}
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
@@ -143,6 +155,7 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		rightBound.SetMinZ(pivot)
 	}
 	// Build subtrees
+	params.OldCost = cost
 	leftChan, rightChan := make(chan Node), make(chan Node)
 	params.MaxDepth--
 	go func() {

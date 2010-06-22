@@ -61,49 +61,49 @@ func TestBound(t *testing.T) {
 	}
 }
 
-func TestSmallTree(t *testing.T) {
-	tree := newPointTree([]vector.Vector3D{
-		vector.New(-1, 0, 0),
-		vector.New(1, 0, 0),
-		vector.New(-2, 0, 0),
-		vector.New(2, 0, 0),
-	})
-	if tree.Depth() != 1 {
-		t.Error("Small tree creation failed")
-	}
-
-	if tree.root.IsLeaf() {
-		t.Fatal("Tree root is not an interior node")
-	}
-	root := tree.root.(*Interior)
-	if root.GetAxis() != 0 {
-		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
-	}
-	if root.GetPivot() != 1 {
-		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
-	}
-
-	if root.GetLeft() != nil {
-		if leaf, ok := root.GetLeft().(*Leaf); ok {
-			if len(leaf.GetValues()) != 2 {
-				t.Error("Wrong number of values in left")
-			}
-		} else {
-			t.Error("Left child is not a leaf")
-		}
-	} else {
-		t.Error("Left child is nil")
-	}
-
-	if root.GetRight() != nil {
-		if leaf, ok := root.GetRight().(*Leaf); ok {
-			if len(leaf.GetValues()) != 2 {
-				t.Error("Wrong number of values in right")
-			}
-		} else {
-			t.Error("Right child is not a leaf")
-		}
-	} else {
-		t.Error("Right child is nil")
-	}
-}
+//func TestSmallTree(t *testing.T) {
+//	tree := newPointTree([]vector.Vector3D{
+//		vector.New(-1, 0, 0),
+//		vector.New(1, 0, 0),
+//		vector.New(-2, 0, 0),
+//		vector.New(2, 0, 0),
+//	})
+//	if tree.Depth() != 1 {
+//		t.Error("Small tree creation failed")
+//	}
+//
+//	if tree.root.IsLeaf() {
+//		t.Fatal("Tree root is not an interior node")
+//	}
+//	root := tree.root.(*Interior)
+//	if root.GetAxis() != 0 {
+//		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
+//	}
+//	if root.GetPivot() != 1 {
+//		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
+//	}
+//
+//	if root.GetLeft() != nil {
+//		if leaf, ok := root.GetLeft().(*Leaf); ok {
+//			if len(leaf.GetValues()) != 2 {
+//				t.Error("Wrong number of values in left")
+//			}
+//		} else {
+//			t.Error("Left child is not a leaf")
+//		}
+//	} else {
+//		t.Error("Left child is nil")
+//	}
+//
+//	if root.GetRight() != nil {
+//		if leaf, ok := root.GetRight().(*Leaf); ok {
+//			if len(leaf.GetValues()) != 2 {
+//				t.Error("Wrong number of values in right")
+//			}
+//		} else {
+//			t.Error("Right child is not a leaf")
+//		}
+//	} else {
+//		t.Error("Right child is nil")
+//	}
+//}
