@@ -116,7 +116,7 @@ func primGetDim(v kdtree.Value, axis int) (min, max float) {
 	return
 }
 
-func NewKD(prims []primitive.Primitive, log *logging.Logger) Partitioner {
+func NewKD(prims []primitive.Primitive, log logging.Handler) Partitioner {
 	vals := make([]kdtree.Value, len(prims))
 	for i, p := range prims {
 		vals[i] = p
