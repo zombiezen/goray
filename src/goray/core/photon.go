@@ -84,8 +84,9 @@ func (pm *Map) Update() {
 		for i, _ := range values {
 			values[i] = pm.photons[i]
 		}
-		// TODO: Make leaves only contain one photon
-		pm.tree = kdtree.New(values, photonGetDim, nil)
+		opts := kdtree.MakeOptions(photonGetDim, nil)
+		opts.LeafSize = 1
+		pm.tree = kdtree.New(values, opts)
 		pm.fresh = true
 	}
 }

@@ -1,5 +1,5 @@
 //
-//  goray/core/partition.go
+//  goray/core/partition/partition.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
@@ -11,9 +11,6 @@ package partition
 import (
 	"goray/logging"
 	"goray/stack"
-)
-
-import (
 	"goray/core/bound"
 	"goray/core/color"
 	"goray/core/kdtree"
@@ -119,12 +116,13 @@ func primGetDim(v kdtree.Value, axis int) (min, max float) {
 	return
 }
 
-func NewKD(prims []primitive.Primitive, log *logging.Logger) Partitioner {
+func NewKD(prims []primitive.Primitive, log logging.Handler) Partitioner {
 	vals := make([]kdtree.Value, len(prims))
 	for i, p := range prims {
 		vals[i] = p
 	}
-	tree := kdtree.New(vals, primGetDim, log)
+	opts := kdtree.MakeOptions(primGetDim, log)
+	tree := kdtree.New(vals, opts)
 	return &kdPartition{tree}
 }
 

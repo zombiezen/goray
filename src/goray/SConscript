@@ -2,16 +2,15 @@
 
 Import('env')
 
-packages = [
+root_packages = [
     env.Go('fmath.go'),
     env.Go('logging.go'),
     env.Go('montecarlo.go'),
-    env.Go('time.go'),
-    env.Go('stack.go'),
+    env.Go('time', Glob('time/*.go')),
+    env.Go('stack', Glob('stack/*.go')),
 ]
 
 subpackages = SConscript(['core/SConscript', 'std/SConscript'], exports='env')
+packages = Flatten([root_packages, subpackages])
 
-all_packages = Flatten([packages, subpackages])
-
-Return('all_packages')
+Return('packages')
