@@ -134,14 +134,7 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	var f splitFunc
-	switch {
-	case len(vals) > 128:
-		f = pigeonSplit
-	default:
-		f = minimalSplit
-	}
-	axis, pivot, cost := f(vals, bd, params)
+	axis, pivot, cost := defaultSplit(vals, bd, params)
 	// Is this bad?
 	if cost > params.OldCost {
 		params.BadRefines++

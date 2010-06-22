@@ -17,6 +17,15 @@ import (
 
 type splitFunc func([]Value, *bound.Bound, buildParams) (axis int, pivot float, cost float)
 
+func defaultSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float, cost float) {
+	const pigeonThreshold = 128
+
+	if len(vals) > pigeonThreshold {
+		return pigeonSplit(vals, bd, params)
+	}
+	return minimalSplit(vals, bd, params)
+}
+
 func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, pivot float, cost float) {
 	axis = bd.GetLargestAxis()
 	data := make([]float, 0, len(vals)*2)
