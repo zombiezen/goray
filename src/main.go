@@ -166,7 +166,7 @@ func main() {
 	sc.AddLight(pointLight.New(vector.New( 0.0, 10.0,  0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
 	sc.AddLight(pointLight.New(vector.New( 0.0,  0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
 	sc.AddObject(cube)
-	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.5, mat)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.25, mat)})
 
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
