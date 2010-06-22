@@ -22,7 +22,6 @@ packages = [
     env.Go('vector', Glob('vector/*.go')),
     env.Go('vmap'),
     env.Go('volume'),
-    env.Go('version'),
 ]
 
 Return('packages')

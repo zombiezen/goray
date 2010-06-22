@@ -7,6 +7,7 @@ root_packages = [
     env.Go('logging.go'),
     env.Go('time', Glob('time/*.go')),
     env.Go('stack', Glob('stack/*.go')),
+	env.Go('version'),
 ]
 
 subpackages = SConscript(['core/SConscript', 'std/SConscript'], exports='env')
