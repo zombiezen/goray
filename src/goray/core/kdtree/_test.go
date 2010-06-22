@@ -18,24 +18,26 @@ func dim(v Value, axis int) (min, max float) {
 	return
 }
 
-func newPointTree(pts []vector.Vector3D) *Tree {
+func newPointTree(pts []vector.Vector3D, opts BuildOptions) *Tree {
 	vals := make([]Value, len(pts))
 	for i, p := range pts {
 		vals[i] = p
 	}
-	return New(vals, BuildOptions{GetDimension: dim, MaxDepth: 4, LeafSize: 2})
+	return New(vals, opts)
 }
 
-func newBoxTree(boxes []*bound.Bound) *Tree {
+func newBoxTree(boxes []*bound.Bound, opts BuildOptions) *Tree {
 	vals := make([]Value, len(boxes))
 	for i, b := range boxes {
 		vals[i] = b
 	}
-	return New(vals, BuildOptions{GetDimension: dim, MaxDepth: 4, LeafSize: 2})
+	return New(vals, opts)
 }
 
 func TestLeafTree(t *testing.T) {
-	tree := newPointTree([]vector.Vector3D{vector.New(-1, 0, 0), vector.New(1, 0, 0)})
+	opts := MakeOptions(dim, nil)
+	opts.LeafSize = 2
+	tree := newPointTree([]vector.Vector3D{vector.New(-1, 0, 0), vector.New(1, 0, 0)}, opts)
 	if tree.Depth() != 0 {
 		t.Error("Simple leaf tree creation fails")
 	}
@@ -44,7 +46,8 @@ func TestLeafTree(t *testing.T) {
 func TestBound(t *testing.T) {
 	ptA, ptB := vector.New(1, 2, 3), vector.New(4, 5, 6)
 
-	b := newBoxTree([]*bound.Bound{bound.New(ptA, ptB)}).GetBound()
+	opts := MakeOptions(dim, nil)
+	b := newBoxTree([]*bound.Bound{bound.New(ptA, ptB)}, opts).GetBound()
 	if b.GetMinX() != ptA.X || b.GetMinY() != ptA.Y || b.GetMinZ() != ptA.Z {
 		t.Error("Box tree minimum wrong")
 	}
@@ -52,7 +55,7 @@ func TestBound(t *testing.T) {
 		t.Error("Box tree maximum wrong")
 	}
 
-	b = newPointTree([]vector.Vector3D{ptA, ptB}).GetBound()
+	b = newPointTree([]vector.Vector3D{ptA, ptB}, opts).GetBound()
 	if b.GetMinX() != ptA.X || b.GetMinY() != ptA.Y || b.GetMinZ() != ptA.Z {
 		t.Error("Point tree minimum wrong")
 	}
@@ -61,49 +64,54 @@ func TestBound(t *testing.T) {
 	}
 }
 
-//func TestSmallTree(t *testing.T) {
-//	tree := newPointTree([]vector.Vector3D{
-//		vector.New(-1, 0, 0),
-//		vector.New(1, 0, 0),
-//		vector.New(-2, 0, 0),
-//		vector.New(2, 0, 0),
-//	})
-//	if tree.Depth() != 1 {
-//		t.Error("Small tree creation failed")
-//	}
-//
-//	if tree.root.IsLeaf() {
-//		t.Fatal("Tree root is not an interior node")
-//	}
-//	root := tree.root.(*Interior)
-//	if root.GetAxis() != 0 {
-//		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
-//	}
-//	if root.GetPivot() != 1 {
-//		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
-//	}
-//
-//	if root.GetLeft() != nil {
-//		if leaf, ok := root.GetLeft().(*Leaf); ok {
-//			if len(leaf.GetValues()) != 2 {
-//				t.Error("Wrong number of values in left")
-//			}
-//		} else {
-//			t.Error("Left child is not a leaf")
-//		}
-//	} else {
-//		t.Error("Left child is nil")
-//	}
-//
-//	if root.GetRight() != nil {
-//		if leaf, ok := root.GetRight().(*Leaf); ok {
-//			if len(leaf.GetValues()) != 2 {
-//				t.Error("Wrong number of values in right")
-//			}
-//		} else {
-//			t.Error("Right child is not a leaf")
-//		}
-//	} else {
-//		t.Error("Right child is nil")
-//	}
-//}
+func TestSimpleTree(t *testing.T) {
+	opts := MakeOptions(dim, nil)
+	opts.SplitFunc = SimpleSplit
+	tree := newPointTree(
+		[]vector.Vector3D{
+			vector.New(-1, 0, 0),
+			vector.New(1, 0, 0),
+			vector.New(-2, 0, 0),
+			vector.New(2, 0, 0),
+		},
+		opts,
+	)
+	if tree.Depth() != 1 {
+		t.Error("Creation failed")
+	}
+
+	if tree.root.IsLeaf() {
+		t.Fatal("Tree root is not an interior node")
+	}
+	root := tree.root.(*Interior)
+	if root.GetAxis() != 0 {
+		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
+	}
+	if root.GetPivot() != 1 {
+		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
+	}
+
+	if root.GetLeft() != nil {
+		if leaf, ok := root.GetLeft().(*Leaf); ok {
+			if len(leaf.GetValues()) != 2 {
+				t.Error("Wrong number of values in left")
+			}
+		} else {
+			t.Error("Left child is not a leaf")
+		}
+	} else {
+		t.Error("Left child is nil")
+	}
+
+	if root.GetRight() != nil {
+		if leaf, ok := root.GetRight().(*Leaf); ok {
+			if len(leaf.GetValues()) != 2 {
+				t.Error("Wrong number of values in right")
+			}
+		} else {
+			t.Error("Right child is not a leaf")
+		}
+	} else {
+		t.Error("Right child is nil")
+	}
+}

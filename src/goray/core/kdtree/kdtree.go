@@ -40,6 +40,7 @@ const (
 /* BuildOptions allows you to tune the parameters of kd-tree construction. */
 type BuildOptions struct {
 	GetDimension   DimensionFunc
+	SplitFunc      SplitFunc
 	Log            logging.Handler
 	MaxDepth       int  // MaxDepth limits how many levels the tree can have
 	LeafSize       int  // LeafSize is the desired leaf size.  Some leaves may not obey this size.
@@ -50,6 +51,7 @@ type BuildOptions struct {
 func MakeOptions(f DimensionFunc, log logging.Handler) BuildOptions {
 	return BuildOptions{
 		GetDimension:   f,
+		SplitFunc:      DefaultSplit,
 		Log:            log,
 		MaxDepth:       DefaultMaxDepth,
 		LeafSize:       DefaultLeafSize,
@@ -57,29 +59,30 @@ func MakeOptions(f DimensionFunc, log logging.Handler) BuildOptions {
 	}
 }
 
-type buildParams struct {
+/* BuildState holds information for building a level of a kd-tree. */
+type BuildState struct {
 	BuildOptions
 	OldCost    float
 	BadRefines uint
 }
 
-func (bp buildParams) getBound(v Value) *bound.Bound {
-	return getBound(v, bp.GetDimension)
+func (state BuildState) getBound(v Value) *bound.Bound {
+	return getBound(v, state.GetDimension)
 }
 
 /* New creates a new kd-tree from an unordered collection of values. */
 func New(vals []Value, opts BuildOptions) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{opts, float(len(vals)), 0}
+	state := BuildState{opts, float(len(vals)), 0}
 	if len(vals) > 0 {
-		tree.bound = bound.New(params.getBound(vals[0]).Get())
+		tree.bound = bound.New(state.getBound(vals[0]).Get())
 		for _, v := range vals[1:] {
-			tree.bound = bound.Union(tree.bound, params.getBound(v))
+			tree.bound = bound.Union(tree.bound, state.getBound(v))
 		}
 	} else {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
-	tree.root = build(vals, tree.bound, params)
+	tree.root = build(vals, tree.bound, state)
 	logging.Debug(opts.Log, "kd-tree is %d levels deep", tree.Depth())
 	return tree
 }
@@ -127,27 +130,27 @@ func (tree *Tree) String() string {
 	return nodeString(tree.root, 0)
 }
 
-func build(vals []Value, bd *bound.Bound, params buildParams) Node {
+func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	// If we're within acceptable bounds (or we're just sick of building the tree),
 	// then make a leaf.
-	if len(vals) <= params.LeafSize || params.MaxDepth <= 0 {
+	if len(vals) <= state.LeafSize || state.MaxDepth <= 0 {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	axis, pivot, cost := defaultSplit(vals, bd, params)
+	axis, pivot, cost := state.SplitFunc(vals, bd, state)
 	// Is this bad?
-	if cost > params.OldCost {
-		params.BadRefines++
+	if cost > state.OldCost {
+		state.BadRefines++
 	}
-	if (cost > params.OldCost*1.6 && len(vals) < 16) || params.BadRefines >= params.FaultTolerance {
+	if (cost > state.OldCost*1.6 && len(vals) < 16) || state.BadRefines >= state.FaultTolerance {
 		// We've done some *bad* splitting.  Just leaf it.
-		logging.Debug(params.Log, "Faulted %d values", len(vals))
+		logging.Debug(state.Log, "Faulted %d values", len(vals))
 		return newLeaf(vals)
 	}
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
 	for _, v := range vals {
-		vMin, vMax := params.GetDimension(v, axis)
+		vMin, vMax := state.GetDimension(v, axis)
 		if vMin < pivot {
 			left = left[0 : len(left)+1]
 			left[len(left)-1] = v
@@ -171,14 +174,14 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 		rightBound.SetMinZ(pivot)
 	}
 	// Build subtrees
-	params.OldCost = cost
+	state.OldCost = cost
 	leftChan, rightChan := make(chan Node), make(chan Node)
-	params.MaxDepth--
+	state.MaxDepth--
 	go func() {
-		leftChan <- build(left, leftBound, params)
+		leftChan <- build(left, leftBound, state)
 	}()
 	go func() {
-		rightChan <- build(right, rightBound, params)
+		rightChan <- build(right, rightBound, state)
 	}()
 	// Return interior node
 	return newInterior(axis, pivot, <-leftChan, <-rightChan)
