@@ -26,6 +26,7 @@ func New() *Stack {
 func (s *Stack) Init() *Stack    { s.top = nil; return s }
 func (s *Stack) Copy() *Stack    { return &Stack{s.top} }
 func (s *Stack) Front() *Element { return s.top }
+func (s *Stack) Empty() bool     { return s.top == nil }
 func (s *Stack) Iter() <-chan interface{} {
 	c := make(chan interface{})
 	go func() {
