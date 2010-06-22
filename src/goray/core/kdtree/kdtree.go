@@ -24,15 +24,6 @@ type Tree struct {
 /* A DimensionFunc calculates the range of a value in a particular axis. */
 type DimensionFunc func(v Value, axis int) (min, max float)
 
-type buildParams struct {
-	GetDimension DimensionFunc
-	MaxDepth     int
-	LeafSize     int
-	Log          logging.Handler
-	OldCost      float
-	BadRefines   uint
-}
-
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
 	minX, maxX := getDim(v, 0)
 	minY, maxY := getDim(v, 1)
@@ -40,16 +31,30 @@ func getBound(v Value, getDim DimensionFunc) *bound.Bound {
 	return bound.New(vector.New(minX, minY, minZ), vector.New(maxX, maxY, maxZ))
 }
 
+/* BuildOptions allows you to tune the parameters of kd-tree construction. */
+type BuildOptions struct {
+	GetDimension DimensionFunc
+	Log          logging.Handler
+	MaxDepth     int
+	LeafSize     int
+}
+
+type buildParams struct {
+	BuildOptions
+	OldCost    float
+	BadRefines uint
+}
+
 func (bp buildParams) getBound(v Value) *bound.Bound {
 	return getBound(v, bp.GetDimension)
 }
 
 /* New creates a new kd-tree from an unordered collection of values. */
-func New(vals []Value, getDim DimensionFunc, log logging.Handler) (tree *Tree) {
+func New(vals []Value, opts BuildOptions) (tree *Tree) {
 	tree = new(Tree)
-	params := buildParams{getDim, 16, 2, log, float(len(vals)), 0} // TODO: Make this deeper later
+	params := buildParams{opts, float(len(vals)), 0}
 	if len(vals) > 0 {
-		tree.bound = bound.New(getBound(vals[0], getDim).Get())
+		tree.bound = bound.New(params.getBound(vals[0]).Get())
 		for _, v := range vals[1:] {
 			tree.bound = bound.Union(tree.bound, params.getBound(v))
 		}
@@ -57,7 +62,7 @@ func New(vals []Value, getDim DimensionFunc, log logging.Handler) (tree *Tree) {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
 	tree.root = build(vals, tree.bound, params)
-	logging.Debug(log, "kd-tree is %d levels deep", tree.Depth())
+	logging.Debug(opts.Log, "kd-tree is %d levels deep", tree.Depth())
 	return tree
 }
 
@@ -123,7 +128,7 @@ func build(vals []Value, bd *bound.Bound, params buildParams) Node {
 	if cost > params.OldCost {
 		params.BadRefines++
 	}
-	if (cost > params.OldCost * 1.6 && len(vals) < 16) || params.BadRefines >= 2 {
+	if (cost > params.OldCost*1.6 && len(vals) < 16) || params.BadRefines >= 2 {
 		// We've done some *bad* splitting.  Just leaf it.
 		logging.Warning(params.Log, "Bad split")
 		return newLeaf(vals)

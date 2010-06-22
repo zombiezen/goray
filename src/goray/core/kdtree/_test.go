@@ -23,7 +23,7 @@ func newPointTree(pts []vector.Vector3D) *Tree {
 	for i, p := range pts {
 		vals[i] = p
 	}
-	return New(vals, dim, nil)
+	return New(vals, BuildOptions{GetDimension: dim, MaxDepth: 4, LeafSize: 2})
 }
 
 func newBoxTree(boxes []*bound.Bound) *Tree {
@@ -31,7 +31,7 @@ func newBoxTree(boxes []*bound.Bound) *Tree {
 	for i, b := range boxes {
 		vals[i] = b
 	}
-	return New(vals, dim, nil)
+	return New(vals, BuildOptions{GetDimension: dim, MaxDepth: 4, LeafSize: 2})
 }
 
 func TestLeafTree(t *testing.T) {

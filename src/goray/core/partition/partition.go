@@ -121,7 +121,13 @@ func NewKD(prims []primitive.Primitive, log *logging.Logger) Partitioner {
 	for i, p := range prims {
 		vals[i] = p
 	}
-	tree := kdtree.New(vals, primGetDim, log)
+	opts := kdtree.BuildOptions{
+		GetDimension: primGetDim,
+		Log:          log,
+		MaxDepth:     64,
+		LeafSize:     2,
+	}
+	tree := kdtree.New(vals, opts)
 	return &kdPartition{tree}
 }
 
