@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 )
 
 /* These constants are predefined logging levels. */
@@ -44,15 +43,6 @@ const (
    You do not have to use it if you don't want to.
 */
 var MainLog = NewLogger()
-
-func sprintv(format string, args []interface{}) string {
-	if len(args) == 0 {
-		return format
-	}
-	callArgs := []reflect.Value{reflect.NewValue(format), reflect.NewValue(args)}
-	sprintf := reflect.NewValue(fmt.Sprintf).(*reflect.FuncValue)
-	return sprintf.Call(callArgs)[0].(*reflect.StringValue).Get()
-}
 
 /* Record defines a simple log record. */
 type Record interface {
@@ -80,9 +70,9 @@ type Handler interface {
 	Handle(Record)
 }
 
-func shortcut(level int, log Handler, format string, args []interface{}) {
+func shortcut(level int, log Handler, format string, args ...interface{}) {
 	if log != nil {
-		log.Handle(BasicRecord{sprintv(format, args), level})
+		log.Handle(BasicRecord{fmt.Sprintf(format, args), level})
 	}
 }
 
@@ -134,7 +124,7 @@ func (log *Logger) Log(level int, message string) {
 
 /* Logf creates a new BasicRecord from a Printf format string and sends it to the handlers. */
 func (log *Logger) Logf(level int, format string, args ...interface{}) {
-	message := sprintv(format, args)
+	message := fmt.Sprintf(format, args)
 	log.Handle(BasicRecord{message, level})
 }
 
