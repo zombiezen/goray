@@ -35,17 +35,14 @@ func simpleSplit(vals []Value, bd *bound.Bound, params buildParams) (axis int, p
 	return
 }
 
-type pigeonBin struct {
-	n           int
-	left, right int
-	bleft, both int
-	t           float
-}
-
-func (b pigeonBin) empty() bool { return b.n == 0 }
-
 func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis int, bestPivot float) {
 	const numBins = 1024
+	type pigeonBin struct {
+		n           int
+		left, right int
+		bleft, both int
+		t           float
+	}
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
@@ -75,7 +72,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 			}
 
 			if tLow == tHigh {
-				if bins[bLeft].empty() || tLow >= bins[bLeft].t {
+				if bins[bLeft].n == 0 || tLow >= bins[bLeft].t {
 					bins[bLeft].t = tLow
 					bins[bLeft].both++
 				} else {
@@ -84,7 +81,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 				}
 				bins[bLeft].n += 2
 			} else {
-				if bins[bLeft].empty() || tLow > bins[bLeft].t {
+				if bins[bLeft].n == 0 || tLow > bins[bLeft].t {
 					bins[bLeft].t = tLow
 					bins[bLeft].left += bins[bLeft].both + bins[bLeft].bleft
 					bins[bLeft].right += bins[bLeft].both
@@ -98,7 +95,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 
 				bins[bLeft].n++
 				bins[bRight].right++
-				if bins[bRight].empty() || tHigh > bins[bRight].t {
+				if bins[bRight].n == 0 || tHigh > bins[bRight].t {
 					bins[bRight].t = tHigh
 					bins[bRight].left += bins[bRight].both + bins[bRight].bleft
 					bins[bRight].right += bins[bRight].both
@@ -114,7 +111,7 @@ func pigeonSplit(vals []Value, bd *bound.Bound, params buildParams) (bestAxis in
 		nBelow, nAbove := 0, len(vals)
 		// Cumulate values and evaluate cost
 		for _, b := range bins {
-			if !b.empty() {
+			if b.n != 0 {
 				nBelow += b.left
 				nAbove -= b.right
 				// Cost:
