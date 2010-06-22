@@ -26,34 +26,34 @@ func New() *Stack {
 func (s *Stack) Init() *Stack    { s.top = nil; return s }
 func (s *Stack) Copy() *Stack    { return &Stack{s.top} }
 func (s *Stack) Front() *Element { return s.top }
+func (s *Stack) Empty() bool     { return s.top == nil }
 func (s *Stack) Iter() <-chan interface{} {
 	c := make(chan interface{})
 	go func() {
+		defer close(c)
 		for elem := s.top; elem != nil; elem = elem.Next() {
 			c <- elem.Value
 		}
-		close(c)
 	}()
 	return c
 }
 
-func (s *Stack) Top() (value interface{}, ok bool) {
+func (s *Stack) Top() interface{} {
 	if s.top == nil {
-		return nil, false
+		return nil
 	}
-	return s.top.Value, true
+	return s.top.Value
 }
 
 func (s *Stack) Push(v interface{}) {
 	s.top = &Element{v, s.top}
 }
 
-func (s *Stack) Pop() (value interface{}, ok bool) {
+func (s *Stack) Pop() (value interface{}) {
 	if s.top == nil {
 		return
 	}
 	value = s.top.Value
 	s.top = s.top.Next()
-	ok = true
 	return
 }

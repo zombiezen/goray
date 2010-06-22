@@ -159,11 +159,11 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 	exitStack.Push(followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))})
 
 	enter := func() followFrame {
-		frame, _ := enterStack.Top()
+		frame := enterStack.Top()
 		return frame.(followFrame)
 	}
 	exit := func() followFrame {
-		frame, _ := exitStack.Top()
+		frame := exitStack.Top()
 		return frame.(followFrame)
 	}
 
@@ -220,7 +220,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 
 		// Update stack
 		enterStack = exitStack.Copy()
-		topExit, _ := exitStack.Pop()
+		topExit := exitStack.Pop()
 		currNode = topExit.(followFrame).node
 	}
 }
@@ -229,8 +229,10 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
 	signal <- false
 	go kd.followRay(r, r.TMin(), dist, ch, signal)
-	for coll = range ch {
-		return coll
+	for newColl := range ch {
+		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
+			coll = newColl
+		}
 	}
 	return
 }
@@ -239,8 +241,10 @@ func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collisi
 	ch, signal := make(chan primitive.Collision), make(chan bool, 1)
 	signal <- false
 	go kd.followRay(r, 0.0, dist, ch, signal)
-	for coll = range ch {
-		return coll
+	for newColl := range ch {
+		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
+			coll = newColl
+		}
 	}
 	return
 }

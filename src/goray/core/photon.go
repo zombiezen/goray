@@ -176,7 +176,8 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float, root
 	maxDistSqr := <-distCh
 
 	next := func() (kdtree.Node, bool) {
-		top, empty := st.Pop()
+		empty := st.Empty()
+		top := st.Pop()
 		return top.(kdtree.Node), empty
 	}
 

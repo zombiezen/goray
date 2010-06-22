@@ -189,7 +189,7 @@ func main() {
 	}
 	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	logging.MainLog.Info("TOTAL TIME: %v", time.Add(finalizeTime, renderTime))
+	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime + renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {
