@@ -8,7 +8,7 @@ packages = [
     env.Go('camera'),
     env.Go('color'),
     env.Go('integrator'),
-    env.Go('kdtree'),
+    env.Go('kdtree', Glob('kdtree/*.go')),
     env.Go('light'),
     env.Go('material'),
     env.Go('matrix'),
