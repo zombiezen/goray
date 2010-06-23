@@ -5,7 +5,7 @@
 //	Created by Ross Light on 2010-06-09.
 //
 
-/* The goray/time package provides a convenient way to time an operation. */
+/* The time package provides a convenient way to time an operation. */
 package time
 
 import (
@@ -13,6 +13,7 @@ import (
 	stdtime "time"
 )
 
+// Different units of time
 const (
 	Nanosecond = 1e-9
 	Second     = 1
@@ -42,6 +43,7 @@ func (t Time) Split() (hours, minutes int, seconds float64) {
 	return
 }
 
+/* String returns a human-readable representation of the time. */
 func (t Time) String() string {
 	h, m, s := t.Split()
 	switch {
