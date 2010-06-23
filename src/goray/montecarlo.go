@@ -60,3 +60,21 @@ func (hal *Halton) Float64() float64 {
 }
 
 func (h *Halton) Float() float { return float(h.Float64()) }
+
+/*
+	VanDerCorput returns the next number in the van der Corput sequence.
+
+	This function can also be used to generate Sobol sequences and Larcher &
+	Pillichshammer sequences.  The particular algorithm used is described in
+	"Efficient Multidimensional Sampling" by Alexander Keller.
+*/
+func VanDerCorput(bits, r uint32) float {
+	const multRatio = 0.00000000023283064365386962890625
+
+	bits = bits<<16 | bits>>16
+	bits = bits&0x00ff00ff<<8 | bits&0xff00ff00>>8
+	bits = bits&0x0f0f0f0f<<4 | bits&0xf0f0f0f0>>4
+	bits = bits&0x33333333<<2 | bits&0xcccccccc>>2
+	bits = bits&0x55555555<<1 | bits&0xaaaaaaaa>>1
+	return float(float64(bits^r) * multRatio)
+}
