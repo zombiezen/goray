@@ -27,6 +27,8 @@ import (
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/vector"
+
+	"goray/std/cameras/ortho"
 	trivialInt "goray/std/integrators/trivial"
 	"goray/std/objects/mesh"
 	"goray/std/primitives/sphere"
@@ -149,7 +151,13 @@ func main() {
 	cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
 	cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
 
-	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
+	sc.SetCamera(ortho.New(
+		vector.New(5.0, 5.0, 5.0), // Position
+		vector.New(0.0, 0.0, 0.0), // Look
+		vector.New(5.0, 6.0, 5.0), // Up
+		*width, *height,           // Size
+		1.0, 3.0, // Aspect, Scale
+	))
 	sc.AddObject(cube)
 	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
 
@@ -174,7 +182,7 @@ func main() {
 	}
 	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime + renderTime)
+	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {

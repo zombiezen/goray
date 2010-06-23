@@ -3,6 +3,7 @@
 Import('env')
 
 packages = [
+	env.Go('cameras/ortho'),
     env.Go('integrators/trivial'),
     env.Go('lights/point'),
     env.Go('objects/mesh'),
