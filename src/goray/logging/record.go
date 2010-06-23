@@ -60,3 +60,21 @@ type BasicRecord struct {
 
 func (rec BasicRecord) Level() Level   { return rec.RecordLevel }
 func (rec BasicRecord) String() string { return rec.Message }
+
+/* A FormattedRecord wraps another record with a customized string. */
+type FormattedRecord struct {
+	Original Record
+	Message  string
+}
+
+func NewFormattedRecord(orig Record, msg string) FormattedRecord {
+	// Unwrap original record if we were given another formatted record.
+	if fmtRec, ok := orig.(FormattedRecord); ok {
+		orig = fmtRec.Original
+	}
+	// Create record
+	return FormattedRecord{orig, msg}
+}
+
+func (rec FormattedRecord) Level() Level   { return rec.Original.Level() }
+func (rec FormattedRecord) String() string { return rec.Message }

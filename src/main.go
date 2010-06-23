@@ -97,8 +97,11 @@ func main() {
 	//	}
 
 	// Set up logging
-	level := logging.Level(logging.InfoLevel - 10*(*debug))
-	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
+	{
+		level := logging.Level(logging.InfoLevel - 10*(*debug))
+		writeHandler := logging.NewWriterHandler(os.Stdout)
+		logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
+	}
 	defer logging.MainLog.Close()
 
 	// Open output file
@@ -111,10 +114,12 @@ func main() {
 	sc := scene.New()
 
 	logging.MainLog.Info("Setting up scene...")
-	sceneFilter := func(rec logging.Record) logging.Record {
-		return logging.BasicRecord{"  SCENE: " + rec.String(), rec.Level()}
-	}
-	sc.GetLog().AddHandler(logging.Filter{logging.MainLog, sceneFilter})
+	sc.GetLog().AddHandler(logging.NewFormatFilter(
+		logging.MainLog,
+		func(rec logging.Record) string {
+			return "  SCENE: " + rec.String()
+		},
+	))
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
@@ -169,11 +174,14 @@ func main() {
 	logging.MainLog.Info("Rendering...")
 
 	var outputImage *render.Image
-	renderFilter := func(rec logging.Record) logging.Record {
-		return logging.BasicRecord{"  RENDER: " + rec.String(), rec.Level()}
-	}
 	renderTime := time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, trivialInt.New(), logging.Filter{logging.MainLog, renderFilter})
+		renderLog := logging.NewFormatFilter(
+			logging.MainLog,
+			func(rec logging.Record) string {
+				return "  RENDER: " + rec.String()
+			},
+		)
+		outputImage = integrator.Render(sc, trivialInt.New(), renderLog)
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)

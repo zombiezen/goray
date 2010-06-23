@@ -45,11 +45,27 @@ func (filter Filter) Close() os.Error {
 }
 
 /* NewMinLevelFilter creates a new Filter that removes records that are below a certain level. */
-func NewMinLevelFilter(minLevel Level, handler Handler) Filter {
+func NewMinLevelFilter(handler Handler, minLevel Level) Filter {
 	return Filter{handler, func(rec Record) Record {
 		if rec.Level() < minLevel {
 			return nil
 		}
 		return rec
+	}}
+}
+
+/*
+	FormatFunc defines a function that takes a record and returns a formatted
+	message.
+
+	Along with NewFormatFilter, this provides a simple way to format your log
+	messages.
+*/
+type FormatFunc func(Record) string
+
+/* NewFormatFilter creates a new Filter that formats records that pass through it. */
+func NewFormatFilter(handler Handler, f FormatFunc) Filter {
+	return Filter{handler, func(rec Record) Record {
+		return NewFormattedRecord(rec, f(rec))
 	}}
 }
