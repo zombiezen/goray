@@ -10,6 +10,7 @@ package util
 import (
 	"math"
 	"goray/fmath"
+	"goray/montecarlo"
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/material"
@@ -24,36 +25,95 @@ import (
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	col = color.NewRGB(0, 0, 0)
+
+	for _, l := range lights {
+		var newCol color.Color
+		switch realLight := l.(type) {
+		case light.DiracLight:
+			// Light with delta distribution
+			newCol = estimateDiracDirect(state, sp, realLight, sc, wo, trShad, sDepth)
+		default:
+			// Area light, etc.
+			newCol = estimateAreaDirect(state, sp, l, sc, wo, trShad, sDepth)
+		}
+		col = color.Add(col, newCol)
+	}
+	return
+}
+
+func checkShadow(state *render.State, sc *scene.Scene, r ray.Ray, trShad bool, sDepth int) bool {
+	r.SetTMin(0.0005) // TODO: Add a smart self-bias value
+	if trShad {
+		// TODO
+	}
+	return sc.IsShadowed(state, r)
+}
+
+func estimateDiracDirect(state *render.State, sp surface.Point, diracLight light.DiracLight, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) color.Color {
 	lightRay := ray.New()
 	lightRay.SetFrom(sp.Position)
 	mat := sp.Material.(material.Material)
-	
-	for _, l := range lights {
-		if diracLight, ok := l.(light.DiracLight); ok {
-			// Light with delta distribution
-			if lcol, ok := diracLight.Illuminate(sp, lightRay); ok {
-				// Shadowed
-				lightRay.SetTMin(0.0005) // TODO: Add a smart self-bias value
-				var shadowed bool
-				if trShad {
-					// TODO
-				} else {
-					shadowed = sc.IsShadowed(state, lightRay)
-				}
-				if !shadowed {
-					if trShad {
-						//lcol = color.Mul(lcol, scol)
-					}
-					surfCol := mat.Eval(state, sp, wo, lightRay.Dir(), material.BSDFAll)
-					//TODO: transmitCol
-					col = color.Add(col, color.ScalarMul(color.Mul(surfCol, lcol), fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))))
-				}
+
+	if lcol, ok := diracLight.Illuminate(sp, lightRay); ok {
+		if shadowed := checkShadow(state, sc, lightRay, trShad, sDepth); !shadowed {
+			if trShad {
+				//lcol = color.Mul(lcol, scol)
 			}
-		} else {
-			// Area light, etc.
-			// TODO
+			surfCol := mat.Eval(state, sp, wo, lightRay.Dir(), material.BSDFAll)
+			//TODO: transmitCol
+			return color.ScalarMul(color.Mul(surfCol, lcol), fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())))
 		}
 	}
+
+	return color.NewRGB(0, 0, 0)
+}
+
+func addMod1(a, b float) (s float) {
+	s = a + b
+	if s > 1 {
+		s -= 1
+	}
+	return
+}
+
+func estimateAreaDirect(state *render.State, sp surface.Point, l light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (ccol color.Color) {
+	ccol = color.NewRGB(0, 0, 0)
+	lightRay := ray.New()
+	lightRay.SetFrom(sp.Position)
+	mat := sp.Material.(material.Material)
+
+	n := l.NumSamples()
+	if state.RayDivision > 1 {
+		n /= state.RayDivision
+		if n < 1 {
+			n = 1
+		}
+	}
+	// TODO: Add a unique offset for every light
+	offset := uint(n*state.PixelSample) + state.SamplingOffset
+
+	isect, canIntersect := l.(light.Intersecter)
+	hal := montecarlo.NewHalton(3)
+	hal.SetStart(offset - 1)
+
+	for i := 0; i < n; i++ {
+		lightSamp := light.Sample{
+			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
+			S2: hal.Float(),
+		}
+		if state.RayDivision > 1 {
+			lightSamp.S1 = addMod1(lightSamp.S1, state.Dc1)
+			lightSamp.S2 = addMod1(lightSamp.S2, state.Dc2)
+		}
+
+		if l.IllumSample(sp, lightRay, &lightSamp) {
+			if shadowed := checkShadow(state, sc, lightRay, trShad, sDepth); !shadowed && lightSamp.Pdf > 1e-6 {
+				// TODO
+			}
+		}
+	}
+	// TODO: Remove when finished
+	_, _, _ = mat, canIntersect, isect
 	return
 }
 
