@@ -1,4 +1,4 @@
-package partition
+package intersect
 
 import "testing"
 
@@ -13,7 +13,7 @@ import (
 func TestDepth(t *testing.T) {
 	type depthTestCase struct {
 		Name        string
-		Partitioner Partitioner
+		Intersect Interface
 	}
 
 	r := ray.New()
@@ -39,13 +39,13 @@ func TestDepth(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		coll := c.Partitioner.Intersect(r, fmath.Inf)
+		coll := c.Intersect.Intersect(r, fmath.Inf)
 		if coll.Hit() {
 			if coll.Primitive != sphereA {
-				t.Errorf("%s partitioner fails depth test", c.Name)
+				t.Errorf("%s intersect fails depth test", c.Name)
 			}
 		} else {
-			t.Errorf("%s partitioner won't collide; depth test skipped.", c.Name)
+			t.Errorf("%s intersect won't collide; depth test skipped.", c.Name)
 		}
 	}
 }

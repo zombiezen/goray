@@ -22,8 +22,8 @@ func (ti *trivial) SurfaceIntegrator()         {}
 func (ti *trivial) Preprocess(sc *scene.Scene) {}
 
 func (ti *trivial) Integrate(sc *scene.Scene, s *render.State, r ray.Ray) color.AlphaColor {
-	if coll, _, _ := sc.Intersect(r); coll.Hit() {
-		return color.NewRGBA(1.0, 1.0, 1.0, 1.0)
+	if coll := sc.Intersect(r, -1); coll.Hit() {
+		return color.NewRGBAFromColor(color.White, 1.0)
 	}
-	return color.NewRGBA(0.1, 0.1, 0.1, 0.0)
+	return color.NewRGBAFromColor(color.Gray(0.1), 0.0)
 }

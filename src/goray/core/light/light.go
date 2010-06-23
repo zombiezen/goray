@@ -1,5 +1,5 @@
 //
-//  goray/core/light.go
+//  goray/core/light/light.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
@@ -52,10 +52,10 @@ type Light interface {
 	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
 	/* CanIlluminate returns whether the light can illuminate a certain point. */
 	CanIlluminate(pt vector.Vector3D) bool
-	/* Illuminate a given surface point, generating a sample. */
-	IllumSample(sp surface.Point, wi ray.Ray, s *Sample) bool
-	/* IllumPdf returns the PDF for sampling with IllumSample. */
-	IllumPdf(sp, spLight surface.Point) float
+	/* IlluminateSample a given surface point, generating a sample. */
+	IlluminateSample(sp surface.Point, wi ray.Ray, s *Sample) bool
+	/* IlluminatePdf returns the PDF for sampling with IllumSample. */
+	IlluminatePdf(sp, spLight surface.Point) float
 }
 
 type Intersecter interface {
@@ -66,6 +66,6 @@ type Intersecter interface {
 type DiracLight interface {
 	Light
 
-	/* Illuminate a given surface point. */
+	/* Illuminate computes the amount of light to add to a given surface point. */
 	Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, ok bool)
 }

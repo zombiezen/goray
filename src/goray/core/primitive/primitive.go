@@ -1,5 +1,5 @@
 //
-//  goray/core/primitive.go
+//  goray/core/primitive/primitive.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
@@ -33,6 +33,13 @@ func (c Collision) Hit() bool { return c.Primitive != nil }
 /* GetPoint returns the point in world coordinates where the ray intersected. */
 func (c Collision) GetPoint() vector.Vector3D {
 	return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
+}
+
+/* GetSurface returns the surface point where the ray intersected. */
+func (c Collision) GetSurface() (sp surface.Point) {
+	sp = c.Primitive.GetSurface(c)
+	sp.Primitive = c.Primitive
+	return
 }
 
 /* Primitive defines a basic 3D entity in a scene. */

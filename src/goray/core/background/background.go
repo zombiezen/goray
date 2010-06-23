@@ -1,5 +1,5 @@
 //
-//  goray/core/background.go
+//  goray/core/background/background.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-28.
