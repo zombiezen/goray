@@ -17,6 +17,7 @@ import (
 	"goray/core/bound"
 	"goray/core/color"
 	"goray/core/kdtree"
+	"goray/core/material"
 	"goray/core/primitive"
 	"goray/core/render"
 	"goray/core/ray"
@@ -82,8 +83,8 @@ func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth i
 	depth := 0
 	for _, p := range s.prims {
 		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin() {
-			mat := coll.Primitive.GetMaterial()
-			if !mat.IsTransparent() {
+			mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+			if !trans {
 				return true
 			}
 			if depth < maxDepth {
@@ -245,8 +246,8 @@ func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxD
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
 	for coll := range ch {
-		mat := coll.Primitive.GetMaterial()
-		if !mat.IsTransparent() {
+		mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+		if !trans {
 			return true
 		}
 		if hit, _ := hitList[coll.Primitive]; !hit {
