@@ -68,8 +68,7 @@ func (dl *directLighting) Preprocess(sc *scene.Scene) {
 }
 
 func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor {
-	var col color.Color = color.NewRGB(0.0, 0.0, 0.0)
-	alpha := 0.0
+	col, alpha := color.Black, 0.0
 
 	defer func(il bool) {
 		state.IncludeLights = il
@@ -138,8 +137,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
-					col = color.Add(col, color.Mul(integ, rcol[1]))
-					alpha = integ.GetA()
+					col, alpha = color.Add(col, color.Mul(integ, rcol[1])), integ.GetA()
 				}
 			}
 		}
@@ -153,5 +151,5 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 			col = color.Add(col, dl.background.GetColor(r, state, false))
 		}
 	}
-	return color.NewRGBA(col.GetR(), col.GetG(), col.GetB(), alpha)
+	return color.NewRGBAFromColor(col, alpha)
 }

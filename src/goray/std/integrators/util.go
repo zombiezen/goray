@@ -65,7 +65,7 @@ func estimateDiracDirect(state *render.State, sp surface.Point, diracLight light
 		}
 	}
 
-	return color.NewRGB(0, 0, 0)
+	return color.Black
 }
 
 func addMod1(a, b float) (s float) {
@@ -77,7 +77,7 @@ func addMod1(a, b float) (s float) {
 }
 
 func estimateAreaDirect(state *render.State, sp surface.Point, l light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (ccol color.Color) {
-	ccol = color.NewRGB(0, 0, 0)
+	ccol = color.Black
 	lightRay := ray.New()
 	lightRay.SetFrom(sp.Position)
 	mat := sp.Material.(material.Material)
@@ -118,7 +118,7 @@ func estimateAreaDirect(state *render.State, sp surface.Point, l light.Light, sc
 }
 
 func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo vector.Vector3D, nSearch int, radius float) (sum color.Color) {
-	sum = color.NewRGB(0.0, 0.0, 0.0)
+	sum = color.Black
 	if !m.Ready() {
 		return
 	}

@@ -10,7 +10,6 @@ package debug
 import (
 	"goray/core/color"
 	"goray/core/material"
-	"goray/core/ray"
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
@@ -38,31 +37,11 @@ func (mat *debugMaterial) Pdf(state *render.State, sp surface.Point, wo, wi vect
 	return 0.0
 }
 
-func (mat *debugMaterial) IsTransparent() bool {
-	return false
-}
-
-func (mat *debugMaterial) GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
-	return nil
-}
-
 func (mat *debugMaterial) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	return
 }
 
 func (mat *debugMaterial) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
-	return nil
-}
-
-func (mat *debugMaterial) Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
-	return color.NewRGB(0, 0, 0)
-}
-
-func (mat *debugMaterial) VolumeTransmittance(state *render.State, sp surface.Point, r ray.Ray) (color.Color, bool) {
-	return nil, false
-}
-
-func (mat *debugMaterial) GetVolumeHandler(inside bool) material.VolumeHandler {
 	return nil
 }
 
