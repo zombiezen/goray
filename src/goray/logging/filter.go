@@ -45,7 +45,7 @@ func (filter Filter) Close() os.Error {
 }
 
 /* NewMinLevelFilter creates a new Filter that removes records that are below a certain level. */
-func NewMinLevelFilter(minLevel int, handler Handler) Filter {
+func NewMinLevelFilter(minLevel Level, handler Handler) Filter {
 	return Filter{handler, func(rec Record) Record {
 		if rec.Level() < minLevel {
 			return nil

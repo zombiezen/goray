@@ -18,7 +18,7 @@ type Handler interface {
 	Handle(Record)
 }
 
-func shortcut(level int, log Handler, format string, args ...interface{}) {
+func shortcut(level Level, log Handler, format string, args ...interface{}) {
 	if log != nil {
 		log.Handle(BasicRecord{fmt.Sprintf(format, args), level})
 	}

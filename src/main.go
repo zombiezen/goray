@@ -97,7 +97,7 @@ func main() {
 	//	}
 
 	// Set up logging
-	level := logging.InfoLevel - 10*(*debug)
+	level := logging.Level(logging.InfoLevel - 10*(*debug))
 	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
 	defer logging.MainLog.Close()
 

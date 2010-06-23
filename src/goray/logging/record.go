@@ -17,23 +17,26 @@ const (
 	CriticalLevel
 )
 
+/* Level is an integer representing the severity of the record. */
+type Level int
+
 /* Record defines a simple log record. */
 type Record interface {
-	Level() int
+	Level() Level
 	String() string
 }
 
 /* StringRecord is a simple, info-level record. */
 type StringRecord string
 
-func (rec StringRecord) Level() int     { return InfoLevel }
+func (rec StringRecord) Level() Level   { return InfoLevel }
 func (rec StringRecord) String() string { return string(rec) }
 
 /* BasicRecord stores a message and a level. */
 type BasicRecord struct {
-	Message      string
-	MessageLevel int
+	Message     string
+	RecordLevel Level
 }
 
-func (rec BasicRecord) Level() int     { return rec.MessageLevel }
+func (rec BasicRecord) Level() Level   { return rec.RecordLevel }
 func (rec BasicRecord) String() string { return rec.Message }

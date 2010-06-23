@@ -50,12 +50,12 @@ func (log *Logger) AddHandler(handler Handler) {
 }
 
 /* Log creates a new BasicRecord and sends it to the handlers. */
-func (log *Logger) Log(level int, message string) {
+func (log *Logger) Log(level Level, message string) {
 	log.Handle(BasicRecord{message, level})
 }
 
 /* Logf creates a new BasicRecord from a Printf format string and sends it to the handlers. */
-func (log *Logger) Logf(level int, format string, args ...interface{}) {
+func (log *Logger) Logf(level Level, format string, args ...interface{}) {
 	shortcut(level, log, format, args)
 }
 
