@@ -39,6 +39,25 @@ type AlphaColor interface {
 	Alpha
 }
 
+/* Gray defines a grayscale color.  It fulfills the Color interface. */
+type Gray float
+
+func (g Gray) GetR() float { return float(g) }
+func (g Gray) GetG() float { return float(g) }
+func (g Gray) GetB() float { return float(g) }
+
+func (col Gray) RGBA() (r, g, b, a uint32) {
+	r = quantizeComponent(float(col))
+	g = r
+	b = r
+	a = math.MaxUint32
+	return
+}
+
+func (g Gray) String() string {
+	return fmt.Sprintf("Gray(%.3f)", float(g))
+}
+
 /* RGB defines a color that has red, green, and blue channels.  It fulfills the Color interface. */
 type RGB struct {
 	R, G, B float
@@ -93,6 +112,13 @@ func (c *RGBA) Copy(src AlphaColor) {
 	c.A = src.GetA()
 }
 
+/* NewRGBAFromColor creates an RGBA value from a color and an alpha value. */
+func NewRGBAFromColor(c Color, a float) RGBA {
+	newColor := RGBA{A: a}
+	newColor.RGB.Copy(c)
+	return newColor
+}
+
 func (c RGBA) GetA() float { return c.A }
 
 func (c RGBA) RGBA() (r, g, b, a uint32) {
@@ -109,13 +135,25 @@ func (c RGBA) AlphaPremultiply() RGBA {
 	return NewRGBA(c.R*c.A, c.G*c.A, c.B*c.A, c.A)
 }
 
+/* These variables are the predefined colors. */
+var (
+	Black = Gray(0)
+	White = Gray(1)
+
+	Red   = RGB{1, 0, 0}
+	Green = RGB{0, 1, 0}
+	Blue  = RGB{0, 0, 1}
+
+	Cyan    = RGB{0, 1, 1}
+	Yellow  = RGB{1, 1, 0}
+	Magenta = RGB{1, 0, 1}
+)
+
 // Operations
 
 func toGorayColor(col image.Color) image.Color {
-	if _, ok := col.(RGB); ok {
-		return col
-	}
-	if _, ok := col.(RGBA); ok {
+	switch col.(type) {
+	case RGB, RGBA, Gray:
 		return col
 	}
 	r, g, b, a := col.RGBA()
@@ -127,7 +165,7 @@ func toGorayColor(col image.Color) image.Color {
 	)
 }
 
-/* The color model for the renderer. */
+/* Model is the color model for the renderer. */
 var Model image.ColorModel = image.ColorModelFunc(toGorayColor)
 
 /* IsBlack determines whether a color is absolute black. */

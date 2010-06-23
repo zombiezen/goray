@@ -76,8 +76,8 @@ func NewPhotonSample(s1, s2, s3 float, flags BSDF, lCol color.Color) PhotonSampl
 	s.Sample = NewSample(s1, s2)
 	s.Sample.Flags = flags
 	s.LastColor = lCol
-	s.Alpha = color.NewRGB(1.0, 1.0, 1.0)
-	s.Color = color.NewRGB(0.0, 0.0, 0.0)
+	s.Alpha = color.White
+	s.Color = color.Black
 	return s
 }
 
