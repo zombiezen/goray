@@ -21,7 +21,6 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/version"
-	"goray/core/camera"
 	"goray/core/integrator"
 	"goray/core/object"
 	"goray/core/render"
