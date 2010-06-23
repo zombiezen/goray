@@ -135,18 +135,18 @@ func (c RGBA) AlphaPremultiply() RGBA {
 	return NewRGBA(c.R*c.A, c.G*c.A, c.B*c.A, c.A)
 }
 
-/* These variables are the predefined colors. */
+// Predefined colors
 var (
-	Black = Gray(0)
-	White = Gray(1)
+	Black Color = Gray(0)
+	White Color = Gray(1)
 
-	Red   = RGB{1, 0, 0}
-	Green = RGB{0, 1, 0}
-	Blue  = RGB{0, 0, 1}
+	Red   Color = RGB{1, 0, 0}
+	Green Color = RGB{0, 1, 0}
+	Blue  Color = RGB{0, 0, 1}
 
-	Cyan    = RGB{0, 1, 1}
-	Yellow  = RGB{1, 1, 0}
-	Magenta = RGB{1, 0, 1}
+	Cyan    Color = RGB{0, 1, 1}
+	Yellow  Color = RGB{1, 1, 0}
+	Magenta Color = RGB{1, 0, 1}
 )
 
 // Operations
