@@ -35,6 +35,13 @@ func (c Collision) GetPoint() vector.Vector3D {
 	return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
 }
 
+/* GetSurface returns the surface point where the ray intersected. */
+func (c Collision) GetSurface() (sp surface.Point) {
+	sp = c.Primitive.GetSurface(c)
+	sp.Primitive = c.Primitive
+	return
+}
+
 /* Primitive defines a basic 3D entity in a scene. */
 type Primitive interface {
 	/* GetBound returns the bounding box in global (world) coordinates. */

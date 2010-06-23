@@ -1,12 +1,15 @@
 //
-//  goray/core/partition/partition.go
+//  goray/core/intersect/intersect.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.
 //
 
-/* The partition package provides an interface for algorithms to efficiently handle ray-collision detection. */
-package partition
+/*
+	The intersect package provides an interface and several algorithms for
+	handling ray-collision detection.
+*/
+package intersect
 
 import (
 	"goray/logging"
@@ -21,17 +24,18 @@ import (
 )
 
 /*
-   Partitioner defines a type that can detect ray collisions.
+   Interface defines a type that can detect ray collisions.
+
    For most cases, this will involve an algorithm that partitions the scene to make these operations faster.
 */
-type Partitioner interface {
+type Interface interface {
 	/* Intersect determines the primitive that a ray collides with. */
 	Intersect(r ray.Ray, dist float) primitive.Collision
-	/* IntersectS determines the primitive that a ray collides with for shadow-detection. */
-	IntersectS(r ray.Ray, dist float) primitive.Collision
-	/* IntersectTS computes the color of a transparent shadow after bouncing around. */
-	IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) primitive.Collision
-	/* GetBound returns a bounding box that contains all of the primitives in the scene. */
+	/* IsShadowed checks whether a ray collides with any primitives (for shadow-detection). */
+	IsShadowed(r ray.Ray, dist float) bool
+	/* DoTransparentShadows computes the color of a transparent shadow after bouncing around. */
+	DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool
+	/* GetBound returns a bounding box that contains all of the primitives that the intersecter knows about. */
 	GetBound() *bound.Bound
 }
 
@@ -44,7 +48,7 @@ type simple struct {
    NewSimple creates a partitioner that doesn't split up the scene at all.
    This should only be used for debugging code, the complexity is O(N).
 */
-func NewSimple(prims []primitive.Primitive) Partitioner {
+func NewSimple(prims []primitive.Primitive) Interface {
 	part := &simple{prims, prims[0].GetBound()}
 	for _, p := range part.prims[1:] {
 		part.bound = bound.Union(part.bound, p.GetBound())
@@ -65,26 +69,22 @@ func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	return
 }
 
-func (s *simple) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
+func (s *simple) IsShadowed(r ray.Ray, dist float) bool {
 	for _, p := range s.prims {
 		if newColl := p.Intersect(r); newColl.Hit() {
-			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin() {
-				coll = newColl
-				return
-			}
+			return true
 		}
 	}
-	return
+	return false
 }
 
-func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
+func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
 	depth := 0
 	for _, p := range s.prims {
-		if info := p.Intersect(r); info.Hit() && info.RayDepth < dist && info.RayDepth > r.TMin() {
-			coll = info
+		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin() {
 			mat := coll.Primitive.GetMaterial()
 			if !mat.IsTransparent() {
-				return
+				return true
 			}
 			if depth < maxDepth {
 				sp := coll.Primitive.GetSurface(coll)
@@ -92,11 +92,11 @@ func (s *simple) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist 
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
-				return
+				return false
 			}
 		}
 	}
-	return
+	return false
 }
 
 type kdPartition struct {
@@ -116,7 +116,7 @@ func primGetDim(v kdtree.Value, axis int) (min, max float) {
 	return
 }
 
-func NewKD(prims []primitive.Primitive, log logging.Handler) Partitioner {
+func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
 	vals := make([]kdtree.Value, len(prims))
 	for i, p := range prims {
 		vals[i] = p
@@ -231,37 +231,33 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 	return
 }
 
-func (kd *kdPartition) IntersectS(r ray.Ray, dist float) (coll primitive.Collision) {
+func (kd *kdPartition) IsShadowed(r ray.Ray, dist float) bool {
 	ch := make(chan primitive.Collision)
 	go kd.followRay(r, r.TMin(), dist, ch)
-	for newColl := range ch {
-		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
-			coll = newColl
-		}
-	}
-	return
+	coll := <-ch
+	return coll.Hit()
 }
 
-func (kd *kdPartition) IntersectTS(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) (coll primitive.Collision) {
+func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
 	ch := make(chan primitive.Collision)
 
 	go kd.followRay(r, r.TMin(), dist, ch)
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
-	for coll = range ch {
+	for coll := range ch {
 		mat := coll.Primitive.GetMaterial()
 		if !mat.IsTransparent() {
-			return
+			return true
 		}
 		if hit, _ := hitList[coll.Primitive]; !hit {
 			hitList[coll.Primitive] = true
 			if depth >= maxDepth {
-				return
+				return false
 			}
 			sp := coll.Primitive.GetSurface(coll)
 			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
 			depth++
 		}
 	}
-	return
+	return false
 }
