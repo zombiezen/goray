@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 /* Handler defines an interface for handling a single record. */
@@ -20,7 +21,7 @@ type Handler interface {
 
 func shortcut(level Level, log Handler, format string, args ...interface{}) {
 	if log != nil {
-		log.Handle(BasicRecord{fmt.Sprintf(format, args), level})
+		log.Handle(BasicRecord{fmt.Sprintf(format, args), level, time.UTC()})
 	}
 }
 

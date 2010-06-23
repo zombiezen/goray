@@ -51,7 +51,7 @@ func (log *Logger) AddHandler(handler Handler) {
 
 /* Log creates a new BasicRecord and sends it to the handlers. */
 func (log *Logger) Log(level Level, message string) {
-	log.Handle(BasicRecord{message, level})
+	shortcut(level, log, "%s", message)
 }
 
 /* Logf creates a new BasicRecord from a Printf format string and sends it to the handlers. */

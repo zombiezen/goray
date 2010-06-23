@@ -8,8 +8,10 @@
 package logging
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 /*
@@ -68,4 +70,20 @@ func NewFormatFilter(handler Handler, f FormatFunc) Filter {
 	return Filter{handler, func(rec Record) Record {
 		return NewFormattedRecord(rec, f(rec))
 	}}
+}
+
+/* DefaultFormatter returns a Filter that formats a record into a reasonable log string. */
+func DefaultFormatter(handler Handler) Filter {
+	return NewFormatFilter(handler, func(rec Record) string {
+		switch orig := GetUnformattedRecord(rec).(type) {
+		case DatedRecord:
+			return fmt.Sprintf(
+				"[%s]%v:%s",
+				orig.Timestamp().Format(time.RFC3339),
+				rec.Level(),
+				rec.String(),
+			)
+		}
+		return fmt.Sprintf("%v:%s", rec.Level(), rec.String())
+	})
 }
