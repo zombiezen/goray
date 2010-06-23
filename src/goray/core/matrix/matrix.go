@@ -1,5 +1,5 @@
 //
-//  goray/core/matrix.go
+//  goray/core/matrix/matrix.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-27.

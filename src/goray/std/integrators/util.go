@@ -24,7 +24,7 @@ import (
 
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
-	col = color.NewRGB(0, 0, 0)
+	col = color.Black
 
 	for _, l := range lights {
 		var newCol color.Color
@@ -46,7 +46,7 @@ func checkShadow(state *render.State, sc *scene.Scene, r ray.Ray, trShad bool, s
 	if trShad {
 		// TODO
 	}
-	return sc.IsShadowed(state, r)
+	return sc.IsShadowed(r, fmath.Inf)
 }
 
 func estimateDiracDirect(state *render.State, sp surface.Point, diracLight light.DiracLight, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) color.Color {
@@ -106,7 +106,7 @@ func estimateAreaDirect(state *render.State, sp surface.Point, l light.Light, sc
 			lightSamp.S2 = addMod1(lightSamp.S2, state.Dc2)
 		}
 
-		if l.IllumSample(sp, lightRay, &lightSamp) {
+		if l.IlluminateSample(sp, lightRay, &lightSamp) {
 			if shadowed := checkShadow(state, sc, lightRay, trShad, sDepth); !shadowed && lightSamp.Pdf > 1e-6 {
 				// TODO
 			}

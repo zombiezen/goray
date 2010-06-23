@@ -75,7 +75,8 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		state.IncludeLights = il
 	}(state.IncludeLights)
 
-	if coll, sp, _ := sc.Intersect(r); coll.Hit() {
+	if coll := sc.Intersect(r, -1); coll.Hit() {
+		sp := coll.GetSurface()
 		// Camera ray
 		if state.RayLevel == 0 {
 			state.IncludeLights = true
@@ -88,7 +89,9 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		lightRay.SetFrom(sp.Position)
 
 		// Contribution of light-emitting surfaces
-		col = color.Add(col, mat.Emit(state, sp, wo))
+		if emat, ok := mat.(material.EmitMaterial); ok {
+			col = color.Add(col, emat.Emit(state, sp, wo))
+		}
 		// Normal lighting
 		if bsdfs&(material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive) != 0 {
 			col = color.Add(col, util.EstimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))

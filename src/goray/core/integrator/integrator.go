@@ -1,5 +1,5 @@
 //
-//  goray/core/integrator.go
+//  goray/core/integrator/integrator.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.

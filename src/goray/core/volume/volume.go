@@ -1,5 +1,5 @@
 //
-//  goray/core/volume.go
+//  goray/core/volume/volume.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-28.

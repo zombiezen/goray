@@ -20,14 +20,15 @@ import (
 	"buildversion"
 	"goray/logging"
 	"goray/time"
-	"goray/core/camera"
+	"goray/version"
 	"goray/core/color"
 	"goray/core/integrator"
 	"goray/core/object"
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/vector"
-	"goray/core/version"
+
+	"goray/std/cameras/ortho"
 	"goray/std/integrators/directlight"
 	pointLight "goray/std/lights/point"
 	debugMaterial "goray/std/materials/debug"
@@ -99,8 +100,11 @@ func main() {
 	//	}
 
 	// Set up logging
-	level := logging.InfoLevel - 10*(*debug)
-	logging.MainLog.AddHandler(logging.NewMinLevelFilter(level, logging.NewWriterHandler(os.Stdout)))
+	{
+		level := logging.Level(logging.InfoLevel - 10*(*debug))
+		writeHandler := logging.NewWriterHandler(os.Stdout)
+		logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
+	}
 	defer logging.MainLog.Close()
 
 	// Open output file
@@ -113,10 +117,12 @@ func main() {
 	sc := scene.New()
 
 	logging.MainLog.Info("Setting up scene...")
-	sceneFilter := func(rec logging.Record) logging.Record {
-		return logging.BasicRecord{"  SCENE: " + rec.String(), rec.Level()}
-	}
-	sc.GetLog().AddHandler(logging.Filter{logging.MainLog, sceneFilter})
+	sc.GetLog().AddHandler(logging.NewFormatFilter(
+		logging.MainLog,
+		func(rec logging.Record) string {
+			return "  SCENE: " + rec.String()
+		},
+	))
 	// We should be doing this:
 	//ok := parseXMLFile(f, scene)
 	// For now, we'll do this:
@@ -153,7 +159,7 @@ func main() {
 		[3]int{4, 6, 7},
 		[3]int{5, 6, 4},
 	}
-	
+
 	mat := debugMaterial.New(color.NewRGB(1.0, 1.0, 1.0))
 	for _, fdata := range faces {
 		face := mesh.NewTriangle(fdata[0], fdata[1], fdata[2], cube)
@@ -161,10 +167,16 @@ func main() {
 		cube.AddTriangle(face)
 	}
 
-	sc.SetCamera(camera.NewOrtho(vector.New(5.0, 5.0, 5.0), vector.New(0.0, 0.0, 0.0), vector.New(5.0, 6.0, 5.0), *width, *height, 1.0, 3.0))
-	sc.AddLight(pointLight.New(vector.New(10.0,  0.0,  0.0), color.NewRGB(1.0, 0.0, 0.0), 200.0))
-	sc.AddLight(pointLight.New(vector.New( 0.0, 10.0,  0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
-	sc.AddLight(pointLight.New(vector.New( 0.0,  0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
+	sc.SetCamera(ortho.New(
+		vector.New(5.0, 5.0, 5.0), // Position
+		vector.New(0.0, 0.0, 0.0), // Look
+		vector.New(5.0, 6.0, 5.0), // Up
+		*width, *height,           // Size
+		1.0, 3.0, // Aspect, Scale
+	))
+	sc.AddLight(pointLight.New(vector.New(10.0, 0.0, 0.0), color.NewRGB(1.0, 0.0, 0.0), 200.0))
+	sc.AddLight(pointLight.New(vector.New(0.0, 10.0, 0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
+	sc.AddLight(pointLight.New(vector.New(0.0, 0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
 	sc.AddObject(cube)
 	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.25, mat)})
 
@@ -177,11 +189,14 @@ func main() {
 	logging.MainLog.Info("Rendering...")
 
 	var outputImage *render.Image
-	renderFilter := func(rec logging.Record) logging.Record {
-		return logging.BasicRecord{"  RENDER: " + rec.String(), rec.Level()}
-	}
 	renderTime := time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, directlight.New(false, 3, 10), logging.Filter{logging.MainLog, renderFilter})
+		renderLog := logging.NewFormatFilter(
+			logging.MainLog,
+			func(rec logging.Record) string {
+				return "  RENDER: " + rec.String()
+			},
+		)
+		outputImage = integrator.Render(sc, directlight.New(false, 3, 10), renderLog)
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)
@@ -189,7 +204,7 @@ func main() {
 	}
 	logging.MainLog.Info("Render finished in %v", renderTime)
 
-	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime + renderTime)
+	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
 	switch *format {

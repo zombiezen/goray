@@ -1,5 +1,5 @@
 //
-//  goray/core/scene.go
+//  goray/core/scene/scene.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
@@ -18,14 +18,12 @@ import (
 	"goray/core/background"
 	"goray/core/bound"
 	"goray/core/camera"
+	"goray/core/intersect"
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/object"
-	"goray/core/partition"
 	"goray/core/primitive"
 	"goray/core/ray"
-	"goray/core/render"
-	"goray/core/surface"
 	"goray/core/vector"
 	"goray/core/volume"
 )
@@ -57,14 +55,14 @@ type Scene struct {
 
 	log *logging.Logger
 
-	objects     map[ObjectID]object.Object3D
-	materials   map[string]material.Material
-	volumes     container.Vector
-	lights      container.Vector
-	partitioner partition.Partitioner
-	camera      camera.Camera
-	background  background.Background
-	sceneBound  *bound.Bound
+	objects    map[ObjectID]object.Object3D
+	materials  map[string]material.Material
+	volumes    container.Vector
+	lights     container.Vector
+	intersect  intersect.Interface
+	camera     camera.Camera
+	background background.Background
+	sceneBound *bound.Bound
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
@@ -168,44 +166,40 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
-/* GetSceneBound returns a bounding box that contains every object in the scene. */
-func (s *Scene) GetSceneBound() *bound.Bound { return s.sceneBound }
+/* GetBound returns a bounding box that contains every object in the scene. */
+func (s *Scene) GetBound() *bound.Bound { return s.sceneBound }
 
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
 /* Intersect returns the surface point that intersects with the given ray. */
-func (s *Scene) Intersect(r ray.Ray) (coll primitive.Collision, sp surface.Point, err os.Error) {
-	dist := r.TMax()
-	if r.TMax() < 0 {
-		dist = fmath.Inf
+func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
+	// Determine distance to check
+	if dist < 0 {
+		dist = r.TMax()
+		if dist < 0 {
+			dist = fmath.Inf
+		}
 	}
-	// Intersect with partitioner
-	if s.partitioner == nil {
-		err = os.NewError("Partition map has not been built")
-		return
+	// Perform low-level intersection
+	if s.intersect == nil {
+		s.log.Warning("Intersect called without an Update")
+		return primitive.Collision{}
 	}
-	coll = s.partitioner.Intersect(r, dist)
-	if !coll.Hit() {
-		return
-	}
-	sp = coll.Primitive.GetSurface(coll)
-	sp.Primitive = coll.Primitive
-	return
+	return s.intersect.Intersect(r, dist)
 }
 
 /* IsShadowed returns whether a ray will cast a shadow. */
-func (s *Scene) IsShadowed(state *render.State, r ray.Ray) bool {
-	if s.partitioner == nil {
+func (s *Scene) IsShadowed(r ray.Ray, dist float) bool {
+	if s.intersect == nil {
+		s.log.Warning("IsShadowed called without an Update")
 		return false
 	}
+	r = ray.Copy(r)
 	r.SetFrom(vector.Add(r.From(), vector.ScalarMul(r.Dir(), r.TMin())))
-	r.SetTime(state.Time)
-	dist := fmath.Inf
 	if r.TMax() >= 0 {
 		dist = r.TMax() - 2*r.TMin()
 	}
-	coll := s.partitioner.IntersectS(r, dist)
-	return coll.Hit()
+	return s.intersect.IsShadowed(r, dist)
 }
 
 /*
@@ -220,8 +214,8 @@ func (s *Scene) Update() (err os.Error) {
 	s.log.Debug("Performing scene update...")
 
 	if s.changes.Has(objectsChanged) {
-		// We've changed the scene's geometry.  We need to rebuild the partitioner.
-		s.partitioner = nil
+		// We've changed the scene's geometry.  We need to rebuild the intersection scheme.
+		s.intersect = nil
 		// Collect primitives
 		var prims []primitive.Primitive
 		{
@@ -246,8 +240,8 @@ func (s *Scene) Update() (err os.Error) {
 		// Do partition building
 		if len(prims) > 0 {
 			s.log.Debug("Building kd-tree...")
-			s.partitioner = partition.NewKD(prims, s.log)
-			s.sceneBound = s.partitioner.GetBound()
+			s.intersect = intersect.NewKD(prims, s.log)
+			s.sceneBound = s.intersect.GetBound()
 			s.log.Debug("Built kd-tree")
 		}
 	}
