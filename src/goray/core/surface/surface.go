@@ -1,5 +1,5 @@
 //
-//  goray/core/surface.go
+//  goray/core/surface/surface.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-29.

@@ -1,5 +1,5 @@
 //
-//  goray/core/vmap.go
+//  goray/core/vmap/vmap.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-28.

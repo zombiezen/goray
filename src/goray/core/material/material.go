@@ -1,5 +1,5 @@
 //
-//  goray/core/material.go
+//  goray/core/material/material.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-24.

@@ -1,5 +1,5 @@
 //
-//  goray/core/camera.go
+//  goray/core/camera/camera.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.

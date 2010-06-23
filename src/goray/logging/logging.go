@@ -1,5 +1,5 @@
 //
-//  goray/logging.go
+//  goray/logging/logging.go
 //  goray
 //
 //  Created by Ross Light on 2010-06-07.

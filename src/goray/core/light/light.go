@@ -1,5 +1,5 @@
 //
-//  goray/core/light.go
+//  goray/core/light/light.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.

@@ -1,5 +1,5 @@
 //
-//  goray/core/object.go
+//  goray/core/object/object.go
 //  goray
 //
 //  Created by Ross Light on 2010-05-23.
