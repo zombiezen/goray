@@ -7,6 +7,8 @@
 
 package logging
 
+import "fmt"
+
 // Predefined log levels
 const (
 	VerboseDebugLevel = (iota + 1) * 10
@@ -17,8 +19,26 @@ const (
 	CriticalLevel
 )
 
-/* Level is an integer representing the severity of the record. */
+/* Level is an integer representing the severity of a record. */
 type Level int
+
+func (lvl Level) String() string {
+	switch lvl {
+	case VerboseDebugLevel:
+		return "Verbose"
+	case DebugLevel:
+		return "Debug"
+	case InfoLevel:
+		return "Info"
+	case WarningLevel:
+		return "Warning"
+	case ErrorLevel:
+		return "Error"
+	case CriticalLevel:
+		return "Critical"
+	}
+	return fmt.Sprintf("Level%d", int(lvl))
+}
 
 /* Record defines a simple log record. */
 type Record interface {
