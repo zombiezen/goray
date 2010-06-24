@@ -160,3 +160,12 @@ func CreateCS(normal Vector3D) (u, v Vector3D) {
 	}
 	return
 }
+
+/* Reflect calculates a reflection of a vector based on a normal. */
+func Reflect(v, n Vector3D) Vector3D {
+	vn := Dot(v, n)
+	if vn < 0 {
+		return ScalarMul(v, -1)
+	}
+	return Sub(ScalarMul(n, 2*vn), v)
+}

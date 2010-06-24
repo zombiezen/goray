@@ -30,7 +30,8 @@ func (mat *debugMaterial) Eval(state *render.State, sp surface.Point, wo, wl vec
 }
 
 func (mat *debugMaterial) Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (color.Color, vector.Vector3D) {
-	return mat.Color, vector.New(0, 0, 0)
+	s.Pdf = 1.0
+	return mat.Color, vector.Reflect(wo, sp.Normal)
 }
 
 func (mat *debugMaterial) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float {
