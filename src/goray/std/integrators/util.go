@@ -25,43 +25,58 @@ import (
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	col = color.Black
+	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
 	for _, l := range lights {
 		var newCol color.Color
 		switch realLight := l.(type) {
 		case light.DiracLight:
 			// Light with delta distribution
-			newCol = estimateDiracDirect(state, sp, realLight, sc, wo, trShad, sDepth)
+			newCol = estimateDiracDirect(params, realLight)
 		default:
 			// Area light, etc.
-			newCol = estimateAreaDirect(state, sp, l, sc, wo, trShad, sDepth)
+			newCol = estimateAreaDirect(params, realLight)
 		}
 		col = color.Add(col, newCol)
 	}
 	return
 }
 
-func checkShadow(state *render.State, sc *scene.Scene, r ray.Ray, trShad bool, sDepth int) bool {
-	r.SetTMin(0.0005) // TODO: Add a smart self-bias value
-	if trShad {
-		// TODO
-	}
-	return sc.IsShadowed(r, fmath.Inf)
+type directParams struct {
+	State  *render.State
+	Surf   surface.Point
+	Lights []light.Light
+	Scene  *scene.Scene
+	Wo     vector.Vector3D
+	TrShad bool
+	SDepth int
 }
 
-func estimateDiracDirect(state *render.State, sp surface.Point, diracLight light.DiracLight, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) color.Color {
+func checkShadow(params directParams, r ray.Ray) bool {
+	r.SetTMin(0.0005) // TODO: Add a smart self-bias value
+	if params.TrShad {
+		// TODO
+	}
+	return params.Scene.IsShadowed(r, fmath.Inf)
+}
+
+func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
+	sp := params.Surf
 	lightRay := ray.New()
 	lightRay.SetFrom(sp.Position)
 	mat := sp.Material.(material.Material)
 
-	if lcol, ok := diracLight.Illuminate(sp, lightRay); ok {
-		if shadowed := checkShadow(state, sc, lightRay, trShad, sDepth); !shadowed {
-			if trShad {
+	if lcol, ok := l.Illuminate(sp, lightRay); ok {
+		if shadowed := checkShadow(params, lightRay); !shadowed {
+			if params.TrShad {
 				//lcol = color.Mul(lcol, scol)
 			}
-			surfCol := mat.Eval(state, sp, wo, lightRay.Dir(), material.BSDFAll)
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir(), material.BSDFAll)
 			//TODO: transmitCol
-			return color.ScalarMul(color.Mul(surfCol, lcol), fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())))
+			return color.ScalarMul(
+				color.Mul(surfCol, lcol),
+				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())),
+			)
 		}
 	}
 
@@ -76,44 +91,130 @@ func addMod1(a, b float) (s float) {
 	return
 }
 
-func estimateAreaDirect(state *render.State, sp surface.Point, l light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (ccol color.Color) {
+func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	ccol = color.Black
+	sp := params.Surf
 	lightRay := ray.New()
 	lightRay.SetFrom(sp.Position)
-	mat := sp.Material.(material.Material)
 
 	n := l.NumSamples()
-	if state.RayDivision > 1 {
-		n /= state.RayDivision
+	if params.State.RayDivision > 1 {
+		n /= params.State.RayDivision
 		if n < 1 {
 			n = 1
 		}
 	}
 	// TODO: Add a unique offset for every light
-	offset := uint(n*state.PixelSample) + state.SamplingOffset
+	offset := uint(n*params.State.PixelSample) + params.State.SamplingOffset
 
 	isect, canIntersect := l.(light.Intersecter)
 	hal := montecarlo.NewHalton(3)
 	hal.SetStart(offset - 1)
 
+	// Sample from light
 	for i := 0; i < n; i++ {
 		lightSamp := light.Sample{
 			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
 			S2: hal.Float(),
 		}
-		if state.RayDivision > 1 {
-			lightSamp.S1 = addMod1(lightSamp.S1, state.Dc1)
-			lightSamp.S2 = addMod1(lightSamp.S2, state.Dc2)
-		}
+		ccol = color.Add(ccol, sampleLight(params, l, canIntersect, lightRay, lightSamp))
+	}
+	ccol = color.ScalarDiv(ccol, float(n))
 
-		if l.IlluminateSample(sp, lightRay, &lightSamp) {
-			if shadowed := checkShadow(state, sc, lightRay, trShad, sDepth); !shadowed && lightSamp.Pdf > 1e-6 {
-				// TODO
+	// Sample from BSDF
+	if canIntersect {
+		ccol2 := color.Black
+		for i := 0; i < n; i++ {
+			hal1 := montecarlo.NewHalton(5)
+			hal1.SetStart(offset + uint(i))
+			s1 := hal1.Float()
+			hal2 := montecarlo.NewHalton(7)
+			hal2.SetStart(offset + uint(i))
+			s2 := hal2.Float()
+
+			ccol2 = color.Add(ccol2, sampleBSDF(params, isect, s1, s2))
+		}
+		ccol2 = color.ScalarDiv(ccol2, float(n))
+		ccol = color.Add(ccol, ccol2)
+	}
+
+	return
+}
+
+const pdfCutoff = 1e-6
+
+func sampleLight(params directParams, l light.Light, canIntersect bool, lightRay ray.Ray, lightSamp light.Sample) (col color.Color) {
+	col = color.Black
+	sp := params.Surf
+	mat := sp.Material.(material.Material)
+
+	if params.State.RayDivision > 1 {
+		lightSamp.S1 = addMod1(lightSamp.S1, params.State.Dc1)
+		lightSamp.S2 = addMod1(lightSamp.S2, params.State.Dc2)
+	}
+
+	if l.IlluminateSample(sp, lightRay, &lightSamp) {
+		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
+			// TODO: if trShad
+			// TODO: transmitCol
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir(), material.BSDFAll)
+			col = color.ScalarMul(
+				color.Mul(surfCol, lightSamp.Color),
+				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())),
+			)
+			if canIntersect {
+				mPdf := mat.Pdf(
+					params.State, sp, params.Wo, lightRay.Dir(),
+					material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive|material.BSDFReflect|material.BSDFTransmit,
+				)
+				l2 := lightSamp.Pdf * lightSamp.Pdf
+				m2 := mPdf * mPdf
+				w := l2 / (l2 + m2)
+				col = color.ScalarMul(col, w/lightSamp.Pdf)
+			} else {
+				col = color.ScalarDiv(col, lightSamp.Pdf)
 			}
 		}
 	}
-	// TODO: Remove when finished
-	_, _, _ = mat, canIntersect, isect
+	return
+}
+
+func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col color.Color) {
+	sp := params.Surf
+	mat := sp.Material.(material.Material)
+	bRay := ray.New()
+	bRay.SetTMin(0.0005)
+	bRay.SetFrom(sp.Position)
+
+	if params.State.RayDivision > 1 {
+		s1 = addMod1(s1, params.State.Dc1)
+		s2 = addMod1(s2, params.State.Dc2)
+	}
+	s := material.NewSample(s1, s2)
+	s.Flags = material.BSDFGlossy | material.BSDFDiffuse | material.BSDFDispersive | material.BSDFReflect | material.BSDFTransmit
+
+	surfCol, wi := mat.Sample(params.State, sp, params.Wo, &s)
+	bRay.SetDir(wi)
+
+	if dist, lcol, lightPdf, ok := l.Intersect(bRay); s.Pdf > pdfCutoff && ok {
+		bRay.SetTMax(dist)
+		if !checkShadow(params, bRay) {
+			// TODO: if trShad
+			// TODO: transmitCol
+			lPdf := 1.0 / lightPdf
+			l2 := lPdf * lPdf
+			m2 := s.Pdf * s.Pdf
+			w := m2 / (l2 + m2)
+			cos2 := fmath.Abs(vector.Dot(sp.Normal, bRay.Dir()))
+			if s.Pdf > pdfCutoff {
+				col = color.ScalarMul(
+					color.Mul(surfCol, lcol),
+					cos2*w/s.Pdf,
+				)
+			}
+		}
+	}
+
 	return
 }
 

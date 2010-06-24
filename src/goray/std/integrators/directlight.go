@@ -96,7 +96,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 			col = color.Add(col, util.EstimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))
 		}
 		if bsdfs&(material.BSDFDiffuse|material.BSDFGlossy) != 0 {
-			// TODO
+			// TODO: EstimatePhotons
 		}
 		if bsdfs&material.BSDFDiffuse != 0 && dl.doAO {
 			// TODO: Ambient occlusion
