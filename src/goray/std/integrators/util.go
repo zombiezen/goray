@@ -27,6 +27,39 @@ const (
 	pdfCutoff   = 1e-6
 )
 
+type sampleFunc func(sampleNum int) color.Color
+
+func sample(n int, f sampleFunc) (col color.Color) {
+	// Set up channels
+	channels := make([]chan color.Color, n)
+	for i, _ := range channels {
+		channels[i] = make(chan color.Color)
+	}
+	// Start sampling
+	for i := 0; i < n; i++ {
+		go func(i int) {
+			defer close(channels[i])
+			channels[i] <- f(i)
+		}(i)
+	}
+	// Collect samples
+	col = color.Black
+	for _, ch := range channels {
+		col = color.Add(col, <-ch)
+	}
+	return color.ScalarDiv(col, float(n))
+}
+
+func halSeq(n int, base, start uint) (seq []float) {
+	seq = make([]float, n)
+	hal := montecarlo.NewHalton(base)
+	hal.SetStart(start)
+	for i, _ := range seq {
+		seq[i] = hal.Float()
+	}
+	return
+}
+
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	col = color.Black
@@ -99,8 +132,6 @@ func addMod1(a, b float) (s float) {
 func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	ccol = color.Black
 	sp := params.Surf
-	lightRay := ray.New()
-	lightRay.SetFrom(sp.Position)
 
 	n := l.NumSamples()
 	if params.State.RayDivision > 1 {
@@ -113,40 +144,34 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	offset := uint(n*params.State.PixelSample) + params.State.SamplingOffset
 
 	isect, canIntersect := l.(light.Intersecter)
-	hal := montecarlo.NewHalton(3)
-	hal.SetStart(offset - 1)
 
 	// Sample from light
-	for i := 0; i < n; i++ {
+	hals1 := halSeq(n, 3, offset-1)
+	ccol = sample(n, func(i int) color.Color {
+		lightRay := ray.New()
+		lightRay.SetFrom(sp.Position)
 		lightSamp := light.Sample{
 			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
-			S2: hal.Float(),
+			S2: hals1[i],
 		}
-		ccol = color.Add(ccol, sampleLight(params, l, canIntersect, lightRay, lightSamp))
-	}
-	ccol = color.ScalarDiv(ccol, float(n))
+		return sampleLight(params, l, canIntersect, lightSamp)
+	})
 
 	// Sample from BSDF
+	hals1 = halSeq(n, 5, offset)
+	hals2 := halSeq(n, 7, offset)
 	if canIntersect {
-		ccol2 := color.Black
-		for i := 0; i < n; i++ {
-			hal1 := montecarlo.NewHalton(5)
-			hal1.SetStart(offset + uint(i))
-			s1 := hal1.Float()
-			hal2 := montecarlo.NewHalton(7)
-			hal2.SetStart(offset + uint(i))
-			s2 := hal2.Float()
-
-			ccol2 = color.Add(ccol2, sampleBSDF(params, isect, s1, s2))
-		}
-		ccol2 = color.ScalarDiv(ccol2, float(n))
+		ccol2 := sample(n, func(i int) color.Color {
+			s1, s2 := hals1[i], hals2[i]
+			return sampleBSDF(params, isect, s1, s2)
+		})
 		ccol = color.Add(ccol, ccol2)
 	}
 
 	return
 }
 
-func sampleLight(params directParams, l light.Light, canIntersect bool, lightRay ray.Ray, lightSamp light.Sample) (col color.Color) {
+func sampleLight(params directParams, l light.Light, canIntersect bool, lightSamp light.Sample) (col color.Color) {
 	col = color.Black
 	sp := params.Surf
 	mat := sp.Material.(material.Material)
@@ -156,6 +181,8 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightRay
 		lightSamp.S2 = addMod1(lightSamp.S2, params.State.Dc2)
 	}
 
+	lightRay := ray.New() // Illuminate will fill in most of the ray
+	lightRay.SetFrom(sp.Position)
 	if l.IlluminateSample(sp, lightRay, &lightSamp) {
 		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
 			// TODO: if trShad
@@ -251,12 +278,8 @@ func ckernel(phot, gather float) float {
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 
-func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float, aoColor color.Color) (col color.Color) {
-	col = color.Black
+func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float, aoColor color.Color) color.Color {
 	mat := sp.Material.(material.Material)
-
-	lightRay := ray.New()
-	lightRay.SetFrom(sp.Position)
 
 	n := aoSamples
 	if state.RayDivision > 1 {
@@ -267,16 +290,17 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 	}
 
 	offset := uint(n*state.PixelSample) + state.SamplingOffset
-	hal := montecarlo.NewHalton(3)
-	hal.SetStart(offset - 1)
 
-	for i := 0; i < n; i++ {
+	hals := halSeq(n, 3, offset-1)
+	return sample(n, func(i int) color.Color {
 		s1 := montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0)
-		s2 := hal.Float()
+		s2 := hals[i]
 		if state.RayDivision > 1 {
 			s1 = addMod1(s1, state.Dc1)
 			s2 = addMod1(s2, state.Dc2)
 		}
+		lightRay := ray.New()
+		lightRay.SetFrom(sp.Position)
 		lightRay.SetTMin(raySelfBias)
 		lightRay.SetTMax(aoDist)
 
@@ -285,13 +309,10 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 		surfCol, dir := mat.Sample(state, sp, wo, &s)
 		lightRay.SetDir(dir)
 
-		if s.Pdf > pdfCutoff {
-			if !sc.IsShadowed(lightRay, fmath.Inf) {
-				cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))
-				col = color.Add(col, color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf))
-			}
+		if s.Pdf <= pdfCutoff || sc.IsShadowed(lightRay, fmath.Inf) {
+			return color.Black
 		}
-	}
-
-	return color.ScalarDiv(col, float(n))
+		cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))
+		return color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf)
+	})
 }
