@@ -52,7 +52,12 @@ type Light interface {
 	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
 	/* CanIlluminate returns whether the light can illuminate a certain point. */
 	CanIlluminate(pt vector.Vector3D) bool
-	/* IlluminateSample a given surface point, generating a sample. */
+	/*
+		IlluminateSample samples the illumination at a given point.
+		
+		The Sample passed in will be filled with the proper sample values and
+		the ray will be the ray that casted the light.
+	*/
 	IlluminateSample(sp surface.Point, wi ray.Ray, s *Sample) bool
 	/* IlluminatePdf returns the PDF for sampling with IllumSample. */
 	IlluminatePdf(sp, spLight surface.Point) float
