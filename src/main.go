@@ -21,6 +21,7 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/version"
+	"goray/core/color"
 	"goray/core/integrator"
 	"goray/core/object"
 	"goray/core/render"
@@ -28,7 +29,9 @@ import (
 	"goray/core/vector"
 
 	"goray/std/cameras/ortho"
-	trivialInt "goray/std/integrators/trivial"
+	"goray/std/integrators/directlight"
+	pointLight "goray/std/lights/point"
+	debugMaterial "goray/std/materials/debug"
 	"goray/std/objects/mesh"
 	"goray/std/primitives/sphere"
 )
@@ -136,24 +139,33 @@ func main() {
 		vector.New(-0.5, 0.5, 0.5),
 	},
 		nil, nil)
-	// Back
-	cube.AddTriangle(mesh.NewTriangle(0, 3, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(0, 2, 1, cube))
-	// Top
-	cube.AddTriangle(mesh.NewTriangle(3, 7, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(6, 2, 7, cube))
-	// Bottom
-	cube.AddTriangle(mesh.NewTriangle(0, 1, 4, cube))
-	cube.AddTriangle(mesh.NewTriangle(5, 4, 1, cube))
-	// Left
-	cube.AddTriangle(mesh.NewTriangle(7, 3, 4, cube))
-	cube.AddTriangle(mesh.NewTriangle(0, 4, 3, cube))
-	// Right
-	cube.AddTriangle(mesh.NewTriangle(6, 5, 2, cube))
-	cube.AddTriangle(mesh.NewTriangle(1, 2, 5, cube))
-	// Front
-	cube.AddTriangle(mesh.NewTriangle(4, 6, 7, cube))
-	cube.AddTriangle(mesh.NewTriangle(5, 6, 4, cube))
+	faces := [][3]int{
+		// Back
+		[3]int{0, 3, 2},
+		[3]int{0, 2, 1},
+		// Top
+		[3]int{3, 7, 2},
+		[3]int{6, 2, 7},
+		// Bottom
+		[3]int{0, 1, 4},
+		[3]int{5, 4, 1},
+		// Left
+		[3]int{7, 3, 4},
+		[3]int{0, 4, 3},
+		// Right
+		[3]int{6, 5, 2},
+		[3]int{1, 2, 5},
+		// Front
+		[3]int{4, 6, 7},
+		[3]int{5, 6, 4},
+	}
+
+	mat := debugMaterial.New(color.NewRGB(1.0, 1.0, 1.0))
+	for _, fdata := range faces {
+		face := mesh.NewTriangle(fdata[0], fdata[1], fdata[2], cube)
+		face.SetMaterial(mat)
+		cube.AddTriangle(face)
+	}
 
 	sc.SetCamera(ortho.New(
 		vector.New(5.0, 5.0, 5.0), // Position
@@ -162,8 +174,11 @@ func main() {
 		*width, *height,           // Size
 		1.0, 3.0, // Aspect, Scale
 	))
+	sc.AddLight(pointLight.New(vector.New(10.0, 0.0, 0.0), color.NewRGB(1.0, 0.0, 0.0), 200.0))
+	sc.AddLight(pointLight.New(vector.New(0.0, 10.0, 0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
+	sc.AddLight(pointLight.New(vector.New(0.0, 0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
 	sc.AddObject(cube)
-	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 1), 0.5, nil)})
+	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.25, mat)})
 
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
@@ -181,7 +196,7 @@ func main() {
 				return "  RENDER: " + rec.String()
 			},
 		)
-		outputImage = integrator.Render(sc, trivialInt.New(), renderLog)
+		outputImage = integrator.Render(sc, directlight.New(false, 3, 10), renderLog)
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)

@@ -14,6 +14,7 @@ packages = [
     env.Go('material', Glob('material/*.go')),
     env.Go('matrix', Glob('matrix/*.go')),
     env.Go('object', Glob('object/*.go')),
+    env.Go('photon'),
     env.Go('primitive', Glob('primitive/*.go')),
     env.Go('ray', Glob('ray/*.go')),
     env.Go('render', Glob('render/*.go')),

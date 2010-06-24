@@ -4,8 +4,11 @@ Import('env')
 
 packages = [
 	env.Go('cameras/ortho'),
+    env.Go('integrators/directlight'),
     env.Go('integrators/trivial'),
+    env.Go('integrators/util'),
     env.Go('lights/point'),
+    env.Go('materials/debug'),
     env.Go('objects/mesh'),
     env.Go('primitives/sphere'),
 ]
