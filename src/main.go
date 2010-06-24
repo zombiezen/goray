@@ -80,6 +80,7 @@ func main() {
 	height := flag.Int("h", 100, "the output height")
 	debug := flag.Int("d", 0, "set debug verbosity level")
 	showVersion := flag.Bool("v", false, "display the version")
+	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
 
 	flag.Usage = printInstructions
 	flag.Parse()
@@ -106,6 +107,10 @@ func main() {
 		logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
 	}
 	defer logging.MainLog.Close()
+
+	// Change the number of processors to use
+	runtime.GOMAXPROCS(*maxProcs)
+	logging.MainLog.Debug("Using %d processor(s)", runtime.GOMAXPROCS(0))
 
 	// Open output file
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
