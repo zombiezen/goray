@@ -34,7 +34,7 @@ func (h *Halton) SetBase(base uint) {
 /* Reset starts the generator over without changing the base. */
 func (h *Halton) Reset() { h.value = 0.0 }
 
-/* SetStart changes the generator to start with a given number. */
+/* SetStart changes the generator to start with the given index in the sequence. */
 func (h *Halton) SetStart(i uint) {
 	h.value = 0
 	for f, factor := h.invBase, h.invBase; i > 0; {
