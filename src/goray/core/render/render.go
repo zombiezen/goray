@@ -10,8 +10,6 @@ package render
 
 import (
 	"image"
-	"rand"
-	"time"
 	"goray/core/color"
 	"goray/core/vector"
 )
@@ -35,22 +33,15 @@ type State struct {
 	IncludeLights  bool
 	WaveLength     bool
 	Time           float
-	Rand           *rand.Rand
 }
 
 /* Init initializes the state. */
-func (st *State) Init(rgen *rand.Rand) {
+func (st *State) Init() {
 	st.CurrentPass = 0
 	st.PixelSample = 0
 	st.RayOffset = 0
 	st.IncludeLights = false
 	st.SetDefaults()
-
-	if rgen != nil {
-		st.Rand = rgen
-	} else {
-		st.Rand = rand.New(rand.NewSource(time.Seconds()))
-	}
 }
 
 /* SetDefaults changes some values to their initial values. */
@@ -115,5 +106,5 @@ func (i *Image) Acquire(ch <-chan Fragment) {
 }
 
 type Renderer interface {
-    Render() <-chan Fragment
+	Render() <-chan Fragment
 }
