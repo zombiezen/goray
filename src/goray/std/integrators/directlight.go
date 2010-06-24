@@ -32,6 +32,7 @@ type directLighting struct {
 
 	doAO      bool
 	aoSamples int
+	aoDist    float
 	aoColor   color.Color
 
 	lights []light.Light
@@ -99,7 +100,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 			// TODO: EstimatePhotons
 		}
 		if bsdfs&material.BSDFDiffuse != 0 && dl.doAO {
-			// TODO: Ambient occlusion
+			col = color.Add(col, util.SampleAO(sc, state, sp, wo, dl.aoSamples, dl.aoDist, dl.aoColor))
 		}
 
 		state.RayLevel++

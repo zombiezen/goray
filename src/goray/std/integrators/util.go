@@ -22,6 +22,11 @@ import (
 	"goray/core/vector"
 )
 
+const (
+	raySelfBias = 0.0005 // TODO: Make this not fixed
+	pdfCutoff   = 1e-6
+)
+
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	col = color.Black
@@ -53,7 +58,7 @@ type directParams struct {
 }
 
 func checkShadow(params directParams, r ray.Ray) bool {
-	r.SetTMin(0.0005) // TODO: Add a smart self-bias value
+	r.SetTMin(raySelfBias)
 	if params.TrShad {
 		// TODO
 	}
@@ -141,8 +146,6 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	return
 }
 
-const pdfCutoff = 1e-6
-
 func sampleLight(params directParams, l light.Light, canIntersect bool, lightRay ray.Ray, lightSamp light.Sample) (col color.Color) {
 	col = color.Black
 	sp := params.Surf
@@ -183,7 +186,7 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col col
 	sp := params.Surf
 	mat := sp.Material.(material.Material)
 	bRay := ray.New()
-	bRay.SetTMin(0.0005)
+	bRay.SetTMin(raySelfBias)
 	bRay.SetFrom(sp.Position)
 
 	if params.State.RayDivision > 1 {
@@ -246,4 +249,49 @@ func kernel(phot, gather float) float {
 func ckernel(phot, gather float) float {
 	p, g := fmath.Sqrt(phot), fmath.Sqrt(gather)
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
+}
+
+func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float, aoColor color.Color) (col color.Color) {
+	col = color.Black
+	mat := sp.Material.(material.Material)
+
+	lightRay := ray.New()
+	lightRay.SetFrom(sp.Position)
+
+	n := aoSamples
+	if state.RayDivision > 1 {
+		n /= state.RayDivision
+		if n < 1 {
+			n = 1
+		}
+	}
+
+	offset := uint(n*state.PixelSample) + state.SamplingOffset
+	hal := montecarlo.NewHalton(3)
+	hal.SetStart(offset - 1)
+
+	for i := 0; i < n; i++ {
+		s1 := montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0)
+		s2 := hal.Float()
+		if state.RayDivision > 1 {
+			s1 = addMod1(s1, state.Dc1)
+			s2 = addMod1(s2, state.Dc2)
+		}
+		lightRay.SetTMin(raySelfBias)
+		lightRay.SetTMax(aoDist)
+
+		s := material.NewSample(s1, s2)
+		s.Flags = material.BSDFDiffuse | material.BSDFReflect
+		surfCol, dir := mat.Sample(state, sp, wo, &s)
+		lightRay.SetDir(dir)
+
+		if s.Pdf > pdfCutoff {
+			if !sc.IsShadowed(lightRay, fmath.Inf) {
+				cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))
+				col = color.Add(col, color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf))
+			}
+		}
+	}
+
+	return color.ScalarDiv(col, float(n))
 }
