@@ -27,9 +27,16 @@ const (
 	pdfCutoff   = 1e-6
 )
 
-type sampleFunc func(sampleNum int) color.Color
+type colorFunc func(int) color.Color
 
-func sample(n int, f sampleFunc) (col color.Color) {
+/*
+	colorSum returns the sum of all of the colors returned by the function.
+
+	The function given is called with [0, n) and it should return a color.
+	These calls happen concurrently and then the result of each function call
+	is summed to get the final return value.
+*/
+func colorSum(n int, f colorFunc) (col color.Color) {
 	// Set up channels
 	channels := make([]chan color.Color, n)
 	for i, _ := range channels {
@@ -47,7 +54,11 @@ func sample(n int, f sampleFunc) (col color.Color) {
 	for _, ch := range channels {
 		col = color.Add(col, <-ch)
 	}
-	return color.ScalarDiv(col, float(n))
+	return
+}
+
+func sample(n int, f colorFunc) color.Color {
+	return color.ScalarDiv(colorSum(n, f), float(n))
 }
 
 func halSeq(n int, base, start uint) (seq []float) {
@@ -62,22 +73,19 @@ func halSeq(n int, base, start uint) (seq []float) {
 
 /* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
-	col = color.Black
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
-	for _, l := range lights {
-		var newCol color.Color
-		switch realLight := l.(type) {
+	return colorSum(len(lights), func(i int) (col color.Color) {
+		switch l := lights[i].(type) {
 		case light.DiracLight:
 			// Light with delta distribution
-			newCol = estimateDiracDirect(params, realLight)
+			col = estimateDiracDirect(params, l)
 		default:
 			// Area light, etc.
-			newCol = estimateAreaDirect(params, realLight)
+			col = estimateAreaDirect(params, l)
 		}
-		col = color.Add(col, newCol)
-	}
-	return
+		return
+	})
 }
 
 type directParams struct {
