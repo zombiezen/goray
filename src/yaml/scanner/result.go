@@ -24,7 +24,7 @@ type BasicToken struct {
 	Start, End token.Position
 }
 
-func (t BasicToken) GetKind() token.Token     { return t.Token }
+func (t BasicToken) GetKind() token.Token     { return t.Kind }
 func (t BasicToken) GetStart() token.Position { return t.Start }
 func (t BasicToken) GetEnd() token.Position   { return t.End }
 
@@ -38,7 +38,7 @@ type ValueToken struct {
 	Value string
 }
 
-func (t ValueToken) String() string { return t.value }
+func (t ValueToken) String() string { return t.Value }
 
 type TagToken struct {
 	BasicToken

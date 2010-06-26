@@ -8,7 +8,10 @@
 package scanner
 
 import (
+	"fmt"
+	"io"
 	"os"
+	"yaml/token"
 )
 
 type Scanner struct {
@@ -20,27 +23,35 @@ type Scanner struct {
 
 func New(r io.Reader) (s *Scanner) {
 	s = new(Scanner)
-	s.reader = &reader{Reader: r, Buffer: new(bytes.Buffer)}
-	s.reader.pos.Line = 1
+	s.reader = newReader(r)
 	return s
 }
 
-func (s *Scanner) Scan() (result Result, err os.Error) {
-
+func (s *Scanner) Scan() (result Token, err os.Error) {
+	return s.Next()
 }
 
-func (s *Scanner) Next() (result Result, err os.Error) {
+func (s *Scanner) Next() (result Token, err os.Error) {
 	if !s.started {
 		return s.streamStart()
 	}
 
 	if err = s.scanToNextToken(); err != nil {
-		return err
+		return
 	}
+	
+	err = os.NewError(fmt.Sprintf("Unrecognized token: %c", s.reader.Bytes()[0]))
+	return
 }
 
-func (s *Scanner) streamStart() (result Result, err os.Error) {
+func (s *Scanner) streamStart() (result Token, err os.Error) {
 	s.started = true
+	result = BasicToken{
+		Kind: token.STREAM_START,
+		Start: s.reader.Pos,
+		End: s.reader.Pos,
+	}
+	return
 }
 
 func (s *Scanner) scanToNextToken() (err os.Error) {
