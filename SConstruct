@@ -62,7 +62,11 @@ env.Go(version_file)
 
 # Main build
 lib = SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray')
+yaml = SConscript('src/yaml/SConscript', exports='env', variant_dir=var_dir + '/yaml')
 program = env.GoProgram('bin/goray', 'build/main.go')
+
+Alias('lib', lib)
+Alias('yaml', yaml)
 
 if env['testing']:
     test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', lib))
