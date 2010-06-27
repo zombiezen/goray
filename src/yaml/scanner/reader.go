@@ -18,15 +18,54 @@ type reader struct {
 	*bytes.Buffer
 	Reader io.Reader
 	Pos    token.Position
+	lastCR bool
 }
 
 func newReader(r io.Reader) *reader {
 	initPos := token.Position{
-		Index: 0,
+		Index:  0,
 		Column: 1,
-		Line: 1,
+		Line:   1,
 	}
-	return &reader{new(bytes.Buffer), r, initPos}
+	return &reader{
+		Buffer: new(bytes.Buffer),
+		Reader: r,
+		Pos:    initPos,
+		lastCR: false,
+	}
+}
+
+func (r *reader) updatePos(data []byte) {
+	r.Pos.Index += len(data)
+	// If the last character from the previous update was a CR and the first
+	// character isn't a LF, then increment line number. (LFs always increment
+	// line number.)
+	if len(data) > 0 && r.lastCR && data[0] != '\n' {
+		r.Pos.Column = 1
+		r.Pos.Line++
+	}
+	// Update column and line information
+	for i, b := range data {
+		switch b {
+		case '\n':
+			r.Pos.Column = 1
+			r.Pos.Line++
+		case '\r':
+			switch {
+			case i+1 >= len(data):
+				// The last byte in the data is a CR. Crap.
+				r.lastCR = true
+			case data[i+1] == '\n':
+				// This is a CRLF.  Do nothing (the next iteration will catch it).
+			default:
+				// This is a naked CR (Mac-style).
+				r.Pos.Column = 1
+				r.Pos.Line++
+			}
+		default:
+			r.Pos.Column++
+		}
+	}
 }
 
 func (r *reader) Cache(n int) os.Error {
@@ -48,8 +87,7 @@ func (r *reader) Read(p []byte) (n int, err os.Error) {
 	} else {
 		n, err = r.Reader.Read(p)
 	}
-	r.Pos.Index += n
-	r.Pos.Column += n
+	r.updatePos(p[0:n])
 	return
 }
 
@@ -57,15 +95,13 @@ func (r *reader) ReadByte() (c byte, err os.Error) {
 	if err = r.Cache(1); err != nil {
 		return
 	}
-	r.Pos.Index++
-	r.Pos.Column++
-	return r.Bytes()[0], nil
+	c = r.Next(1)[0] // Next will update the position for us
+	return
 }
 
 func (r *reader) Next(n int) (bytes []byte) {
 	bytes = r.Buffer.Next(n)
-	r.Pos.Index += len(bytes)
-	r.Pos.Column += len(bytes)
+	r.updatePos(bytes)
 	return
 }
 
@@ -81,7 +117,7 @@ func (r *reader) CheckBreak() bool {
 }
 
 func (r *reader) SkipBreak() {
-	if r.Len() == 0 {
+	if err := r.Cache(2); err != nil {
 		return
 	}
 
@@ -95,6 +131,4 @@ func (r *reader) SkipBreak() {
 			r.Next(1)
 		}
 	}
-	r.Pos.Column = 0
-	r.Pos.Line++
 }
