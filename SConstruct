@@ -69,7 +69,7 @@ Alias('lib', lib)
 Alias('yaml', yaml)
 
 if env['testing']:
-    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', lib))
+    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', [lib, yaml]))
     Default(test_suite)
 else:
     Default(lib, program)

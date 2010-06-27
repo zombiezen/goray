@@ -21,7 +21,12 @@ type reader struct {
 }
 
 func newReader(r io.Reader) *reader {
-	return &reader{new(bytes.Buffer), r, token.Position{Line: 1}}
+	initPos := token.Position{
+		Index: 0,
+		Column: 1,
+		Line: 1,
+	}
+	return &reader{new(bytes.Buffer), r, initPos}
 }
 
 func (r *reader) Cache(n int) os.Error {
@@ -40,15 +45,20 @@ func (r *reader) Cache(n int) os.Error {
 func (r *reader) Read(p []byte) (n int, err os.Error) {
 	if r.Buffer.Len() > 0 {
 		n, _ = r.Buffer.Read(p)
-		return
+	} else {
+		n, err = r.Reader.Read(p)
 	}
-	return r.Reader.Read(p)
+	r.Pos.Index += n
+	r.Pos.Column += n
+	return
 }
 
 func (r *reader) ReadByte() (c byte, err os.Error) {
 	if err = r.Cache(1); err != nil {
 		return
 	}
+	r.Pos.Index++
+	r.Pos.Column++
 	return r.Bytes()[0], nil
 }
 
