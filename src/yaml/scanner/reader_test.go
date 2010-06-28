@@ -3,6 +3,7 @@ package scanner
 import (
 	"bytes"
 	"io"
+	"os"
 	"testing"
 	"testing/iotest"
 )
@@ -118,5 +119,42 @@ func TestOneByteReader(t *testing.T) {
 	}
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestSkipBreak(t *testing.T) {
+	r := newReader(bytes.NewBufferString("a\rb\nc\r\nd\n"))
+	r.SkipBreak()
+	if c, _ := r.ReadByte(); c != 'a' {
+		t.Fatal("SkipBreak skips normal characters")
+	}
+	r.SkipBreak()
+	if c, _ := r.ReadByte(); c != 'b' {
+		t.Error("Didn't skip CR")
+		r.ReadByte()
+	}
+	r.SkipBreak()
+	if c, _ := r.ReadByte(); c != 'c' {
+		t.Error("Didn't skip LF")
+		r.ReadByte()
+	}
+	r.SkipBreak()
+	if c, _ := r.ReadByte(); c != 'd' {
+		t.Error("Failed on CRLF")
+		if c == '\n' {
+			t.Log("Got caught on LF")
+			r.ReadByte()
+		}
+	}
+	r.SkipBreak()
+	if _, err := r.ReadByte(); err != os.EOF {
+		t.Error("Final skip LF failed")
+	}
+	// Test final CR
+	r = newReader(bytes.NewBufferString("a\r"))
+	r.ReadByte()
+	r.SkipBreak()
+	if _, err := r.ReadByte(); err != os.EOF {
+		t.Error("Final skip CR failed")
 	}
 }

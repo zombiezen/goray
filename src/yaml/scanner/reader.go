@@ -95,6 +95,9 @@ func (r *reader) Read(p []byte) (n int, err os.Error) {
 
 func (r *reader) ReadByte() (c byte, err os.Error) {
 	if err = r.Cache(1); err != nil {
+		if err == io.ErrUnexpectedEOF {
+			err = os.EOF
+		}
 		return
 	}
 	c = r.Next(1)[0] // Next will update the position for us
@@ -119,7 +122,7 @@ func (r *reader) CheckBreak() bool {
 }
 
 func (r *reader) SkipBreak() {
-	if err := r.Cache(2); err != nil {
+	if err := r.Cache(2); err != nil && (err != io.ErrUnexpectedEOF || r.Len() == 0) {
 		return
 	}
 
