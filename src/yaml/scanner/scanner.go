@@ -80,13 +80,15 @@ func (s *Scanner) fetch() (err os.Error) {
 	s.unrollIndent(s.reader.Pos.Column)
 
 	if err = s.reader.Cache(4); err != nil {
-		if err == os.EOF && !s.ended {
-			err = s.streamEnd()
-			return
-		} else if err == io.ErrUnexpectedEOF {
+		if err == io.ErrUnexpectedEOF {
 			// Only have a handful of characters left?  That's cool, we handle
 			// that.
-			err = nil
+			if s.reader.Len() == 0 {
+				// No characters left? End the stream.
+				return s.streamEnd()
+			} else {
+				err = nil
+			}
 		} else {
 			return
 		}
@@ -154,55 +156,6 @@ func (s *Scanner) fetch() (err os.Error) {
 		err = os.NewError(fmt.Sprintf("Unrecognized token: %c", s.reader.Bytes()[0]))
 	}
 	return
-}
-
-func (s *Scanner) scanToNextToken() (err os.Error) {
-	for {
-		if err = s.reader.Cache(1); err != nil {
-			return
-		}
-
-		// TODO: BOM
-
-		// Eat whitespaces
-		//
-		// Tabs are allowed:
-		// - in the flow context;
-		// - in the block context, but not at the beginning of the line or
-		//   after '-', '?', or ':' (complex value).
-		for s.reader.Check(" ") || (s.reader.Check("\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
-			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil {
-				return
-			}
-		}
-
-		// Eat comment until end of line
-		if s.reader.Check("#") {
-			for !s.reader.CheckBreak() {
-				s.reader.Next(1)
-				if err = s.reader.Cache(1); err != nil {
-					return
-				}
-			}
-		}
-
-		// If it's a line break, eat it.
-		if s.reader.CheckBreak() {
-			if err = s.reader.Cache(2); err != nil {
-				return
-			}
-			s.reader.SkipBreak()
-			// In the block context, a new line may start a simple key.
-			if s.flowLevel == 0 {
-				s.simpleKeyAllowed = true
-			}
-		} else {
-			// We found a token.
-			break
-		}
-	}
-	return nil
 }
 
 func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
@@ -412,4 +365,57 @@ func (s *Scanner) fetchFlowScalar(doubleQuoted bool) (err os.Error) {
 
 func (s *Scanner) fetchPlainScalar() (err os.Error) {
 	return
+}
+
+func (s *Scanner) scanToNextToken() (err os.Error) {
+	for {
+		if err = s.reader.Cache(1); err != nil {
+			if err == io.ErrUnexpectedEOF {
+				// Our "next" token is the end of the stream.  This isn't a failure.
+				err = nil
+			}
+			return
+		}
+
+		// TODO: BOM
+
+		// Eat whitespaces
+		//
+		// Tabs are allowed:
+		// - in the flow context;
+		// - in the block context, but not at the beginning of the line or
+		//   after '-', '?', or ':' (complex value).
+		for s.reader.Check(" ") || (s.reader.Check("\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
+			s.reader.Next(1)
+			if err = s.reader.Cache(1); err != nil {
+				return
+			}
+		}
+
+		// Eat comment until end of line
+		if s.reader.Check("#") {
+			for !s.reader.CheckBreak() {
+				s.reader.Next(1)
+				if err = s.reader.Cache(1); err != nil {
+					return
+				}
+			}
+		}
+
+		// If it's a line break, eat it.
+		if s.reader.CheckBreak() {
+			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
+				return
+			}
+			s.reader.SkipBreak()
+			// In the block context, a new line may start a simple key.
+			if s.flowLevel == 0 {
+				s.simpleKeyAllowed = true
+			}
+		} else {
+			// We found a token.
+			break
+		}
+	}
+	return nil
 }
