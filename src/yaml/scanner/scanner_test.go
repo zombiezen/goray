@@ -9,7 +9,7 @@ import (
 )
 
 type scanTest struct {
-	Name string
+	Name     string
 	Input    string
 	Expected []Token
 }
@@ -27,6 +27,19 @@ var scannerTests = []scanTest{
 			BasicToken{token.STREAM_END, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
 		},
 	},
+	scanTest{
+		"Basic",
+		`%YAML 1.2
+---
+"Hello, World!"`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{8, 1, 9}},
+			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{12, 2, 3}},
+			BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{28, 3, 15}},
+			BasicToken{token.STREAM_END, token.Position{28, 3, 15}, token.Position{28, 3, 15}},
+		},
+	},
 }
 
 func posEq(a, b token.Position) bool {
@@ -40,7 +53,7 @@ func TestScanner(t *testing.T) {
 		for results.Len() == 0 || results.At(results.Len()-1).(Token).GetKind() != token.STREAM_END {
 			tok, err := scanner.Scan()
 			if err != nil {
-				t.Errorf("%v: %v", test, err)
+				t.Errorf("%v error: %v", test, err)
 				break
 			}
 			results.Push(tok)
@@ -61,7 +74,7 @@ func TestScanner(t *testing.T) {
 				}
 			}
 		} else {
-			t.Errorf("%v: yielded %v", test, results)
+			t.Errorf("%v: Yielded %v", test, results)
 		}
 	}
 }
