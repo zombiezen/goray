@@ -52,6 +52,14 @@ func TestCache(t *testing.T) {
 	}
 }
 
+func TestHalfCache(t *testing.T) {
+	r := newReader(bytes.NewBufferString("Hi"))
+	err := r.Cache(4)
+	if err != io.ErrUnexpectedEOF {
+		t.Errorf("Cache should give unexpected EOF error, instead got %v", err)
+	}
+}
+
 func TestInitialPos(t *testing.T) {
 	r := newReader(bytes.NewBufferString(""))
 	if r.Pos.Index != 0 {
