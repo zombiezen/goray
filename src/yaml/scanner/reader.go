@@ -110,39 +110,61 @@ func (r *reader) Next(n int) (bytes []byte) {
 	return
 }
 
-func (r *reader) Check(st string) bool {
-	if r.Len() < len(st) {
+func (r *reader) Check(i int, st string) bool {
+	if r.Len() < i + len(st) {
 		return false
 	}
-	return st == string(r.Bytes()[0:len(st)])
+	return st == string(r.Bytes()[i:i+len(st)])
 }
 
-func (r *reader) CheckBreak() bool {
-	if r.Len() == 0 {
+func (r *reader) CheckAny(i int, chars string) bool {
+	if r.Len() <= i {
 		return false
 	}
-	return isBreak(r.Bytes()[0])
+	currByte := r.Bytes()[i]
+	for _, c := range chars {
+		if currByte == byte(c) {
+			return true
+		}
+	}
+	return false
 }
 
-func (r *reader) CheckDigit() bool {
-	if r.Len() == 0 {
+func (r *reader) CheckBreak(i int) bool {
+	if r.Len() <= i {
 		return false
 	}
-	return isDigit(r.Bytes()[0])
+	return isBreak(r.Bytes()[i])
 }
 
-func (r *reader) CheckLetter() bool {
-	if r.Len() == 0 {
+func (r *reader) CheckDigit(i int) bool {
+	if r.Len() <= i {
 		return false
 	}
-	return isLetter(r.Bytes()[0])
+	return isDigit(r.Bytes()[i])
 }
 
-func (r *reader) CheckSpace() bool {
-	if r.Len() == 0 {
+func (r *reader) CheckLetter(i int) bool {
+	if r.Len() <= i {
 		return false
 	}
-	return isWhitespace(r.Bytes()[0])
+	return isLetter(r.Bytes()[i])
+}
+
+func (r *reader) CheckSpace(i int) bool {
+	if r.Len() <= i {
+		return false
+	}
+	return isWhitespace(r.Bytes()[i])
+}
+
+// CheckBlank returns whether the buffer ends before the given index, or if it
+// doesn't, whether that index contains whitespace.
+func (r *reader) CheckBlank(i int) bool {
+	if r.Len() <= i {
+		return true
+	}
+	return CheckSpace(i) || CheckBreak(i)
 }
 
 func (r *reader) SkipBreak() {
