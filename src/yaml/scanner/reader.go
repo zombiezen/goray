@@ -118,7 +118,31 @@ func (r *reader) Check(st string) bool {
 }
 
 func (r *reader) CheckBreak() bool {
-	return r.Check("\n") || r.Check("\r")
+	if r.Len() == 0 {
+		return false
+	}
+	return isBreak(r.Bytes()[0])
+}
+
+func (r *reader) CheckDigit() bool {
+	if r.Len() == 0 {
+		return false
+	}
+	return isDigit(r.Bytes()[0])
+}
+
+func (r *reader) CheckLetter() bool {
+	if r.Len() == 0 {
+		return false
+	}
+	return isLetter(r.Bytes()[0])
+}
+
+func (r *reader) CheckSpace() bool {
+	if r.Len() == 0 {
+		return false
+	}
+	return isWhitespace(r.Bytes()[0])
 }
 
 func (r *reader) SkipBreak() {
@@ -134,6 +158,18 @@ func (r *reader) SkipBreak() {
 			r.Next(2)
 		} else {
 			r.Next(1)
+		}
+	}
+}
+
+func (r *reader) SkipSpaces() {
+	if err := r.Cache(1); err != nil {
+		return
+	}
+	for r.CheckSpace() {
+		r.Next(1)
+		if err := r.Cache(1); err != nil {
+			return
 		}
 	}
 }
