@@ -104,6 +104,24 @@ func (r *reader) ReadByte() (c byte, err os.Error) {
 	return
 }
 
+func (r *reader) ReadBreak() (bytes []byte, err os.Error) {
+	if err := r.Cache(2); err != nil && (err != io.ErrUnexpectedEOF || r.Len() == 0) {
+		return
+	}
+
+	switch r.Bytes()[0] {
+	case '\n':
+		bytes = r.Next(1)
+	case '\r':
+		if r.Len() > 1 && r.Bytes()[1] == '\n' {
+			bytes = r.Next(2)
+		} else {
+			bytes = r.Next(1)
+		}
+	}
+	return
+}
+
 func (r *reader) Next(n int) (bytes []byte) {
 	bytes = r.Buffer.Next(n)
 	r.updatePos(bytes)
@@ -111,7 +129,7 @@ func (r *reader) Next(n int) (bytes []byte) {
 }
 
 func (r *reader) Check(i int, st string) bool {
-	if r.Len() < i + len(st) {
+	if r.Len() < i+len(st) {
 		return false
 	}
 	return st == string(r.Bytes()[i:i+len(st)])
@@ -164,31 +182,14 @@ func (r *reader) CheckBlank(i int) bool {
 	if r.Len() <= i {
 		return true
 	}
-	return CheckSpace(i) || CheckBreak(i)
-}
-
-func (r *reader) SkipBreak() {
-	if err := r.Cache(2); err != nil && (err != io.ErrUnexpectedEOF || r.Len() == 0) {
-		return
-	}
-
-	switch r.Bytes()[0] {
-	case '\n':
-		r.Next(1)
-	case '\r':
-		if r.Len() > 1 && r.Bytes()[1] == '\n' {
-			r.Next(2)
-		} else {
-			r.Next(1)
-		}
-	}
+	return r.CheckSpace(i) || r.CheckBreak(i)
 }
 
 func (r *reader) SkipSpaces() {
 	if err := r.Cache(1); err != nil {
 		return
 	}
-	for r.CheckSpace() {
+	for r.CheckSpace(0) {
 		r.Next(1)
 		if err := r.Cache(1); err != nil {
 			return

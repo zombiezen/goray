@@ -3,7 +3,6 @@ package scanner
 import (
 	"bytes"
 	"io"
-	"os"
 	"testing"
 	"testing/iotest"
 )
@@ -106,7 +105,7 @@ func TestOneByteReader(t *testing.T) {
 	b := bytes.NewBufferString(data)
 	r := newReader(iotest.OneByteReader(b))
 	r.Cache(cacheSize)
-	if !r.Check(data[0:cacheSize]) {
+	if !r.Check(0, data[0:cacheSize]) {
 		t.Error("Caching failed")
 	}
 	result := make([]byte, len(data))
@@ -122,39 +121,41 @@ func TestOneByteReader(t *testing.T) {
 	}
 }
 
-func TestSkipBreak(t *testing.T) {
+func TestReadBreak(t *testing.T) {
 	r := newReader(bytes.NewBufferString("a\rb\nc\r\nd\n"))
-	r.SkipBreak()
-	if c, _ := r.ReadByte(); c != 'a' {
-		t.Fatal("SkipBreak skips normal characters")
-	}
-	r.SkipBreak()
-	if c, _ := r.ReadByte(); c != 'b' {
-		t.Error("Didn't skip CR")
-		r.ReadByte()
-	}
-	r.SkipBreak()
-	if c, _ := r.ReadByte(); c != 'c' {
-		t.Error("Didn't skip LF")
-		r.ReadByte()
-	}
-	r.SkipBreak()
-	if c, _ := r.ReadByte(); c != 'd' {
-		t.Error("Failed on CRLF")
-		if c == '\n' {
-			t.Log("Got caught on LF")
-			r.ReadByte()
+	// Non-break ReadBreak
+	{
+		bytes, err := r.ReadBreak()
+		if err != nil {
+			t.Error("First ReadBreak error:", err)
+		} else if len(bytes) != 0 {
+			t.Error("First ReadBreak yielded non-break characters")
+		}
+		if c, _ := r.ReadByte(); c != 'a' {
+			t.Fatal("SkipBreak skips non-break characters")
 		}
 	}
-	r.SkipBreak()
-	if _, err := r.ReadByte(); err != os.EOF {
-		t.Error("Final skip LF failed")
+	// Break check function
+	check := func(name, br string, nextChar byte) {
+		bytes, err := r.ReadBreak()
+		if err != nil {
+			t.Error(name, "ReadBreak error:", err)
+		} else if string(bytes) != br {
+			t.Errorf("%s ReadBreak gave wrong break: %#v", name, string(bytes))
+		}
+		if nextChar != 0 {
+			if c, _ := r.ReadByte(); c != nextChar {
+				t.Errorf("Didn't skip %s", name)
+				r.ReadByte()
+			}
+		}
 	}
+	check("CR", "\r", 'b')
+	check("LF", "\n", 'c')
+	check("CRLF", "\r\n", 'd')
+	check("Final LF", "\n", 0)
 	// Test final CR
 	r = newReader(bytes.NewBufferString("a\r"))
 	r.ReadByte()
-	r.SkipBreak()
-	if _, err := r.ReadByte(); err != os.EOF {
-		t.Error("Final skip CR failed")
-	}
+	check("Final CR", "\r", 0)
 }
