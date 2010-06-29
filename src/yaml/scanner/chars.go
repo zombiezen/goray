@@ -30,3 +30,25 @@ func isHexDigit(c byte) bool {
 func isWordChar(c byte) bool {
 	return isLetter(c) || isDigit(c) || c == '-'
 }
+
+func asHex(c byte) (val int, ok bool) {
+	ok = true
+	switch {
+	case c >= '0' && c <= '9':
+		val = int(c - '0')
+	case c >= 'A' && c <= 'F':
+		val = int(c - 'A' + 0x09)
+	case c >= 'a' && c <= 'f':
+		val = int(c - 'a' + 0x09)
+	default:
+		ok = false
+	}
+	return
+}
+
+func asDecimal(c byte) (val int, ok bool) {
+	if !isDigit(c) {
+		return 0, false
+	}
+	return int(c - '0'), true
+}
