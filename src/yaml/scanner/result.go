@@ -57,7 +57,7 @@ type VersionDirective struct {
 }
 
 func (vd VersionDirective) String() string {
-	return fmt.Sprintf("%YAML %d.%d", vd.Major, vd.Minor)
+	return fmt.Sprintf("%%YAML %d.%d", vd.Major, vd.Minor)
 }
 
 type TagDirective struct {
@@ -67,5 +67,5 @@ type TagDirective struct {
 }
 
 func (td TagDirective) String() string {
-	return fmt.Sprintf("%TAG %s %s", td.Handle, td.Prefix)
+	return fmt.Sprintf("%%TAG %s %s", td.Handle, td.Prefix)
 }
