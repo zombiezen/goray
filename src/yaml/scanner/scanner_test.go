@@ -34,10 +34,10 @@ var scannerTests = []scanTest{
 "Hello, World!"`,
 		[]Token{
 			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
-			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{8, 1, 9}},
-			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{12, 2, 3}},
-			BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{28, 3, 15}},
-			BasicToken{token.STREAM_END, token.Position{28, 3, 15}, token.Position{28, 3, 15}},
+			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{9, 1, 10}},
+			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{13, 2, 4}},
+			BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{29, 3, 16}},
+			BasicToken{token.STREAM_END, token.Position{29, 4, 1}, token.Position{29, 4, 1}},
 		},
 	},
 }
@@ -67,10 +67,10 @@ func TestScanner(t *testing.T) {
 					t.Errorf("%v: got wrong token %v at %d", test, tok.GetKind(), i)
 				}
 				if !posEq(tok.GetStart(), expected.GetStart()) {
-					t.Errorf("%v: token %d started at %v", test, i, tok.GetStart())
+					t.Errorf("%v: token %d started at %v (expected %v)", test, i, tok.GetStart(), expected.GetStart())
 				}
 				if !posEq(tok.GetEnd(), expected.GetEnd()) {
-					t.Errorf("%v: token %d ended at %v", test, i, tok.GetStart())
+					t.Errorf("%v: token %d ended at %v (expected %v)", test, i, tok.GetEnd(), expected.GetEnd())
 				}
 			}
 		} else {

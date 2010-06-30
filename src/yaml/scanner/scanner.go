@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode"
 	"yaml/token"
 )
 
@@ -94,63 +93,44 @@ func (s *Scanner) fetch() (err os.Error) {
 		}
 	}
 
-	checkany := func(chars string) bool {
-		currByte := s.reader.Bytes()[0]
-		for _, c := range chars {
-			if currByte == byte(c) {
-				return true
-			}
-		}
-		return false
-	}
-	blank := func(i int) bool {
-		return unicode.IsSpace(int(s.reader.Bytes()[i]))
-	}
-	blankz := func(i int) bool {
-		if s.reader.Len() <= i {
-			return true
-		}
-		return blank(i)
-	}
-
 	switch {
-	case s.reader.Pos.Column == 1 && s.reader.Check("%"):
+	case s.reader.Pos.Column == 1 && s.reader.Check(0, "%"):
 		return s.fetchDirective()
-	case s.reader.Pos.Column == 1 && s.reader.Check("---") && blankz(3):
+	case s.reader.Pos.Column == 1 && s.reader.Check(0, "---") && s.reader.CheckBlank(3):
 		return s.fetchDocumentIndicator(token.DOCUMENT_START)
-	case s.reader.Pos.Column == 1 && s.reader.Check("...") && blankz(3):
+	case s.reader.Pos.Column == 1 && s.reader.Check(0, "...") && s.reader.CheckBlank(3):
 		return s.fetchDocumentIndicator(token.DOCUMENT_END)
-	case s.reader.Check("["):
+	case s.reader.Check(0, "["):
 		return s.fetchFlowCollectionStart(token.FLOW_SEQUENCE_START)
-	case s.reader.Check("{"):
+	case s.reader.Check(0, "{"):
 		return s.fetchFlowCollectionStart(token.FLOW_MAPPING_START)
-	case s.reader.Check("]"):
+	case s.reader.Check(0, "]"):
 		return s.fetchFlowCollectionEnd(token.FLOW_SEQUENCE_END)
-	case s.reader.Check("}"):
+	case s.reader.Check(0, "}"):
 		return s.fetchFlowCollectionEnd(token.FLOW_MAPPING_END)
-	case s.reader.Check(","):
+	case s.reader.Check(0, ","):
 		return s.fetchFlowEntry()
-	case s.reader.Check("-") && blankz(2):
+	case s.reader.Check(0, "-") && s.reader.CheckBlank(2):
 		return s.fetchBlockEntry()
-	case s.reader.Check("?") && (s.flowLevel > 0 || blankz(2)):
+	case s.reader.Check(0, "?") && (s.flowLevel > 0 || s.reader.CheckBlank(2)):
 		return s.fetchKey()
-	case s.reader.Check(":") && (s.flowLevel > 0 || blankz(2)):
+	case s.reader.Check(0, ":") && (s.flowLevel > 0 || s.reader.CheckBlank(2)):
 		return s.fetchValue()
-	case s.reader.Check("*"):
+	case s.reader.Check(0, "*"):
 		return s.fetchAnchor(token.ALIAS)
-	case s.reader.Check("&"):
+	case s.reader.Check(0, "&"):
 		return s.fetchAnchor(token.ANCHOR)
-	case s.reader.Check("!"):
+	case s.reader.Check(0, "!"):
 		return s.fetchTag()
-	case s.reader.Check("|") && s.flowLevel == 0:
+	case s.reader.Check(0, "|") && s.flowLevel == 0:
 		return s.fetchBlockScalar(false)
-	case s.reader.Check(">") && s.flowLevel == 1:
+	case s.reader.Check(0, ">") && s.flowLevel == 1:
 		return s.fetchBlockScalar(true)
-	case s.reader.Check("'"):
-		return s.fetchFlowScalar(false)
-	case s.reader.Check("\""):
-		return s.fetchFlowScalar(true)
-	case !(blankz(0) || checkany("-?:,[]{}#&*!|>'\"%@`")) || (s.reader.Check("-") && !blank(1)) || (s.flowLevel == 0 && checkany("?:") && !blankz(1)):
+	case s.reader.Check(0, "'"):
+		return s.fetchFlowScalar(SingleQuotedScalarStyle)
+	case s.reader.Check(0, "\""):
+		return s.fetchFlowScalar(DoubleQuotedScalarStyle)
+	case !(s.reader.CheckBlank(0) || s.reader.CheckAny(0, "-?:,[]{}#&*!|>'\"%@`")) || (s.reader.Check(0, "-") && !s.reader.CheckSpace(1)) || (s.flowLevel == 0 && s.reader.CheckAny(0, "?:") && !s.reader.CheckBlank(1)):
 		return s.fetchPlainScalar()
 	default:
 		err = os.NewError(fmt.Sprintf("Unrecognized token: %c", s.reader.Bytes()[0]))
@@ -298,7 +278,12 @@ func (s *Scanner) fetchDirective() (err os.Error) {
 		return
 	}
 	s.simpleKeyAllowed = false
-	// TODO: Create token
+	// Create token
+	var tok Token
+	if tok, err = s.scanDirective(); err != nil {
+		return
+	}
+	s.tokenQueue.PushBack(tok)
 	return
 }
 
@@ -359,63 +344,18 @@ func (s *Scanner) fetchBlockScalar(folded bool) (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchFlowScalar(doubleQuoted bool) (err os.Error) {
+func (s *Scanner) fetchFlowScalar(style int) (err os.Error) {
+	if err = s.saveSimpleKey(); err != nil {
+		return
+	}
+	s.simpleKeyAllowed = false
+	tok, err := s.scanFlowScalar(style)
+	if err == nil {
+		s.tokenQueue.PushBack(tok)
+	}
 	return
 }
 
 func (s *Scanner) fetchPlainScalar() (err os.Error) {
 	return
-}
-
-func (s *Scanner) scanToNextToken() (err os.Error) {
-	for {
-		if err = s.reader.Cache(1); err != nil {
-			if err == io.ErrUnexpectedEOF {
-				// Our "next" token is the end of the stream.  This isn't a failure.
-				err = nil
-			}
-			return
-		}
-
-		// TODO: BOM
-
-		// Eat whitespaces
-		//
-		// Tabs are allowed:
-		// - in the flow context;
-		// - in the block context, but not at the beginning of the line or
-		//   after '-', '?', or ':' (complex value).
-		for s.reader.Check(" ") || (s.reader.Check("\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
-			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil {
-				return
-			}
-		}
-
-		// Eat comment until end of line
-		if s.reader.Check("#") {
-			for !s.reader.CheckBreak() {
-				s.reader.Next(1)
-				if err = s.reader.Cache(1); err != nil {
-					return
-				}
-			}
-		}
-
-		// If it's a line break, eat it.
-		if s.reader.CheckBreak() {
-			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
-				return
-			}
-			s.reader.SkipBreak()
-			// In the block context, a new line may start a simple key.
-			if s.flowLevel == 0 {
-				s.simpleKeyAllowed = true
-			}
-		} else {
-			// We found a token.
-			break
-		}
-	}
-	return nil
 }

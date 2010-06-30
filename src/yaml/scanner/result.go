@@ -46,9 +46,19 @@ type TagToken struct {
 	Suffix string
 }
 
+// Type of scalar
+const (
+	AnyScalarStyle = iota
+	PlainScalarStyle
+	SingleQuotedScalarStyle
+	DoubleQuotedScalarStyle
+	LiteralScalarStyle
+	FoldedScalarStyle
+)
+
 type ScalarToken struct {
 	ValueToken
-	// TODO: Style
+	Style int
 }
 
 type VersionDirective struct {
