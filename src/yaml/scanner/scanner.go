@@ -107,19 +107,13 @@ func (s *Scanner) fetch() (err os.Error) {
 
 	s.unrollIndent(s.reader.Pos.Column)
 
-	if err = s.reader.CacheFull(4); err != nil {
-		if err == io.ErrUnexpectedEOF {
-			// Only have a handful of characters left?  That's cool, we handle
-			// that.
-			if s.reader.Len() == 0 {
-				// No characters left? End the stream.
-				return s.streamEnd()
-			} else {
-				err = nil
-			}
-		} else {
-			return
-		}
+	if err = s.reader.Cache(4); err != nil {
+		return
+	}
+
+	if s.reader.Len() == 0 {
+		// No characters left? End the stream.
+		return s.streamEnd()
 	}
 
 	switch {

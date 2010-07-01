@@ -9,7 +9,6 @@ package scanner
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"yaml/token"
@@ -17,11 +16,7 @@ import (
 
 func (s *Scanner) scanToNextToken() (err os.Error) {
 	for {
-		if err = s.reader.CacheFull(1); err != nil {
-			if err == io.ErrUnexpectedEOF {
-				// Our "next" token is the end of the stream.  This isn't a failure.
-				err = nil
-			}
+		if err = s.reader.Cache(1); err != nil {
 			return
 		}
 
@@ -35,22 +30,16 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		//   after '-', '?', or ':' (complex value).
 		for s.reader.Check(0, " ") || (s.reader.Check(0, "\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
 			s.reader.Next(1)
-			if err = s.reader.CacheFull(1); err != nil {
-				if err == io.ErrUnexpectedEOF {
-					err = nil
-				}
+			if err = s.reader.Cache(1); err != nil {
 				return
 			}
 		}
 
 		// Eat comment until end of line
 		if s.reader.Check(0, "#") {
-			for !s.reader.CheckBreak(0) {
+			for !s.reader.CheckBreak(0) && s.reader.Len() > 0 {
 				s.reader.Next(1)
-				if err = s.reader.CacheFull(1); err != nil {
-					if err == io.ErrUnexpectedEOF {
-						err = nil
-					}
+				if err = s.reader.Cache(1); err != nil {
 					return
 				}
 			}
@@ -301,19 +290,13 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	s.reader.SkipSpaces()
 
 	if err = s.reader.CacheFull(1); err != nil {
-		fmt.Println("Break 1")
 		return
 	}
 	if s.reader.Check(0, "#") {
-		for !s.reader.CheckBreak(0) {
+		for !s.reader.CheckBreak(0) && s.reader.Len() > 0 {
 			s.reader.Next(1)
-			if err = s.reader.CacheFull(1); err != nil {
-				if err == io.ErrUnexpectedEOF {
-					break
-				} else {
-					fmt.Println("Break 2")
-					return
-				}
+			if err = s.reader.Cache(1); err != nil {
+				return
 			}
 		}
 	}
@@ -337,14 +320,12 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 
 	// Scan the leading line breaks and determine indentation level, if needed
 	if breaks, endPos, err = s.scanBlockScalarBreaks(&indent, startPos); err != nil {
-		fmt.Println("Break 3")
 		return
 	}
 	trailingBreaks.Write(breaks)
 
 	// Scan content
-	if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
-		fmt.Println("Break 4")
+	if err = s.reader.Cache(1); err != nil {
 		return
 	}
 	for s.reader.Pos.Column == indent && s.reader.Len() > 0 {
@@ -366,12 +347,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 		// Consume the current line
 		for !s.reader.CheckBreak(0) {
 			io.Copyn(valueBuf, s.reader, 1)
-			if err = s.reader.CacheFull(1); err != nil {
-				if err == io.ErrUnexpectedEOF {
-					err = nil
-					break
-				}
-				fmt.Println("Break 5")
+			if err = s.reader.Cache(1); err != nil {
 				return
 			}
 		}
@@ -415,12 +391,12 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 
 	for {
 		// Eat the indentation spaces
-		if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
+		if err = s.reader.Cache(1); err != nil {
 			return
 		}
 		for (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, " ") {
 			s.reader.Next(1)
-			if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
+			if err = s.reader.Cache(1); err != nil {
 				return
 			}
 		}
@@ -470,7 +446,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 	for {
 		leadingBlanks := false
 
-		if err = s.reader.CacheFull(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+		if err = s.reader.Cache(4); err != nil {
 			return
 		}
 		err = nil
@@ -512,7 +488,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 			}
 
 			// Get ready for next non-blank
-			if err = s.reader.CacheFull(2); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+			if err = s.reader.Cache(2); err != nil {
 				return
 			}
 		}
@@ -684,7 +660,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 	trailingBreaks := new(bytes.Buffer)
 
 	for {
-		if err = s.reader.CacheFull(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+		if err = s.reader.Cache(4); err != nil {
 			return
 		}
 		err = nil
@@ -731,7 +707,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 			b, _ := s.reader.ReadByte()
 			valueBuf.WriteByte(b)
 			endPos = s.reader.Pos
-			if err = s.reader.CacheFull(2); err != nil && err != io.ErrUnexpectedEOF {
+			if err = s.reader.Cache(2); err != nil {
 				return
 			}
 		}
