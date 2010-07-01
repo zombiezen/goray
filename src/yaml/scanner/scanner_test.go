@@ -136,6 +136,24 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Block literal scalar",
+		"|\n A\n\n  B\n C\n",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{0, 1, 1}, token.Position{13, 6, 1}}, "A\n\n B\nC\n"},
+			BasicToken{token.STREAM_END, token.Position{13, 6, 1}, token.Position{13, 6, 1}},
+		},
+	},
+	scanTest{
+		"Block folded scalar",
+		">\n A\n\n B\n C\n",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{0, 1, 1}, token.Position{12, 6, 1}}, "A\nB C\n"},
+			BasicToken{token.STREAM_END, token.Position{12, 6, 1}, token.Position{12, 6, 1}},
+		},
+	},
+	scanTest{
 		"Basic document",
 		`%YAML 1.2
 ---
