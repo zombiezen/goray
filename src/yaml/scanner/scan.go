@@ -9,6 +9,7 @@ package scanner
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"yaml/token"
@@ -227,6 +228,236 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 		},
 		valueBuf.String(),
 	}
+	return
+}
+
+func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
+	const (
+		chompStrip = -1
+		chompClip = 0
+		chompKeep = +1
+	)
+	
+	var breaks []byte
+	
+	chomping := chompClip
+	indent := 0
+	increment := 0
+	leadingBlank := false
+	trailingBlank := false
+	
+	valueBuf := new(bytes.Buffer)
+	leadingBreak := new(bytes.Buffer)
+	trailingBreaks := new(bytes.Buffer)
+	
+	// Eat the indicator
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	
+	// Scan for additional block scalar indicators (order doesn't matter)
+	if err = s.reader.Cache(1); err != nil {
+		return
+	}
+	scanChomp := func() {
+		switch {
+		case s.reader.Check(0, "+"):
+			chomping = chompKeep
+		case s.reader.Check(0, "-"):
+			chomping = chompStrip
+		default:
+			return
+		}
+		s.reader.Next(1)
+	}
+	scanIndent := func() os.Error {
+		if s.reader.CheckDigit(0) {
+			b, _ := s.reader.ReadByte()
+			increment, _ = asDecimal(b)
+			if increment == 0 {
+				return os.NewError("Found an indentation equal to 0")
+			}
+		}
+		return nil
+	}
+	if s.reader.CheckAny(0, "+-") {
+		scanChomp()
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+		if err = scanIndent(); err != nil {
+			return
+		}
+	} else if s.reader.CheckDigit(0) {
+		if err = scanIndent(); err != nil {
+			return
+		}
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+		scanChomp()
+	}
+	
+	// Eat whitespaces and comments to the end of the line
+	s.reader.SkipSpaces()
+	
+	if err = s.reader.Cache(1); err != nil {
+		fmt.Println("Break 1")
+		return
+	}
+	if s.reader.Check(0, "#") {
+		for !s.reader.CheckBreak(0) {
+			s.reader.Next(1)
+			if err = s.reader.Cache(1); err != nil {
+				if err == io.ErrUnexpectedEOF {
+					break
+				} else {
+					fmt.Println("Break 2")
+					return
+				}
+			}
+		}
+	}
+	
+	// Ensure that we're at EOL
+	if !s.reader.CheckBlank(0) {
+		err = os.NewError("Did not find expected comment or line break")
+		return
+	}
+	// Eat line break
+	s.reader.ReadBreak()
+	endPos := s.reader.Pos
+	// Set the indentation level if it was specified
+	if increment != 0 {
+		if s.indent > 0 {
+			indent = s.indent + increment
+		} else {
+			indent = increment
+		}
+	}
+	
+	// Scan the leading line breaks and determine indentation level, if needed
+	if breaks, endPos, err = s.scanBlockScalarBreaks(&indent, startPos); err != nil {
+		fmt.Println("Break 3")
+		return
+	}
+	trailingBreaks.Write(breaks)
+	
+	// Scan content
+	if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+		fmt.Println("Break 4")
+		return
+	}
+	for s.reader.Pos.Column == indent && s.reader.Len() > 0 {
+		// We are at the beginning of a non-empty line
+		trailingBlank = s.reader.CheckSpace(0)
+		// Do we need to fold the leading line break?
+		if style == FoldedScalarStyle && leadingBreak.Len() > 0 && !leadingBlank && !trailingBlank {
+			if trailingBreaks.Len() == 0 {
+				valueBuf.WriteByte(' ')
+			}
+			leadingBreak.Reset()
+		} else {
+			io.Copy(valueBuf, leadingBreak)
+		}
+		// Append the remaining line breaks
+		io.Copy(valueBuf, trailingBreaks)
+		// Is it a leading whitespace?
+		leadingBlank = s.reader.CheckSpace(0)
+		// Consume the current line
+		for !s.reader.CheckBreak(0) {
+			io.Copyn(valueBuf, s.reader, 1)
+			if err = s.reader.Cache(1); err != nil {
+				if err == io.ErrUnexpectedEOF {
+					err = nil
+					break
+				}
+				fmt.Println("Break 5")
+				return
+			}
+		}
+		// Consume the line break
+		if breaks, err = s.reader.ReadBreak(); err != nil {
+			return
+		}
+		leadingBreak.Write(breaks)
+		// Eat the following indentation spaces and line breaks
+		if breaks, endPos, err = s.scanBlockScalarBreaks(&indent, startPos); err != nil {
+			return
+		}
+		trailingBreaks.Write(breaks)
+	}
+	
+	// Chomp the tail
+	if chomping != chompStrip {
+		io.Copy(valueBuf, leadingBreak)
+	}
+	if chomping == chompKeep {
+		io.Copy(valueBuf, trailingBreaks)
+	}
+	
+	// Create token
+	{
+		scalarTok := ScalarToken{}
+		scalarTok.Kind = token.SCALAR
+		scalarTok.Start, scalarTok.End = startPos, endPos
+		scalarTok.Value = valueBuf.String()
+		scalarTok.Style = style
+		tok = scalarTok
+	}
+	err = nil
+	return
+}
+
+func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (breaks []byte, endPos token.Position, err os.Error) {
+	maxIndent := 0
+	endPos = s.reader.Pos
+	breaksBuffer := new(bytes.Buffer)
+	
+	for {
+		// Eat the indentation spaces
+		if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+			return
+		}
+		for (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, " ") {
+			s.reader.Next(1)
+			if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+				return
+			}
+		}
+		if s.reader.Pos.Column > maxIndent {
+			maxIndent = s.reader.Pos.Column
+		}
+		// Check for a tab character messing the indentation
+		if (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, "\t") {
+			err = os.NewError("Found a tab character where an indentation space is expected")
+			return
+		}
+		// Have we found a non-empty line?
+		if !s.reader.CheckBreak(0) || s.reader.Len() == 0{
+			break
+		}
+		// Consume the line break
+		var brBytes []byte
+		if brBytes, err = s.reader.ReadBreak(); err != nil {
+			return
+		}
+		breaksBuffer.Write(brBytes)
+		endPos = s.reader.Pos
+	}
+	
+	// Determine the indentation level, if needed
+	if *indent == 0 {
+		*indent = maxIndent
+		if *indent < s.indent + 1 {
+			*indent = s.indent + 1
+		}
+		if *indent < 1 {
+			*indent = 1
+		}
+	}
+	
+	breaks = breaksBuffer.Bytes()
+	err = nil
 	return
 }
 

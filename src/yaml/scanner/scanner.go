@@ -152,9 +152,9 @@ func (s *Scanner) fetch() (err os.Error) {
 	case s.reader.Check(0, "!"):
 		return s.fetchTag()
 	case s.reader.Check(0, "|") && s.flowLevel == 0:
-		return s.fetchBlockScalar(false)
-	case s.reader.Check(0, ">") && s.flowLevel == 1:
-		return s.fetchBlockScalar(true)
+		return s.fetchBlockScalar(LiteralScalarStyle)
+	case s.reader.Check(0, ">") && s.flowLevel == 0:
+		return s.fetchBlockScalar(FoldedScalarStyle)
 	case s.reader.Check(0, "'"):
 		return s.fetchFlowScalar(SingleQuotedScalarStyle)
 	case s.reader.Check(0, "\""):
@@ -528,7 +528,15 @@ func (s *Scanner) fetchTag() (err os.Error) {
 	return
 }
 
-func (s *Scanner) fetchBlockScalar(folded bool) (err os.Error) {
+func (s *Scanner) fetchBlockScalar(style int) (err os.Error) {
+	if err = s.removeSimpleKey(); err != nil {
+		return err
+	}
+	s.simpleKeyAllowed = true
+	tok, err := s.scanBlockScalar(style)
+	if err == nil {
+		s.addToken(tok)
+	}
 	return
 }
 
