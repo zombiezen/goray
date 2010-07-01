@@ -28,19 +28,6 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
-		"Basic",
-		`%YAML 1.2
----
-"Hello, World!"`,
-		[]Token{
-			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
-			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{9, 1, 10}},
-			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{13, 2, 4}},
-			ValueToken{BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{29, 3, 16}}, "Hello, World!"},
-			BasicToken{token.STREAM_END, token.Position{29, 4, 1}, token.Position{29, 4, 1}},
-		},
-	},
-	scanTest{
 		"Plain literal",
 		`Hello, World!`,
 		[]Token{
@@ -62,6 +49,21 @@ var scannerTests = []scanTest{
 			ValueToken{BasicToken{token.SCALAR, token.Position{11, 1, 12}, token.Position{14, 1, 15}}, "Baz"},
 			BasicToken{token.FLOW_SEQUENCE_END, token.Position{14, 1, 15}, token.Position{15, 1, 16}},
 			BasicToken{token.STREAM_END, token.Position{15, 2, 1}, token.Position{15, 2, 1}},
+		},
+	},
+	scanTest{
+		"Basic document",
+		`%YAML 1.2
+---
+"Hello, World!"
+...`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{9, 1, 10}},
+			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{13, 2, 4}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{29, 3, 16}}, "Hello, World!"},
+			BasicToken{token.DOCUMENT_END, token.Position{30, 4, 1}, token.Position{33, 4, 4}},
+			BasicToken{token.STREAM_END, token.Position{33, 5, 1}, token.Position{33, 5, 1}},
 		},
 	},
 }
