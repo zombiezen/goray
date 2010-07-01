@@ -42,11 +42,15 @@ var scannerTests = []scanTest{
 		[]Token{
 			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
 			BasicToken{token.FLOW_SEQUENCE_START, token.Position{0, 1, 1}, token.Position{1, 1, 2}},
+
 			ValueToken{BasicToken{token.SCALAR, token.Position{1, 1, 2}, token.Position{4, 1, 5}}, "Foo"},
 			BasicToken{token.FLOW_ENTRY, token.Position{4, 1, 5}, token.Position{5, 1, 6}},
+
 			ValueToken{BasicToken{token.SCALAR, token.Position{6, 1, 7}, token.Position{9, 1, 10}}, "Bar"},
 			BasicToken{token.FLOW_ENTRY, token.Position{9, 1, 10}, token.Position{10, 1, 11}},
+
 			ValueToken{BasicToken{token.SCALAR, token.Position{11, 1, 12}, token.Position{14, 1, 15}}, "Baz"},
+
 			BasicToken{token.FLOW_SEQUENCE_END, token.Position{14, 1, 15}, token.Position{15, 1, 16}},
 			BasicToken{token.STREAM_END, token.Position{15, 2, 1}, token.Position{15, 2, 1}},
 		},
@@ -68,8 +72,9 @@ var scannerTests = []scanTest{
 			ValueToken{BasicToken{token.SCALAR, token.Position{13, 1, 14}, token.Position{20, 1, 21}}, "Knights"},
 			BasicToken{token.VALUE, token.Position{20, 1, 21}, token.Position{21, 1, 22}},
 			ValueToken{BasicToken{token.SCALAR, token.Position{22, 1, 23}, token.Position{24, 1, 25}}, "Ni"},
-			BasicToken{token.FLOW_MAPPING_END, token.Position{25, 1, 26}, token.Position{26, 1, 27}},
-			BasicToken{token.STREAM_END, token.Position{26, 2, 1}, token.Position{26, 2, 1}},
+
+			BasicToken{token.FLOW_MAPPING_END, token.Position{24, 1, 25}, token.Position{25, 1, 26}},
+			BasicToken{token.STREAM_END, token.Position{25, 2, 1}, token.Position{25, 2, 1}},
 		},
 	},
 	scanTest{
