@@ -49,6 +49,21 @@ var scannerTests = []scanTest{
 			BasicToken{token.STREAM_END, token.Position{13, 2, 1}, token.Position{13, 2, 1}},
 		},
 	},
+	scanTest{
+		"Flow sequence",
+		`[Foo, Bar, Baz]`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.FLOW_SEQUENCE_START, token.Position{0, 1, 1}, token.Position{1, 1, 2}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{1, 1, 2}, token.Position{4, 1, 5}}, "Foo"},
+			BasicToken{token.FLOW_ENTRY, token.Position{4, 1, 5}, token.Position{5, 1, 6}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{6, 1, 7}, token.Position{9, 1, 10}}, "Bar"},
+			BasicToken{token.FLOW_ENTRY, token.Position{9, 1, 10}, token.Position{10, 1, 11}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{11, 1, 12}, token.Position{14, 1, 15}}, "Baz"},
+			BasicToken{token.FLOW_SEQUENCE_END, token.Position{14, 1, 15}, token.Position{15, 1, 16}},
+			BasicToken{token.STREAM_END, token.Position{15, 2, 1}, token.Position{15, 2, 1}},
+		},
+	},
 }
 
 func posEq(a, b token.Position) bool {
@@ -81,7 +96,7 @@ func TestScanner(t *testing.T) {
 				if !posEq(tok.GetEnd(), expected.GetEnd()) {
 					t.Errorf("%v: token %d ended at %v (expected %v)", test, i, tok.GetEnd(), expected.GetEnd())
 				}
-				if _, ok := expected.(ValueToken); ok && tok.String() != tok.String() {
+				if _, ok := expected.(ValueToken); ok && tok.String() != expected.String() {
 					t.Errorf("%v: token %d had wrong value %#v (expected %#v)", test, i, tok.String(), expected.String())
 				}
 			}
