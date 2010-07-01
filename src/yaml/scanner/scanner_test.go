@@ -37,6 +37,23 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Comment",
+		`# Comment`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.STREAM_END, token.Position{9, 2, 1}, token.Position{9, 2, 1}},
+		},
+	},
+	scanTest{
+		"Comment with content",
+		"# Comment\nHello",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{10, 2, 1}, token.Position{15, 2, 6}}, "Hello"},
+			BasicToken{token.STREAM_END, token.Position{15, 3, 1}, token.Position{15, 3, 1}},
+		},
+	},
+	scanTest{
 		"Flow sequence",
 		`[Foo, Bar, Baz]`,
 		[]Token{
