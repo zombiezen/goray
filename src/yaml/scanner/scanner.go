@@ -139,11 +139,11 @@ func (s *Scanner) fetch() (err os.Error) {
 		return s.fetchFlowCollectionEnd(token.FLOW_MAPPING_END)
 	case s.reader.Check(0, ","):
 		return s.fetchFlowEntry()
-	case s.reader.Check(0, "-") && s.reader.CheckBlank(2):
+	case s.reader.Check(0, "-") && s.reader.CheckBlank(1):
 		return s.fetchBlockEntry()
-	case s.reader.Check(0, "?") && (s.flowLevel > 0 || s.reader.CheckBlank(2)):
+	case s.reader.Check(0, "?") && (s.flowLevel > 0 || s.reader.CheckBlank(1)):
 		return s.fetchKey()
-	case s.reader.Check(0, ":") && (s.flowLevel > 0 || s.reader.CheckBlank(2)):
+	case s.reader.Check(0, ":") && (s.flowLevel > 0 || s.reader.CheckBlank(1)):
 		return s.fetchValue()
 	case s.reader.Check(0, "*"):
 		return s.fetchAnchor(token.ALIAS)
@@ -408,6 +408,36 @@ func (s *Scanner) fetchFlowEntry() (err os.Error) {
 }
 
 func (s *Scanner) fetchBlockEntry() (err os.Error) {
+	// Are we in the block context?
+	if s.flowLevel == 0 {
+		// Are we allowed to start a new entry?
+		if !s.simpleKeyAllowed {
+			err = os.NewError("Block sequence entries are not allowed in this context")
+			return
+		}
+		// Add the BLOCK_SEQUENCE_START token, if needed
+		s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_SEQUENCE_START, s.reader.Pos)
+	}
+	// It is an error for the '-' indicator to occur in the flow context, but we let
+	// the Parser detect and report about it because the Parser is able to point to
+	// the context.
+	
+	// Reset any potential simple keys on the current flow level
+	if err = s.removeSimpleKey(); err != nil {
+		return
+	}
+	
+	// Simple keys are allowed after '-'
+	s.simpleKeyAllowed = true
+	
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.addToken(BasicToken{
+		Kind: token.BLOCK_ENTRY,
+		Start: startPos,
+		End: s.reader.Pos,
+	})
 	return
 }
 
