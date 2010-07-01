@@ -36,8 +36,17 @@ var scannerTests = []scanTest{
 			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
 			BasicToken{token.VERSION_DIRECTIVE, token.Position{0, 1, 1}, token.Position{9, 1, 10}},
 			BasicToken{token.DOCUMENT_START, token.Position{10, 2, 1}, token.Position{13, 2, 4}},
-			BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{29, 3, 16}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{14, 3, 1}, token.Position{29, 3, 16}}, "Hello, World!"},
 			BasicToken{token.STREAM_END, token.Position{29, 4, 1}, token.Position{29, 4, 1}},
+		},
+	},
+	scanTest{
+		"Plain literal",
+		`Hello, World!`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{0, 1, 1}, token.Position{13, 1, 14}}, "Hello, World!"},
+			BasicToken{token.STREAM_END, token.Position{13, 2, 1}, token.Position{13, 2, 1}},
 		},
 	},
 }
@@ -71,6 +80,9 @@ func TestScanner(t *testing.T) {
 				}
 				if !posEq(tok.GetEnd(), expected.GetEnd()) {
 					t.Errorf("%v: token %d ended at %v (expected %v)", test, i, tok.GetEnd(), expected.GetEnd())
+				}
+				if _, ok := expected.(ValueToken); ok && tok.String() != tok.String() {
+					t.Errorf("%v: token %d had wrong value %#v (expected %#v)", test, i, tok.String(), expected.String())
 				}
 			}
 		} else {

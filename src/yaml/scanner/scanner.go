@@ -309,14 +309,58 @@ func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err os.Error) {
 }
 
 func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err os.Error) {
+	// The indicators '[' and '{' may start a simple key
+	if err = s.saveSimpleKey(); err != nil {
+		return
+	}
+	s.increaseFlowLevel()
+	// A simple key may follow the indicators '[' and '{'
+	s.simpleKeyAllowed = true
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.tokenQueue.PushBack(BasicToken{
+		Kind: kind,
+		Start: startPos,
+		End: s.reader.Pos,
+	})
 	return
 }
 
 func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err os.Error) {
+	// Reset any potential simple key on the current flow level
+	if err = s.removeSimpleKey(); err != nil {
+		return
+	}
+	s.decreaseFlowLevel()
+	// No simple keys after the indicators ']' and '}'
+	s.simpleKeyAllowed = false
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.tokenQueue.PushBack(BasicToken{
+		Kind: kind,
+		Start: startPos,
+		End: s.reader.Pos,
+	})
 	return
 }
 
 func (s *Scanner) fetchFlowEntry() (err os.Error) {
+	// Reset any potential simple keys on the current flow level
+	if err = s.removeSimpleKey(); err != nil {
+		return
+	}
+	// Simple keys are allowed after ','
+	s.simpleKeyAllowed = true
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.tokenQueue.PushBack(BasicToken{
+		Kind: token.FLOW_ENTRY,
+		Start: startPos,
+		End: s.reader.Pos,
+	})
 	return
 }
 
@@ -325,14 +369,55 @@ func (s *Scanner) fetchBlockEntry() (err os.Error) {
 }
 
 func (s *Scanner) fetchKey() (err os.Error) {
+	// In block context, additional checks are required
+	if s.flowLevel == 0 {
+		// Are we allowed to start a new key?
+		if s.simpleKeyAllowed {
+			err = os.NewError("Mapping keys are not allowed in this context")
+			return
+		}
+		// Add BLOCK_MAPPING_START token if needed
+		s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_MAPPING_START, s.reader.Pos)
+	}
+	// Reset any potential simple keys on the current flow level
+	if err = s.removeSimpleKey(); err != nil {
+		return
+	}
+	// Simple keys are allowed after '?' in the block context
+	s.simpleKeyAllowed = (s.flowLevel > 0)
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.tokenQueue.PushBack(BasicToken{
+		Kind: token.KEY,
+		Start: startPos,
+		End: s.reader.Pos,
+	})
 	return
 }
 
 func (s *Scanner) fetchValue() (err os.Error) {
+	skey := s.simpleKeyStack.Last().(*simpleKey)
+	// Have we found a simple key?
+	if skey.Possible {
+		// TODO: Create the KEY token and insert it into the queue
+	} else {
+	}
 	return
 }
 
 func (s *Scanner) fetchAnchor(kind token.Token) (err os.Error) {
+	// An anchor/alias could be a simple key
+	if err = s.saveSimpleKey(); err != nil {
+		return
+	}
+	// A simple key cannot follow an anchor/alias
+	s.simpleKeyAllowed = false
+	// Consume the token
+	tok, err := s.scanAnchor(kind)
+	if err == nil {
+		s.tokenQueue.PushBack(tok)
+	}
 	return
 }
 
@@ -357,5 +442,16 @@ func (s *Scanner) fetchFlowScalar(style int) (err os.Error) {
 }
 
 func (s *Scanner) fetchPlainScalar() (err os.Error) {
+	// A plain scalar could be a simple key
+	if err = s.saveSimpleKey(); err != nil {
+		return
+	}
+	// A simple key cannot follow a flow scalar
+	s.simpleKeyAllowed = false
+	// Scan in scalar
+	tok, err := s.scanPlainScalar()
+	if err == nil {
+		s.tokenQueue.PushBack(tok)
+	}
 	return
 }

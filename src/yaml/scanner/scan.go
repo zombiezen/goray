@@ -337,6 +337,8 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 			} else {
 				io.Copy(valueBuf, leadingBreak)
 				io.Copy(valueBuf, trailingBreaks)
+				leadingBreak.Reset()
+				trailingBreaks.Reset()
 			}
 		} else {
 			io.Copy(valueBuf, whitespaces)
@@ -432,5 +434,134 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 			return
 		}
 	}
+	return
+}
+
+func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
+	startPos := s.reader.Pos
+	valueBuf := new(bytes.Buffer)
+	indent := s.indent + 1
+	leadingBlanks := false
+	
+	for {
+		if err = s.reader.Cache(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+			return
+		}
+		err = nil
+		// Set up buffers
+		whitespaces := new(bytes.Buffer)
+		leadingBreak := new(bytes.Buffer)
+		trailingBreaks := new(bytes.Buffer)
+		// Better not be a document indicator.
+		if s.reader.Pos.Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
+			err = os.NewError("Unexpected end of document")
+			return
+		}
+		// Check for a comment
+		if s.reader.Check(0, "#") {
+			break
+		}
+		// Consume non-blanks
+		for !s.reader.CheckBlank(0) {
+			// Check for 'x:x' in the flow context
+			if s.flowLevel > 0 && s.reader.Check(0, ":") && !s.reader.CheckBlank(1) {
+				err = os.NewError("Found unexpected ':'")
+				return
+			}
+			// Check for indicators that may end a plain scalar
+			if (s.reader.Check(0, ":") && s.reader.CheckBlank(1)) || (s.flowLevel > 0 && s.reader.CheckAny(0, ",:?]}")) {
+				break
+			}
+			// Check if we need to join whitespaces and breaks
+			if leadingBlanks {
+				// Do we need to fold line breaks?
+				if leadingBreak.Bytes()[0] == '\n' {
+					// We need to fold line breaks
+					if trailingBreaks.Len() == 0 {
+						valueBuf.WriteByte(' ')
+					} else {
+						io.Copy(valueBuf, trailingBreaks)
+					}
+				} else {
+					io.Copy(valueBuf, leadingBreak)
+					io.Copy(valueBuf, trailingBreaks)
+					leadingBreak.Reset()
+					trailingBreaks.Reset()
+				}
+			} else if whitespaces.Len() > 0 {
+				io.Copy(valueBuf, whitespaces)
+				whitespaces.Reset()
+			}
+			// Copy the character
+			b, _ := s.reader.ReadByte()
+			valueBuf.WriteByte(b)
+			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
+				return
+			}
+		}
+		
+		// Is it the end?
+		if !(s.reader.CheckSpace(0) || s.reader.CheckBreak(0)) {
+			break
+		}
+		
+		// Consume blank characters
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+		for s.reader.CheckBlank(0) || s.reader.CheckBreak(0) {
+			if s.reader.CheckBlank(0) {
+				// Check for abusive tabs
+				if leadingBlanks && s.reader.Pos.Column < indent && s.reader.Check(0, "\t") {
+					err = os.NewError("Found a tab character that violates indentation")
+					return
+				}
+				
+				if !leadingBlanks {
+					b, _ := s.reader.ReadByte()
+					whitespaces.WriteByte(b)
+				} else {
+					s.reader.Next(1)
+				}
+			} else {
+				var bytes []byte
+				if !leadingBlanks {
+					whitespaces.Reset()
+					if bytes, err = s.reader.ReadBreak(); err == nil {
+						leadingBreak.Write(bytes)
+					} else {
+						return
+					}
+				} else {
+					if bytes, err = s.reader.ReadBreak(); err == nil {
+						trailingBreaks.Write(bytes)
+					} else {
+						return
+					}
+				}
+			}
+			if err = s.reader.Cache(1); err != nil {
+				return
+			}
+		}
+		
+		// Check indentation level
+		if s.flowLevel == 0 && s.reader.Pos.Column < indent {
+			break
+		}
+	}
+	
+	// Create token
+	{
+		scalarTok := ScalarToken{}
+		scalarTok.Kind = token.SCALAR
+		scalarTok.Start, scalarTok.End = startPos, s.reader.Pos
+		scalarTok.Style = PlainScalarStyle
+		tok = scalarTok
+	}
+	if leadingBlanks {
+		s.simpleKeyAllowed = true
+	}
+	err = nil
 	return
 }
