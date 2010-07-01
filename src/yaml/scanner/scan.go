@@ -442,17 +442,18 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 	startPos := s.reader.Pos
 	valueBuf := new(bytes.Buffer)
 	indent := s.indent + 1
+
+	// Set up buffers
 	leadingBlanks := false
-	
+	whitespaces := new(bytes.Buffer)
+	leadingBreak := new(bytes.Buffer)
+	trailingBreaks := new(bytes.Buffer)
+
 	for {
 		if err = s.reader.Cache(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
 			return
 		}
 		err = nil
-		// Set up buffers
-		whitespaces := new(bytes.Buffer)
-		leadingBreak := new(bytes.Buffer)
-		trailingBreaks := new(bytes.Buffer)
 		// Better not be a document indicator.
 		if s.reader.Pos.Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
 			err = os.NewError("Unexpected end of document")
@@ -486,12 +487,9 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 				} else {
 					io.Copy(valueBuf, leadingBreak)
 					io.Copy(valueBuf, trailingBreaks)
-					leadingBreak.Reset()
-					trailingBreaks.Reset()
 				}
 			} else if whitespaces.Len() > 0 {
 				io.Copy(valueBuf, whitespaces)
-				whitespaces.Reset()
 			}
 			// Copy the character
 			b, _ := s.reader.ReadByte()
@@ -500,12 +498,12 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 				return
 			}
 		}
-		
+
 		// Is it the end?
 		if !(s.reader.CheckSpace(0) || s.reader.CheckBreak(0)) {
 			break
 		}
-		
+
 		// Consume blank characters
 		if err = s.reader.Cache(1); err != nil {
 			return
@@ -517,7 +515,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 					err = os.NewError("Found a tab character that violates indentation")
 					return
 				}
-				
+
 				if !leadingBlanks {
 					b, _ := s.reader.ReadByte()
 					whitespaces.WriteByte(b)
@@ -530,6 +528,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 					whitespaces.Reset()
 					if bytes, err = s.reader.ReadBreak(); err == nil {
 						leadingBreak.Write(bytes)
+						leadingBlanks = true
 					} else {
 						return
 					}
@@ -545,13 +544,13 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 				return
 			}
 		}
-		
+
 		// Check indentation level
 		if s.flowLevel == 0 && s.reader.Pos.Column < indent {
 			break
 		}
 	}
-	
+
 	// Create token
 	{
 		scalarTok := ScalarToken{}
