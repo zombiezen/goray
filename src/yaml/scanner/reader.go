@@ -68,7 +68,7 @@ func (r *reader) updatePos(data []byte) {
 	}
 }
 
-func (r *reader) Cache(n int) (err os.Error) {
+func (r *reader) CacheFull(n int) (err os.Error) {
 	var nRead int64
 	// Do we already have enough buffered?
 	if r.Len() >= n {
@@ -94,7 +94,7 @@ func (r *reader) Read(p []byte) (n int, err os.Error) {
 }
 
 func (r *reader) ReadByte() (c byte, err os.Error) {
-	if err = r.Cache(1); err != nil {
+	if err = r.CacheFull(1); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			err = os.EOF
 		}
@@ -105,7 +105,7 @@ func (r *reader) ReadByte() (c byte, err os.Error) {
 }
 
 func (r *reader) ReadBreak() (bytes []byte, err os.Error) {
-	if err := r.Cache(2); err != nil && (err != io.ErrUnexpectedEOF || r.Len() == 0) {
+	if err := r.CacheFull(2); err != nil && (err != io.ErrUnexpectedEOF || r.Len() == 0) {
 		return
 	}
 
@@ -186,12 +186,12 @@ func (r *reader) CheckBlank(i int) bool {
 }
 
 func (r *reader) SkipSpaces() {
-	if err := r.Cache(1); err != nil {
+	if err := r.CacheFull(1); err != nil {
 		return
 	}
 	for r.CheckSpace(0) {
 		r.Next(1)
-		if err := r.Cache(1); err != nil {
+		if err := r.CacheFull(1); err != nil {
 			return
 		}
 	}

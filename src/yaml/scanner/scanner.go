@@ -107,7 +107,7 @@ func (s *Scanner) fetch() (err os.Error) {
 
 	s.unrollIndent(s.reader.Pos.Column)
 
-	if err = s.reader.Cache(4); err != nil {
+	if err = s.reader.CacheFull(4); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			// Only have a handful of characters left?  That's cool, we handle
 			// that.
@@ -421,22 +421,22 @@ func (s *Scanner) fetchBlockEntry() (err os.Error) {
 	// It is an error for the '-' indicator to occur in the flow context, but we let
 	// the Parser detect and report about it because the Parser is able to point to
 	// the context.
-	
+
 	// Reset any potential simple keys on the current flow level
 	if err = s.removeSimpleKey(); err != nil {
 		return
 	}
-	
+
 	// Simple keys are allowed after '-'
 	s.simpleKeyAllowed = true
-	
+
 	// Consume the token
 	startPos := s.reader.Pos
 	s.reader.Next(1)
 	s.addToken(BasicToken{
-		Kind: token.BLOCK_ENTRY,
+		Kind:  token.BLOCK_ENTRY,
 		Start: startPos,
-		End: s.reader.Pos,
+		End:   s.reader.Pos,
 	})
 	return
 }

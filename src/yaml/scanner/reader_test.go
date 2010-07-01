@@ -7,30 +7,30 @@ import (
 	"testing/iotest"
 )
 
-func TestCache(t *testing.T) {
+func TestCacheFull(t *testing.T) {
 	const data = "Spam, Eggs, Bacon, Spam, and Spam"
 	r := newReader(bytes.NewBufferString(data))
 	if r.Len() != 0 {
 		t.Fatal("Reader starts off with a cache")
 	}
-	// Cache one byte
-	if err := r.Cache(1); err != nil {
-		t.Error("Cache error:", err)
+	// CacheFull one byte
+	if err := r.CacheFull(1); err != nil {
+		t.Error("CacheFull error:", err)
 	}
 	if r.Len() != 1 {
 		t.Errorf("Reader asked to cache 1 byte, have %d bytes", r.Len())
 	}
-	// Cache one more byte
-	if err := r.Cache(2); err != nil {
-		t.Error("Cache error:", err)
+	// CacheFull one more byte
+	if err := r.CacheFull(2); err != nil {
+		t.Error("CacheFull error:", err)
 	}
 	cacheSize := r.Len()
 	if r.Len() != 2 {
 		t.Errorf("Reader asked to cache 2 bytes, have %d bytes", r.Len())
 	}
 	// This shouldn't cache anything more.
-	if err := r.Cache(1); err != nil {
-		t.Error("Cache error:", err)
+	if err := r.CacheFull(1); err != nil {
+		t.Error("CacheFull error:", err)
 	}
 	if r.Len() != cacheSize {
 		t.Error("Redundant cache changed buffer")
@@ -45,18 +45,18 @@ func TestCache(t *testing.T) {
 		t.Errorf("Read from cache gave %d bytes, expected %d", nRead, cacheSize)
 	}
 	if string(result[0:nRead]) != data[0:nRead] {
-		t.Error("Cached read corrupted")
+		t.Error("CacheFulld read corrupted")
 	}
 	if err != nil {
 		t.Error(err)
 	}
 }
 
-func TestHalfCache(t *testing.T) {
+func TestHalfCacheFull(t *testing.T) {
 	r := newReader(bytes.NewBufferString("Hi"))
-	err := r.Cache(4)
+	err := r.CacheFull(4)
 	if err != io.ErrUnexpectedEOF {
-		t.Errorf("Cache should give unexpected EOF error, instead got %v", err)
+		t.Errorf("CacheFull should give unexpected EOF error, instead got %v", err)
 	}
 }
 
@@ -76,7 +76,7 @@ func TestInitialPos(t *testing.T) {
 func TestPos(t *testing.T) {
 	const data = "Hello\nGoodbye"
 	r := newReader(bytes.NewBufferString(data))
-	r.Cache(1)
+	r.CacheFull(1)
 	if r.Pos.Index != 0 || r.Pos.Column != 1 || r.Pos.Line != 1 {
 		t.Error("Caching moves position")
 	}
@@ -104,7 +104,7 @@ func TestOneByteReader(t *testing.T) {
 
 	b := bytes.NewBufferString(data)
 	r := newReader(iotest.OneByteReader(b))
-	r.Cache(cacheSize)
+	r.CacheFull(cacheSize)
 	if !r.Check(0, data[0:cacheSize]) {
 		t.Error("Caching failed")
 	}

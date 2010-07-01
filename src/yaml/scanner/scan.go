@@ -17,7 +17,7 @@ import (
 
 func (s *Scanner) scanToNextToken() (err os.Error) {
 	for {
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			if err == io.ErrUnexpectedEOF {
 				// Our "next" token is the end of the stream.  This isn't a failure.
 				err = nil
@@ -35,7 +35,7 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		//   after '-', '?', or ':' (complex value).
 		for s.reader.Check(0, " ") || (s.reader.Check(0, "\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
 			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				if err == io.ErrUnexpectedEOF {
 					err = nil
 				}
@@ -47,7 +47,7 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		if s.reader.Check(0, "#") {
 			for !s.reader.CheckBreak(0) {
 				s.reader.Next(1)
-				if err = s.reader.Cache(1); err != nil {
+				if err = s.reader.CacheFull(1); err != nil {
 					if err == io.ErrUnexpectedEOF {
 						err = nil
 					}
@@ -111,13 +111,13 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 
 	// Eat the rest of the line, including comments
 	s.reader.SkipSpaces()
-	if err = s.reader.Cache(1); err != nil {
+	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
 	if s.reader.Check(0, "#") {
 		for s.reader.Len() != 0 && !s.reader.CheckBreak(0) {
 			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				return
 			}
 		}
@@ -132,7 +132,7 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 
 func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 	nameBuf := new(bytes.Buffer)
-	if err = s.reader.Cache(1); err != nil {
+	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
 
@@ -140,7 +140,7 @@ func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 		if _, err = io.Copyn(nameBuf, s.reader, 1); err != nil {
 			return
 		}
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 	}
@@ -162,14 +162,14 @@ func (s *Scanner) scanDirectiveName() (name string, err os.Error) {
 func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
 	scanNumber := func() (n int, err os.Error) {
 		numLen := 0
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 		for s.reader.CheckDigit(0) && numLen < 9 {
 			b, _ := s.reader.ReadByte()
 			n = n*10 + int(b-'0')
 			numLen++
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				return 0, err
 			}
 		}
@@ -205,13 +205,13 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 	s.reader.Next(1)
 	// Consume value
 	valueBuf := new(bytes.Buffer)
-	if err = s.reader.Cache(1); err != nil {
+	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
 	for s.reader.CheckLetter(0) {
 		b, _ := s.reader.ReadByte()
 		valueBuf.WriteByte(b)
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 	}
@@ -234,28 +234,28 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	const (
 		chompStrip = -1
-		chompClip = 0
-		chompKeep = +1
+		chompClip  = 0
+		chompKeep  = +1
 	)
-	
+
 	var breaks []byte
-	
+
 	chomping := chompClip
 	indent := 0
 	increment := 0
 	leadingBlank := false
 	trailingBlank := false
-	
+
 	valueBuf := new(bytes.Buffer)
 	leadingBreak := new(bytes.Buffer)
 	trailingBreaks := new(bytes.Buffer)
-	
+
 	// Eat the indicator
 	startPos := s.reader.Pos
 	s.reader.Next(1)
-	
+
 	// Scan for additional block scalar indicators (order doesn't matter)
-	if err = s.reader.Cache(1); err != nil {
+	if err = s.reader.CacheFull(1); err != nil {
 		return
 	}
 	scanChomp := func() {
@@ -281,7 +281,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	}
 	if s.reader.CheckAny(0, "+-") {
 		scanChomp()
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 		if err = scanIndent(); err != nil {
@@ -291,23 +291,23 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 		if err = scanIndent(); err != nil {
 			return
 		}
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 		scanChomp()
 	}
-	
+
 	// Eat whitespaces and comments to the end of the line
 	s.reader.SkipSpaces()
-	
-	if err = s.reader.Cache(1); err != nil {
+
+	if err = s.reader.CacheFull(1); err != nil {
 		fmt.Println("Break 1")
 		return
 	}
 	if s.reader.Check(0, "#") {
 		for !s.reader.CheckBreak(0) {
 			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				if err == io.ErrUnexpectedEOF {
 					break
 				} else {
@@ -317,7 +317,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 			}
 		}
 	}
-	
+
 	// Ensure that we're at EOL
 	if !s.reader.CheckBlank(0) {
 		err = os.NewError("Did not find expected comment or line break")
@@ -334,16 +334,16 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 			indent = increment
 		}
 	}
-	
+
 	// Scan the leading line breaks and determine indentation level, if needed
 	if breaks, endPos, err = s.scanBlockScalarBreaks(&indent, startPos); err != nil {
 		fmt.Println("Break 3")
 		return
 	}
 	trailingBreaks.Write(breaks)
-	
+
 	// Scan content
-	if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+	if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
 		fmt.Println("Break 4")
 		return
 	}
@@ -366,7 +366,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 		// Consume the current line
 		for !s.reader.CheckBreak(0) {
 			io.Copyn(valueBuf, s.reader, 1)
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				if err == io.ErrUnexpectedEOF {
 					err = nil
 					break
@@ -386,7 +386,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 		}
 		trailingBreaks.Write(breaks)
 	}
-	
+
 	// Chomp the tail
 	if chomping != chompStrip {
 		io.Copy(valueBuf, leadingBreak)
@@ -394,7 +394,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	if chomping == chompKeep {
 		io.Copy(valueBuf, trailingBreaks)
 	}
-	
+
 	// Create token
 	{
 		scalarTok := ScalarToken{}
@@ -412,15 +412,15 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 	maxIndent := 0
 	endPos = s.reader.Pos
 	breaksBuffer := new(bytes.Buffer)
-	
+
 	for {
 		// Eat the indentation spaces
-		if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+		if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
 			return
 		}
 		for (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, " ") {
 			s.reader.Next(1)
-			if err = s.reader.Cache(1); err != nil && err != io.ErrUnexpectedEOF {
+			if err = s.reader.CacheFull(1); err != nil && err != io.ErrUnexpectedEOF {
 				return
 			}
 		}
@@ -433,7 +433,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 			return
 		}
 		// Have we found a non-empty line?
-		if !s.reader.CheckBreak(0) || s.reader.Len() == 0{
+		if !s.reader.CheckBreak(0) || s.reader.Len() == 0 {
 			break
 		}
 		// Consume the line break
@@ -444,18 +444,18 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 		breaksBuffer.Write(brBytes)
 		endPos = s.reader.Pos
 	}
-	
+
 	// Determine the indentation level, if needed
 	if *indent == 0 {
 		*indent = maxIndent
-		if *indent < s.indent + 1 {
+		if *indent < s.indent+1 {
 			*indent = s.indent + 1
 		}
 		if *indent < 1 {
 			*indent = 1
 		}
 	}
-	
+
 	breaks = breaksBuffer.Bytes()
 	err = nil
 	return
@@ -470,7 +470,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 	for {
 		leadingBlanks := false
 
-		if err = s.reader.Cache(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+		if err = s.reader.CacheFull(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
 			return
 		}
 		err = nil
@@ -512,7 +512,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 			}
 
 			// Get ready for next non-blank
-			if err = s.reader.Cache(2); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+			if err = s.reader.CacheFull(2); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
 				return
 			}
 		}
@@ -526,7 +526,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 		whitespaces := new(bytes.Buffer)
 		leadingBreak := new(bytes.Buffer)
 		trailingBreaks := new(bytes.Buffer)
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 		for s.reader.CheckBlank(0) || s.reader.CheckBreak(0) {
@@ -554,7 +554,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 					}
 				}
 			}
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				return
 			}
 		}
@@ -595,7 +595,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 }
 
 func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
-	if err = s.reader.Cache(2); err != nil {
+	if err = s.reader.CacheFull(2); err != nil {
 		return
 	}
 	codeLength := 0
@@ -651,7 +651,7 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 	// Is this a hex escape?
 	if codeLength > 0 {
 		// Scan character value
-		if err = s.reader.Cache(codeLength); err != nil {
+		if err = s.reader.CacheFull(codeLength); err != nil {
 			return
 		}
 		for k := 0; k < codeLength; k++ {
@@ -684,7 +684,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 	trailingBreaks := new(bytes.Buffer)
 
 	for {
-		if err = s.reader.Cache(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
+		if err = s.reader.CacheFull(4); err != nil && (err != io.ErrUnexpectedEOF || s.reader.Len() == 0) {
 			return
 		}
 		err = nil
@@ -731,7 +731,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 			b, _ := s.reader.ReadByte()
 			valueBuf.WriteByte(b)
 			endPos = s.reader.Pos
-			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
+			if err = s.reader.CacheFull(2); err != nil && err != io.ErrUnexpectedEOF {
 				return
 			}
 		}
@@ -742,7 +742,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		}
 
 		// Consume blank characters
-		if err = s.reader.Cache(1); err != nil {
+		if err = s.reader.CacheFull(1); err != nil {
 			return
 		}
 		for s.reader.CheckSpace(0) || s.reader.CheckBreak(0) {
@@ -777,7 +777,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 					}
 				}
 			}
-			if err = s.reader.Cache(1); err != nil {
+			if err = s.reader.CacheFull(1); err != nil {
 				return
 			}
 		}
