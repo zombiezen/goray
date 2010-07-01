@@ -353,6 +353,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 		scalarTok.Kind = token.SCALAR
 		scalarTok.Start, scalarTok.End = startPos, s.reader.Pos
 		scalarTok.Style = style
+		scalarTok.Value = valueBuf.String()
 		tok = scalarTok
 	}
 	err = nil
@@ -557,6 +558,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		scalarTok.Kind = token.SCALAR
 		scalarTok.Start, scalarTok.End = startPos, s.reader.Pos
 		scalarTok.Style = PlainScalarStyle
+		scalarTok.Value = valueBuf.String()
 		tok = scalarTok
 	}
 	if leadingBlanks {
