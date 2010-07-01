@@ -51,9 +51,6 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 
 		// If it's a line break, eat it.
 		if s.reader.CheckBreak(0) {
-			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
-				return
-			}
 			s.reader.ReadBreak()
 			// In the block context, a new line may start a simple key.
 			if s.flowLevel == 0 {
@@ -439,7 +436,7 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 }
 
 func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
-	startPos := s.reader.Pos
+	startPos, endPos := s.reader.Pos, s.reader.Pos
 	valueBuf := new(bytes.Buffer)
 	indent := s.indent + 1
 
@@ -454,10 +451,9 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 			return
 		}
 		err = nil
-		// Better not be a document indicator.
+		// Stop on a document indicator
 		if s.reader.Pos.Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
-			err = os.NewError("Unexpected end of document")
-			return
+			break
 		}
 		// Check for a comment
 		if s.reader.Check(0, "#") {
@@ -471,7 +467,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 				return
 			}
 			// Check for indicators that may end a plain scalar
-			if (s.reader.Check(0, ":") && s.reader.CheckBlank(1)) || (s.flowLevel > 0 && s.reader.CheckAny(0, ",:?]}")) {
+			if (s.reader.Check(0, ":") && s.reader.CheckBlank(1)) || (s.flowLevel > 0 && s.reader.CheckAny(0, ",:?[]{}")) {
 				break
 			}
 			// Check if we need to join whitespaces and breaks
@@ -484,16 +480,20 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 					} else {
 						io.Copy(valueBuf, trailingBreaks)
 					}
+					leadingBreak.Reset()
 				} else {
 					io.Copy(valueBuf, leadingBreak)
 					io.Copy(valueBuf, trailingBreaks)
 				}
+				
+				leadingBlanks = false
 			} else if whitespaces.Len() > 0 {
 				io.Copy(valueBuf, whitespaces)
 			}
 			// Copy the character
 			b, _ := s.reader.ReadByte()
 			valueBuf.WriteByte(b)
+			endPos = s.reader.Pos
 			if err = s.reader.Cache(2); err != nil && err != io.ErrUnexpectedEOF {
 				return
 			}
@@ -508,8 +508,8 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		if err = s.reader.Cache(1); err != nil {
 			return
 		}
-		for s.reader.CheckBlank(0) || s.reader.CheckBreak(0) {
-			if s.reader.CheckBlank(0) {
+		for s.reader.CheckSpace(0) || s.reader.CheckBreak(0) {
+			if s.reader.CheckSpace(0) {
 				// Check for abusive tabs
 				if leadingBlanks && s.reader.Pos.Column < indent && s.reader.Check(0, "\t") {
 					err = os.NewError("Found a tab character that violates indentation")
@@ -555,7 +555,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 	{
 		scalarTok := ScalarToken{}
 		scalarTok.Kind = token.SCALAR
-		scalarTok.Start, scalarTok.End = startPos, s.reader.Pos
+		scalarTok.Start, scalarTok.End = startPos, endPos
 		scalarTok.Style = PlainScalarStyle
 		scalarTok.Value = valueBuf.String()
 		tok = scalarTok
