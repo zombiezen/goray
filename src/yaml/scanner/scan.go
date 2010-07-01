@@ -35,6 +35,9 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		for s.reader.Check(0, " ") || (s.reader.Check(0, "\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
 			s.reader.Next(1)
 			if err = s.reader.Cache(1); err != nil {
+				if err == io.ErrUnexpectedEOF {
+					err = nil
+				}
 				return
 			}
 		}
@@ -44,6 +47,9 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 			for !s.reader.CheckBreak(0) {
 				s.reader.Next(1)
 				if err = s.reader.Cache(1); err != nil {
+					if err == io.ErrUnexpectedEOF {
+						err = nil
+					}
 					return
 				}
 			}
@@ -485,7 +491,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 					io.Copy(valueBuf, leadingBreak)
 					io.Copy(valueBuf, trailingBreaks)
 				}
-				
+
 				leadingBlanks = false
 			} else if whitespaces.Len() > 0 {
 				io.Copy(valueBuf, whitespaces)
