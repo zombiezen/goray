@@ -52,6 +52,27 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Flow mapping",
+		`{Spam: Eggs, Knights: Ni}`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.FLOW_MAPPING_START, token.Position{0, 1, 1}, token.Position{1, 1, 2}},
+
+			BasicToken{token.KEY, token.Position{1, 1, 2}, token.Position{1, 1, 2}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{1, 1, 2}, token.Position{5, 1, 6}}, "Spam"},
+			BasicToken{token.VALUE, token.Position{5, 1, 6}, token.Position{6, 1, 7}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{7, 1, 8}, token.Position{11, 1, 12}}, "Eggs"},
+			BasicToken{token.FLOW_ENTRY, token.Position{11, 1, 12}, token.Position{12, 1, 13}},
+
+			BasicToken{token.KEY, token.Position{13, 1, 14}, token.Position{13, 1, 14}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{13, 1, 14}, token.Position{20, 1, 21}}, "Knights"},
+			BasicToken{token.VALUE, token.Position{20, 1, 21}, token.Position{21, 1, 22}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{22, 1, 23}, token.Position{24, 1, 25}}, "Ni"},
+			BasicToken{token.FLOW_MAPPING_END, token.Position{25, 1, 26}, token.Position{26, 1, 27}},
+			BasicToken{token.STREAM_END, token.Position{26, 2, 1}, token.Position{26, 2, 1}},
+		},
+	},
+	scanTest{
 		"Basic document",
 		`%YAML 1.2
 ---
