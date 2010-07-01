@@ -78,6 +78,47 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Block sequence",
+		"- Foo\n- Bar\n- Baz",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.BLOCK_SEQUENCE_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+
+			BasicToken{token.BLOCK_ENTRY, token.Position{0, 1, 1}, token.Position{1, 1, 2}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{2, 1, 3}, token.Position{5, 1, 6}}, "Foo"},
+
+			BasicToken{token.BLOCK_ENTRY, token.Position{6, 2, 1}, token.Position{7, 2, 2}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{8, 2, 3}, token.Position{11, 2, 6}}, "Bar"},
+
+			BasicToken{token.BLOCK_ENTRY, token.Position{12, 3, 1}, token.Position{13, 3, 2}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{14, 3, 3}, token.Position{17, 3, 6}}, "Baz"},
+
+			BasicToken{token.BLOCK_END, token.Position{17, 4, 1}, token.Position{17, 4, 1}},
+			BasicToken{token.STREAM_END, token.Position{17, 4, 1}, token.Position{17, 4, 1}},
+		},
+	},
+	scanTest{
+		"Block mapping",
+		"a: b\nc: d",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.BLOCK_MAPPING_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+
+			BasicToken{token.KEY, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{0, 1, 1}, token.Position{1, 1, 2}}, "a"},
+			BasicToken{token.VALUE, token.Position{1, 1, 2}, token.Position{2, 1, 3}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{3, 1, 4}, token.Position{4, 1, 5}}, "b"},
+
+			BasicToken{token.KEY, token.Position{5, 2, 1}, token.Position{5, 2, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{5, 2, 1}, token.Position{6, 2, 2}}, "c"},
+			BasicToken{token.VALUE, token.Position{6, 2, 2}, token.Position{7, 2, 3}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{8, 2, 4}, token.Position{9, 2, 5}}, "d"},
+
+			BasicToken{token.BLOCK_END, token.Position{9, 3, 1}, token.Position{9, 3, 1}},
+			BasicToken{token.STREAM_END, token.Position{9, 3, 1}, token.Position{9, 3, 1}},
+		},
+	},
+	scanTest{
 		"Basic document",
 		`%YAML 1.2
 ---
