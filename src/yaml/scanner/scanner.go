@@ -17,16 +17,18 @@ import (
 )
 
 type simpleKey struct {
-	Possible bool
-	Required bool
-	Pos      token.Position
+	Possible    bool
+	Required    bool
+	Pos         token.Position
+	TokenNumber uint
 }
 
 type Scanner struct {
-	reader     *reader
-	tokenQueue *list.List
-	started    bool
-	ended      bool
+	reader      *reader
+	tokenQueue  *list.List
+	parsedCount uint
+	started     bool
+	ended       bool
 
 	indent      int
 	indentStack vector.IntVector
@@ -45,22 +47,49 @@ func New(r io.Reader) (s *Scanner) {
 }
 
 func (s *Scanner) Scan() (result Token, err os.Error) {
-	if s.ended {
-		return
-	}
 	if s.tokenQueue.Len() == 0 {
-		if err = s.fetch(); err != nil {
+		if s.ended {
 			return
 		}
-		if s.tokenQueue.Len() == 0 {
-			err = os.NewError("Fetch returned no tokens")
+		if err = s.prepare(); err != nil {
 			return
 		}
 	}
 	elem := s.tokenQueue.Front()
 	result = elem.Value.(Token)
 	s.tokenQueue.Remove(elem)
+	s.parsedCount++
 	return
+}
+
+func (s *Scanner) prepare() (err os.Error) {
+	for {
+		needMore := false
+		if s.tokenQueue.Len() == 0 {
+			needMore = true
+		} else {
+			if err = s.removeStaleSimpleKeys(); err != nil {
+				return
+			}
+			for v := range s.simpleKeyStack.Iter() {
+				skey := v.(*simpleKey)
+				if skey.Possible && skey.TokenNumber == s.parsedCount {
+					needMore = true
+					break
+				}
+			}
+		}
+		// Are we finished?
+		if !needMore {
+			break
+		}
+		// Fetch next token
+		err = s.fetch()
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 func (s *Scanner) fetch() (err os.Error) {
@@ -138,6 +167,23 @@ func (s *Scanner) fetch() (err os.Error) {
 	return
 }
 
+func (s *Scanner) addToken(t Token) {
+	s.tokenQueue.PushBack(t)
+}
+
+func (s *Scanner) insertToken(num uint, t Token) {
+	queueIndex := num - s.parsedCount
+	if queueIndex < uint(s.tokenQueue.Len()) {
+		elem := s.tokenQueue.Front()
+		for i := uint(0); i < queueIndex; i++ {
+			elem = elem.Next()
+		}
+		s.tokenQueue.InsertBefore(t, elem)
+	} else {
+		s.tokenQueue.PushBack(t)
+	}
+}
+
 func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
 	for val := range s.simpleKeyStack.Iter() {
 		key := val.(*simpleKey)
@@ -159,9 +205,10 @@ func (s *Scanner) saveSimpleKey() (err os.Error) {
 	required := s.flowLevel == 0 && s.indent == s.reader.Pos.Column
 	if s.simpleKeyAllowed {
 		key := simpleKey{
-			Possible: true,
-			Required: required,
-			Pos:      s.reader.Pos,
+			Possible:    true,
+			Required:    required,
+			Pos:         s.reader.Pos,
+			TokenNumber: s.parsedCount + uint(s.tokenQueue.Len()),
 		}
 		if err = s.removeSimpleKey(); err != nil {
 			return
@@ -192,7 +239,7 @@ func (s *Scanner) decreaseFlowLevel() {
 	}
 }
 
-func (s *Scanner) rollIndent(column, queueIndex int, kind token.Token, pos token.Position) {
+func (s *Scanner) rollIndent(column, tokenNumber int, kind token.Token, pos token.Position) {
 	if s.flowLevel > 0 {
 		return
 	}
@@ -207,14 +254,10 @@ func (s *Scanner) rollIndent(column, queueIndex int, kind token.Token, pos token
 			Start: pos,
 			End:   pos,
 		}
-		if queueIndex == -1 {
-			s.tokenQueue.PushBack(tok)
+		if tokenNumber == -1 {
+			s.addToken(tok)
 		} else {
-			elem := s.tokenQueue.Front()
-			for i := 0; i < queueIndex; i++ {
-				elem = elem.Next()
-			}
-			s.tokenQueue.InsertBefore(tok, elem)
+			s.insertToken(uint(tokenNumber), tok)
 		}
 	}
 }
@@ -226,7 +269,7 @@ func (s *Scanner) unrollIndent(column int) {
 	}
 
 	for s.indent > column {
-		s.tokenQueue.PushBack(BasicToken{
+		s.addToken(BasicToken{
 			Kind:  token.BLOCK_END,
 			Start: s.reader.Pos,
 			End:   s.reader.Pos,
@@ -240,7 +283,7 @@ func (s *Scanner) streamStart() {
 	s.simpleKeyStack.Push(new(simpleKey))
 	s.simpleKeyAllowed = true
 	s.started = true
-	s.tokenQueue.PushBack(BasicToken{
+	s.addToken(BasicToken{
 		Kind:  token.STREAM_START,
 		Start: s.reader.Pos,
 		End:   s.reader.Pos,
@@ -262,7 +305,7 @@ func (s *Scanner) streamEnd() (err os.Error) {
 	}
 	s.simpleKeyAllowed = false
 	// End the stream
-	s.tokenQueue.PushBack(BasicToken{
+	s.addToken(BasicToken{
 		Kind:  token.STREAM_END,
 		Start: s.reader.Pos,
 		End:   s.reader.Pos,
@@ -283,7 +326,7 @@ func (s *Scanner) fetchDirective() (err os.Error) {
 	if tok, err = s.scanDirective(); err != nil {
 		return
 	}
-	s.tokenQueue.PushBack(tok)
+	s.addToken(tok)
 	return
 }
 
@@ -300,7 +343,7 @@ func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err os.Error) {
 	s.reader.Next(3)
 	endPos := s.reader.Pos
 	// Create the scanner token
-	s.tokenQueue.PushBack(BasicToken{
+	s.addToken(BasicToken{
 		Kind:  kind,
 		Start: startPos,
 		End:   endPos,
@@ -319,10 +362,10 @@ func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err os.Error) {
 	// Consume the token
 	startPos := s.reader.Pos
 	s.reader.Next(1)
-	s.tokenQueue.PushBack(BasicToken{
-		Kind: kind,
+	s.addToken(BasicToken{
+		Kind:  kind,
 		Start: startPos,
-		End: s.reader.Pos,
+		End:   s.reader.Pos,
 	})
 	return
 }
@@ -338,10 +381,10 @@ func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err os.Error) {
 	// Consume the token
 	startPos := s.reader.Pos
 	s.reader.Next(1)
-	s.tokenQueue.PushBack(BasicToken{
-		Kind: kind,
+	s.addToken(BasicToken{
+		Kind:  kind,
 		Start: startPos,
-		End: s.reader.Pos,
+		End:   s.reader.Pos,
 	})
 	return
 }
@@ -356,10 +399,10 @@ func (s *Scanner) fetchFlowEntry() (err os.Error) {
 	// Consume the token
 	startPos := s.reader.Pos
 	s.reader.Next(1)
-	s.tokenQueue.PushBack(BasicToken{
-		Kind: token.FLOW_ENTRY,
+	s.addToken(BasicToken{
+		Kind:  token.FLOW_ENTRY,
 		Start: startPos,
-		End: s.reader.Pos,
+		End:   s.reader.Pos,
 	})
 	return
 }
@@ -388,10 +431,10 @@ func (s *Scanner) fetchKey() (err os.Error) {
 	// Consume the token
 	startPos := s.reader.Pos
 	s.reader.Next(1)
-	s.tokenQueue.PushBack(BasicToken{
-		Kind: token.KEY,
+	s.addToken(BasicToken{
+		Kind:  token.KEY,
 		Start: startPos,
-		End: s.reader.Pos,
+		End:   s.reader.Pos,
 	})
 	return
 }
@@ -400,9 +443,39 @@ func (s *Scanner) fetchValue() (err os.Error) {
 	skey := s.simpleKeyStack.Last().(*simpleKey)
 	// Have we found a simple key?
 	if skey.Possible {
-		// TODO: Create the KEY token and insert it into the queue
+		// Create the KEY token and insert it into the queue
+		tok := BasicToken{token.KEY, skey.Pos, skey.Pos}
+		s.insertToken(skey.TokenNumber, tok)
+		// In the block context, we may need to add the BLOCK_MAPPING_START token
+		s.rollIndent(skey.Pos.Column, int(skey.TokenNumber), token.BLOCK_MAPPING_START, skey.Pos)
+		// Remove the simple key
+		skey.Possible = false
+		// A simple key cannot follow another simple key
+		s.simpleKeyAllowed = false
 	} else {
+		// The ':' indicator follows a complex key
+		// In the block context, extra checks are required
+		if s.flowLevel == 0 {
+			// Are we allowed to start a complex value?
+			if !s.simpleKeyAllowed {
+				err = os.NewError("Mapping values are not allowed in this context")
+				return
+			}
+			// Add the BLOCK_MAPPING_START token, if needed
+			s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_MAPPING_START, s.reader.Pos)
+		}
+		// Simple keys after ':' are allowed in the block context
+		s.simpleKeyAllowed = (s.flowLevel > 0)
 	}
+	// Consume the token
+	startPos := s.reader.Pos
+	s.reader.Next(1)
+	s.addToken(BasicToken{
+		Kind:  token.VALUE,
+		Start: startPos,
+		End:   s.reader.Pos,
+	})
+	return nil
 	return
 }
 
@@ -416,7 +489,7 @@ func (s *Scanner) fetchAnchor(kind token.Token) (err os.Error) {
 	// Consume the token
 	tok, err := s.scanAnchor(kind)
 	if err == nil {
-		s.tokenQueue.PushBack(tok)
+		s.addToken(tok)
 	}
 	return
 }
@@ -436,7 +509,7 @@ func (s *Scanner) fetchFlowScalar(style int) (err os.Error) {
 	s.simpleKeyAllowed = false
 	tok, err := s.scanFlowScalar(style)
 	if err == nil {
-		s.tokenQueue.PushBack(tok)
+		s.addToken(tok)
 	}
 	return
 }
@@ -451,7 +524,7 @@ func (s *Scanner) fetchPlainScalar() (err os.Error) {
 	// Scan in scalar
 	tok, err := s.scanPlainScalar()
 	if err == nil {
-		s.tokenQueue.PushBack(tok)
+		s.addToken(tok)
 	}
 	return
 }
