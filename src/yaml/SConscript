@@ -3,6 +3,7 @@
 Import('env')
 
 packages = [
+	env.Go('parser', Glob('parser/*.go')),
     env.Go('scanner', Glob('scanner/*.go')),
     env.Go('token', Glob('token/*.go')),
 ]
