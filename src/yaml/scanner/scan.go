@@ -184,7 +184,41 @@ func (s *Scanner) scanVersionDirectiveValue() (major, minor int, err os.Error) {
 }
 
 func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) {
-	// TODO
+	s.reader.SkipSpaces()
+
+	// Scan handle
+	if handle, err = s.scanTagHandle(true); err != nil {
+		return
+	}
+
+	// Handle whitespace
+	if err = s.reader.CacheFull(1); err != nil {
+		return
+	}
+	if !s.reader.CheckSpace(0) {
+		err = os.NewError("Did not find expected whitespace")
+		return
+	}
+	s.reader.SkipSpaces()
+
+	// Scan prefix
+	if prefix, err = s.scanTagURI(); err != nil {
+		return
+	}
+	if prefix == "" {
+		err = os.NewError("Did not find expected tag URI")
+		return
+	}
+
+	// Expect whitespace or line break
+	if err = s.reader.Cache(1); err != nil {
+		return
+	}
+	if !s.reader.CheckBlank(0) {
+		err = os.NewError("Did not find expected whitespace or line break")
+		return
+	}
+
 	return
 }
 
@@ -340,6 +374,10 @@ func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
 
 func (s *Scanner) scanTagURI() (uri string, err os.Error) {
 	uriBuf := new(bytes.Buffer)
+
+	if err = s.reader.Cache(1); err != nil {
+		return
+	}
 
 	for s.reader.CheckWord(0) || s.reader.CheckAny(0, ";/?:@&=+$,.!~*'()[]%") {
 		if s.reader.Check(0, "%") {

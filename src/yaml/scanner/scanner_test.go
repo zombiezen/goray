@@ -222,6 +222,20 @@ var scannerTests = []scanTest{
 			BasicToken{token.STREAM_END, token.Position{33, 5, 1}, token.Position{33, 5, 1}},
 		},
 	},
+	scanTest{
+		"Tag directive",
+		`%TAG !yaml! tag:yaml.org,2002:
+---
+!yaml!str "foo"`,
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagDirective{BasicToken{token.TAG_DIRECTIVE, token.Position{0, 1, 1}, token.Position{30, 1, 31}}, "!yaml!", "tag:yaml.org,2002:"},
+			BasicToken{token.DOCUMENT_START, token.Position{31, 2, 1}, token.Position{34, 2, 4}},
+			TagToken{BasicToken{token.TAG, token.Position{35, 3, 1}, token.Position{44, 3, 10}}, "!yaml!", "str"},
+			ValueToken{BasicToken{token.SCALAR, token.Position{45, 3, 11}, token.Position{50, 3, 16}}, "foo"},
+			BasicToken{token.STREAM_END, token.Position{50, 4, 1}, token.Position{50, 4, 1}},
+		},
+	},
 }
 
 func posEq(a, b token.Position) bool {
@@ -257,7 +271,7 @@ func TestScanner(t *testing.T) {
 				if _, ok := expected.(ValueToken); ok && tok.String() != expected.String() {
 					t.Errorf("%v: token %d had wrong value %#v (expected %#v)", test, i, tok.String(), expected.String())
 				}
-				
+
 				if expectedTag, expectedTagOk := expected.(TagToken); expectedTagOk {
 					tagTok, tagTokOk := tok.(TagToken)
 					if tagTokOk {
@@ -269,6 +283,20 @@ func TestScanner(t *testing.T) {
 						}
 					} else {
 						t.Errorf("%v: token %d was expected to be a tag", test, i)
+					}
+				}
+
+				if expectedDir, expectedDirOk := expected.(TagDirective); expectedDirOk {
+					dirTok, dirTokOk := tok.(TagDirective)
+					if dirTokOk {
+						if dirTok.Handle != expectedDir.Handle {
+							t.Errorf("%v: token %d has wrong handle %#v (expected %#v)", test, i, dirTok.Handle, expectedDir.Handle)
+						}
+						if dirTok.Prefix != expectedDir.Prefix {
+							t.Errorf("%v: token %d has wrong prefix %#v (expected %#v)", test, i, dirTok.Prefix, expectedDir.Prefix)
+						}
+					} else {
+						t.Errorf("%v: token %d was expected to be a tag directive", test, i)
 					}
 				}
 			}
