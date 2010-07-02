@@ -16,11 +16,13 @@ import (
 
 func (s *Scanner) scanToNextToken() (err os.Error) {
 	for {
-		if err = s.reader.Cache(1); err != nil {
+		// Allow the BOM mark to start a line
+		if err = s.reader.Cache(3); err != nil {
 			return
 		}
-
-		// TODO: BOM
+		if s.reader.Pos.Column == 1 && s.reader.Check(0, "\xEF\xBB\xBF") {
+			s.reader.Next(3)
+		}
 
 		// Eat whitespaces
 		//
@@ -28,6 +30,10 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		// - in the flow context;
 		// - in the block context, but not at the beginning of the line or
 		//   after '-', '?', or ':' (complex value).
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+
 		for s.reader.Check(0, " ") || (s.reader.Check(0, "\t") && (s.flowLevel > 0 || !s.simpleKeyAllowed)) {
 			s.reader.Next(1)
 			if err = s.reader.Cache(1); err != nil {

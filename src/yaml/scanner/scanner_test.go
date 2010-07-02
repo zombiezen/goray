@@ -28,6 +28,14 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"BOM",
+		"\xEF\xBB\xBF",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			BasicToken{token.STREAM_END, token.Position{3, 2, 1}, token.Position{3, 2, 1}},
+		},
+	},
+	scanTest{
 		"Plain literal",
 		`Hello, World!`,
 		[]Token{
