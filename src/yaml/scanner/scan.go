@@ -20,7 +20,7 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 		if err = s.reader.Cache(3); err != nil {
 			return
 		}
-		if s.reader.Pos.Column == 1 && s.reader.Check(0, "\xEF\xBB\xBF") {
+		if s.GetPosition().Column == 1 && s.reader.Check(0, "\xEF\xBB\xBF") {
 			s.reader.Next(3)
 		}
 
@@ -67,7 +67,7 @@ func (s *Scanner) scanToNextToken() (err os.Error) {
 }
 
 func (s *Scanner) scanDirective() (tok Token, err os.Error) {
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	// Eat '%'
 	s.reader.Next(1)
 	// Scan the name
@@ -85,7 +85,7 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 		}
 		t := VersionDirective{}
 		t.Kind = token.VERSION_DIRECTIVE
-		t.Start, t.End = startPos, s.reader.Pos
+		t.Start, t.End = startPos, s.GetPosition()
 		t.Major, t.Minor = major, minor
 		tok = t
 	case "TAG":
@@ -96,7 +96,7 @@ func (s *Scanner) scanDirective() (tok Token, err os.Error) {
 		}
 		t := TagDirective{}
 		t.Kind = token.TAG_DIRECTIVE
-		t.Start, t.End = startPos, s.reader.Pos
+		t.Start, t.End = startPos, s.GetPosition()
 		t.Handle, t.Prefix = handle, prefix
 		tok = t
 	default:
@@ -229,7 +229,7 @@ func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) 
 }
 
 func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	// Eat indicator
 	s.reader.Next(1)
 	// Consume value
@@ -253,7 +253,7 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 		BasicToken{
 			Kind:  kind,
 			Start: startPos,
-			End:   s.reader.Pos,
+			End:   s.GetPosition(),
 		},
 		valueBuf.String(),
 	}
@@ -263,7 +263,7 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 func (s *Scanner) scanTag() (tok Token, err os.Error) {
 	var handle, suffix string
 
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	if err = s.reader.Cache(2); err != nil {
 		return
 	}
@@ -327,7 +327,7 @@ func (s *Scanner) scanTag() (tok Token, err os.Error) {
 	{
 		tagTok := TagToken{}
 		tagTok.Kind = token.TAG
-		tagTok.Start, tagTok.End = startPos, s.reader.Pos
+		tagTok.Start, tagTok.End = startPos, s.GetPosition()
 		tagTok.Handle, tagTok.Suffix = handle, suffix
 		tok = tagTok
 	}
@@ -468,7 +468,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	trailingBreaks := new(bytes.Buffer)
 
 	// Eat the indicator
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 
 	// Scan for additional block scalar indicators (order doesn't matter)
@@ -536,7 +536,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	}
 	// Eat line break
 	s.reader.ReadBreak()
-	endPos := s.reader.Pos
+	endPos := s.GetPosition()
 	// Set the indentation level if it was specified
 	if increment != 0 {
 		if s.indent > 0 {
@@ -556,7 +556,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	if err = s.reader.Cache(1); err != nil {
 		return
 	}
-	for s.reader.Pos.Column == indent && s.reader.Len() > 0 {
+	for s.GetPosition().Column == indent && s.reader.Len() > 0 {
 		// We are at the beginning of a non-empty line
 		trailingBlank = s.reader.CheckSpace(0)
 		// Do we need to fold the leading line break?
@@ -614,7 +614,7 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 
 func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (breaks []byte, endPos token.Position, err os.Error) {
 	maxIndent := 0
-	endPos = s.reader.Pos
+	endPos = s.GetPosition()
 	breaksBuffer := new(bytes.Buffer)
 
 	for {
@@ -622,17 +622,17 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 		if err = s.reader.Cache(1); err != nil {
 			return
 		}
-		for (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, " ") {
+		for (*indent == 0 || s.GetPosition().Column < *indent) && s.reader.Check(0, " ") {
 			s.reader.Next(1)
 			if err = s.reader.Cache(1); err != nil {
 				return
 			}
 		}
-		if s.reader.Pos.Column > maxIndent {
-			maxIndent = s.reader.Pos.Column
+		if s.GetPosition().Column > maxIndent {
+			maxIndent = s.GetPosition().Column
 		}
 		// Check for a tab character messing the indentation
-		if (*indent == 0 || s.reader.Pos.Column < *indent) && s.reader.Check(0, "\t") {
+		if (*indent == 0 || s.GetPosition().Column < *indent) && s.reader.Check(0, "\t") {
 			err = os.NewError("Found a tab character where an indentation space is expected")
 			return
 		}
@@ -646,7 +646,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 			return
 		}
 		breaksBuffer.Write(brBytes)
-		endPos = s.reader.Pos
+		endPos = s.GetPosition()
 	}
 
 	// Determine the indentation level, if needed
@@ -666,7 +666,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 }
 
 func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	// Eat the left quote
 	s.reader.Next(1)
@@ -680,7 +680,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 		err = nil
 
 		// Better not be a document indicator.
-		if s.reader.Pos.Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
+		if s.GetPosition().Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
 			err = os.NewError("Unexpected end of document")
 			return
 		}
@@ -789,7 +789,7 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 	{
 		scalarTok := ScalarToken{}
 		scalarTok.Kind = token.SCALAR
-		scalarTok.Start, scalarTok.End = startPos, s.reader.Pos
+		scalarTok.Start, scalarTok.End = startPos, s.GetPosition()
 		scalarTok.Style = style
 		scalarTok.Value = valueBuf.String()
 		tok = scalarTok
@@ -877,7 +877,7 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 }
 
 func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
-	startPos, endPos := s.reader.Pos, s.reader.Pos
+	startPos, endPos := s.GetPosition(), s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	indent := s.indent + 1
 
@@ -893,7 +893,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		}
 		err = nil
 		// Stop on a document indicator
-		if s.reader.Pos.Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
+		if s.GetPosition().Column == 1 && (s.reader.Check(0, "---") || s.reader.Check(0, "...")) && s.reader.CheckBlank(3) {
 			break
 		}
 		// Check for a comment
@@ -934,7 +934,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 			// Copy the character
 			b, _ := s.reader.ReadByte()
 			valueBuf.WriteByte(b)
-			endPos = s.reader.Pos
+			endPos = s.GetPosition()
 			if err = s.reader.Cache(2); err != nil {
 				return
 			}
@@ -952,7 +952,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		for s.reader.CheckSpace(0) || s.reader.CheckBreak(0) {
 			if s.reader.CheckSpace(0) {
 				// Check for abusive tabs
-				if leadingBlanks && s.reader.Pos.Column < indent && s.reader.Check(0, "\t") {
+				if leadingBlanks && s.GetPosition().Column < indent && s.reader.Check(0, "\t") {
 					err = os.NewError("Found a tab character that violates indentation")
 					return
 				}
@@ -987,7 +987,7 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 		}
 
 		// Check indentation level
-		if s.flowLevel == 0 && s.reader.Pos.Column < indent {
+		if s.flowLevel == 0 && s.GetPosition().Column < indent {
 			break
 		}
 	}

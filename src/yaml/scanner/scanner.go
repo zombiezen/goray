@@ -46,6 +46,17 @@ func New(r io.Reader) (s *Scanner) {
 	return s
 }
 
+/*
+	GetPosition returns the position of the first unread byte from the
+	underlying reader.
+
+	This does not necessarily correspond to the starting position of the token
+	that will be returned next by Scan, nor does it even correspond to the
+	position in the reader (more bytes may have actually been read).  The
+	Scanner has to do some look-ahead to do its job.
+*/
+func (s *Scanner) GetPosition() token.Position { return s.reader.Pos }
+
 func (s *Scanner) Scan() (result Token, err os.Error) {
 	if s.tokenQueue.Len() == 0 {
 		if s.ended {
@@ -105,7 +116,7 @@ func (s *Scanner) fetch() (err os.Error) {
 		return
 	}
 
-	s.unrollIndent(s.reader.Pos.Column)
+	s.unrollIndent(s.GetPosition().Column)
 
 	if err = s.reader.Cache(4); err != nil {
 		return
@@ -117,11 +128,11 @@ func (s *Scanner) fetch() (err os.Error) {
 	}
 
 	switch {
-	case s.reader.Pos.Column == 1 && s.reader.Check(0, "%"):
+	case s.GetPosition().Column == 1 && s.reader.Check(0, "%"):
 		return s.fetchDirective()
-	case s.reader.Pos.Column == 1 && s.reader.Check(0, "---") && s.reader.CheckBlank(3):
+	case s.GetPosition().Column == 1 && s.reader.Check(0, "---") && s.reader.CheckBlank(3):
 		return s.fetchDocumentIndicator(token.DOCUMENT_START)
-	case s.reader.Pos.Column == 1 && s.reader.Check(0, "...") && s.reader.CheckBlank(3):
+	case s.GetPosition().Column == 1 && s.reader.Check(0, "...") && s.reader.CheckBlank(3):
 		return s.fetchDocumentIndicator(token.DOCUMENT_END)
 	case s.reader.Check(0, "["):
 		return s.fetchFlowCollectionStart(token.FLOW_SEQUENCE_START)
@@ -185,7 +196,7 @@ func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
 		// A simple key is:
 		// - limited to a single line
 		// - shorter than 1024 characters
-		if key.Possible && (key.Pos.Line < s.reader.Pos.Line || key.Pos.Index+1024 < s.reader.Pos.Index) {
+		if key.Possible && (key.Pos.Line < s.GetPosition().Line || key.Pos.Index+1024 < s.GetPosition().Index) {
 			if key.Required {
 				return os.NewError("Could not find expected ':'")
 			}
@@ -196,12 +207,12 @@ func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
 }
 
 func (s *Scanner) saveSimpleKey() (err os.Error) {
-	required := s.flowLevel == 0 && s.indent == s.reader.Pos.Column
+	required := s.flowLevel == 0 && s.indent == s.GetPosition().Column
 	if s.simpleKeyAllowed {
 		key := simpleKey{
 			Possible:    true,
 			Required:    required,
-			Pos:         s.reader.Pos,
+			Pos:         s.GetPosition(),
 			TokenNumber: s.parsedCount + uint(s.tokenQueue.Len()),
 		}
 		if err = s.removeSimpleKey(); err != nil {
@@ -265,8 +276,8 @@ func (s *Scanner) unrollIndent(column int) {
 	for s.indent > column {
 		s.addToken(BasicToken{
 			Kind:  token.BLOCK_END,
-			Start: s.reader.Pos,
-			End:   s.reader.Pos,
+			Start: s.GetPosition(),
+			End:   s.GetPosition(),
 		})
 		s.indent = s.indentStack.Pop()
 	}
@@ -279,15 +290,15 @@ func (s *Scanner) streamStart() {
 	s.started = true
 	s.addToken(BasicToken{
 		Kind:  token.STREAM_START,
-		Start: s.reader.Pos,
-		End:   s.reader.Pos,
+		Start: s.GetPosition(),
+		End:   s.GetPosition(),
 	})
 }
 
 func (s *Scanner) streamEnd() (err os.Error) {
 	s.ended = true
 	// Force new line
-	if s.reader.Pos.Column != 1 {
+	if s.GetPosition().Column != 1 {
 		s.reader.Pos.Column = 1
 		s.reader.Pos.Line++
 	}
@@ -301,8 +312,8 @@ func (s *Scanner) streamEnd() (err os.Error) {
 	// End the stream
 	s.addToken(BasicToken{
 		Kind:  token.STREAM_END,
-		Start: s.reader.Pos,
-		End:   s.reader.Pos,
+		Start: s.GetPosition(),
+		End:   s.GetPosition(),
 	})
 	return nil
 }
@@ -333,9 +344,9 @@ func (s *Scanner) fetchDocumentIndicator(kind token.Token) (err os.Error) {
 	}
 	s.simpleKeyAllowed = false
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(3)
-	endPos := s.reader.Pos
+	endPos := s.GetPosition()
 	// Create the scanner token
 	s.addToken(BasicToken{
 		Kind:  kind,
@@ -354,12 +365,12 @@ func (s *Scanner) fetchFlowCollectionStart(kind token.Token) (err os.Error) {
 	// A simple key may follow the indicators '[' and '{'
 	s.simpleKeyAllowed = true
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  kind,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return
 }
@@ -373,12 +384,12 @@ func (s *Scanner) fetchFlowCollectionEnd(kind token.Token) (err os.Error) {
 	// No simple keys after the indicators ']' and '}'
 	s.simpleKeyAllowed = false
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  kind,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return
 }
@@ -391,12 +402,12 @@ func (s *Scanner) fetchFlowEntry() (err os.Error) {
 	// Simple keys are allowed after ','
 	s.simpleKeyAllowed = true
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  token.FLOW_ENTRY,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return
 }
@@ -410,7 +421,7 @@ func (s *Scanner) fetchBlockEntry() (err os.Error) {
 			return
 		}
 		// Add the BLOCK_SEQUENCE_START token, if needed
-		s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_SEQUENCE_START, s.reader.Pos)
+		s.rollIndent(s.GetPosition().Column, -1, token.BLOCK_SEQUENCE_START, s.GetPosition())
 	}
 	// It is an error for the '-' indicator to occur in the flow context, but we let
 	// the Parser detect and report about it because the Parser is able to point to
@@ -425,12 +436,12 @@ func (s *Scanner) fetchBlockEntry() (err os.Error) {
 	s.simpleKeyAllowed = true
 
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  token.BLOCK_ENTRY,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return
 }
@@ -444,7 +455,7 @@ func (s *Scanner) fetchKey() (err os.Error) {
 			return
 		}
 		// Add BLOCK_MAPPING_START token if needed
-		s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_MAPPING_START, s.reader.Pos)
+		s.rollIndent(s.GetPosition().Column, -1, token.BLOCK_MAPPING_START, s.GetPosition())
 	}
 	// Reset any potential simple keys on the current flow level
 	if err = s.removeSimpleKey(); err != nil {
@@ -453,12 +464,12 @@ func (s *Scanner) fetchKey() (err os.Error) {
 	// Simple keys are allowed after '?' in the block context
 	s.simpleKeyAllowed = (s.flowLevel > 0)
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  token.KEY,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return
 }
@@ -486,18 +497,18 @@ func (s *Scanner) fetchValue() (err os.Error) {
 				return
 			}
 			// Add the BLOCK_MAPPING_START token, if needed
-			s.rollIndent(s.reader.Pos.Column, -1, token.BLOCK_MAPPING_START, s.reader.Pos)
+			s.rollIndent(s.GetPosition().Column, -1, token.BLOCK_MAPPING_START, s.GetPosition())
 		}
 		// Simple keys after ':' are allowed in the block context
 		s.simpleKeyAllowed = (s.flowLevel > 0)
 	}
 	// Consume the token
-	startPos := s.reader.Pos
+	startPos := s.GetPosition()
 	s.reader.Next(1)
 	s.addToken(BasicToken{
 		Kind:  token.VALUE,
 		Start: startPos,
-		End:   s.reader.Pos,
+		End:   s.GetPosition(),
 	})
 	return nil
 	return
