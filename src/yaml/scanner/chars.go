@@ -28,7 +28,7 @@ func isHexDigit(c byte) bool {
 }
 
 func isWordChar(c byte) bool {
-	return isLetter(c) || isDigit(c) || c == '-'
+	return isLetter(c) || isDigit(c) || c == '_' || c == '-'
 }
 
 func asHex(c byte) (val int, ok bool) {
