@@ -519,6 +519,14 @@ func (s *Scanner) fetchAnchor(kind token.Token) (err os.Error) {
 }
 
 func (s *Scanner) fetchTag() (err os.Error) {
+	if err = s.saveSimpleKey(); err != nil {
+		return
+	}
+	s.simpleKeyAllowed = false
+	tok, err := s.scanTag()
+	if err == nil {
+		s.addToken(tok)
+	}
 	return
 }
 

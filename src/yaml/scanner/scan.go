@@ -220,6 +220,190 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 	return
 }
 
+func (s *Scanner) scanTag() (tok Token, err os.Error) {
+	var handle, suffix string
+
+	startPos := s.reader.Pos
+	if err = s.reader.Cache(2); err != nil {
+		return
+	}
+	if s.reader.Check(1, "<") {
+		// Verbatim tag (i.e. "!<foo:bar>")
+		// Eat "!<"
+		s.reader.Next(2)
+		// Consume tag value
+		if suffix, err = s.scanTagURI(); err != nil {
+			return
+		}
+		if suffix == "" {
+			err = os.NewError("Did not find expected tag URI")
+			return
+		}
+		// Check for ">" and eat it
+		if !s.reader.Check(0, ">") {
+			err = os.NewError("Did not find expected '>'")
+			return
+		}
+		s.reader.Next(1)
+	} else {
+		// Shorthand tag (i.e. "!suffix" or "!handle!suffix"
+		// Try to scan a handle
+		if handle, err = s.scanTagHandle(false); err != nil {
+			return
+		}
+		// Check if it is a handle
+		if len(handle) >= 2 && handle[0] == '!' && handle[len(handle)-1] == '!' {
+			// Scan the suffix now
+			if suffix, err = s.scanTagURI(); err != nil {
+				return
+			}
+			if suffix == "" {
+				err = os.NewError("Did not find expected tag URI")
+				return
+			}
+		} else {
+			// It wasn't a handle.  Scan the rest of the tag.
+			if suffix, err = s.scanTagURI(); err != nil {
+				return
+			}
+			handle, suffix = "!", handle[1:]+suffix
+			// Special case: the "!" tag.
+			if suffix == "" {
+				handle, suffix = "", "!"
+			}
+		}
+	}
+
+	// Check the current character which ends the tag.
+	if err = s.reader.Cache(1); err != nil {
+		return
+	}
+	if !s.reader.CheckBlank(0) {
+		err = os.NewError("Did not find expected whitespace or line break")
+		return
+	}
+
+	// Create token
+	{
+		tagTok := TagToken{}
+		tagTok.Kind = token.TAG
+		tagTok.Start, tagTok.End = startPos, s.reader.Pos
+		tagTok.Handle, tagTok.Suffix = handle, suffix
+		tok = tagTok
+	}
+	err = nil
+	return
+}
+
+func (s *Scanner) scanTagHandle(directive bool) (handle string, err os.Error) {
+	handleBuf := new(bytes.Buffer)
+
+	// Check the initial "!" character
+	if err = s.reader.CacheFull(1); err != nil {
+		return
+	}
+	if !s.reader.Check(0, "!") {
+		err = os.NewError("Did not find expected '!'")
+		return
+	}
+
+	// Copy the "!" character
+	io.Copyn(handleBuf, s.reader, 1)
+
+	// Copy all subsequent alphabetical and numerical characters
+	if err = s.reader.Cache(1); err != nil {
+		return
+	}
+	for s.reader.CheckLetter(0) {
+		io.Copyn(handleBuf, s.reader, 1)
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+	}
+
+	// Check if the trailing character is "!" and copy it
+	if s.reader.Check(0, "!") {
+		io.Copyn(handleBuf, s.reader, 1)
+	} else {
+		// It's either the "!" tag or not really a tag handle.  If it's a %TAG
+		// directive, it's an error.  If it's a tag token, it must be a part of
+		// a URI.
+		if directive && handleBuf.String() == "!" {
+			err = os.NewError("Did not find expected '!'")
+			return
+		}
+	}
+
+	handle = handleBuf.String()
+	return
+}
+
+func (s *Scanner) scanTagURI() (uri string, err os.Error) {
+	uriBuf := new(bytes.Buffer)
+
+	for s.reader.CheckWord(0) || s.reader.CheckAny(0, ";/?:@&=+$,.!~*'()[]%") {
+		if s.reader.Check(0, "%") {
+			if err = s.scanURIEscape(uriBuf); err != nil {
+				return
+			}
+		} else {
+			io.Copyn(uriBuf, s.reader, 1)
+		}
+
+		if err = s.reader.Cache(1); err != nil {
+			return
+		}
+	}
+
+	uri = uriBuf.String()
+	return
+}
+
+func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
+	for escapeWidth, left := 0, 1; left > 0; left-- {
+		// Check for a URI-escaped octet
+		if err = s.reader.CacheFull(3); err != nil {
+			return
+		}
+		if !(s.reader.Check(0, "%") && s.reader.CheckHexDigit(1) && s.reader.CheckHexDigit(2)) {
+			err = os.NewError("Did not find URI-escaped octet")
+			return
+		}
+		// Get the octet
+		digits := s.reader.Next(3)[1:3]
+		digit1, _ := asHex(digits[0])
+		digit2, _ := asHex(digits[1])
+		octet := byte(digit1<<4) | byte(digit2)
+		// If it is the leading octet, determine the length of the UTF-8 sequence
+		if escapeWidth == 0 {
+			switch {
+			case octet&0x80 == 0x00:
+				escapeWidth = 1
+			case octet&0xE0 == 0xC0:
+				escapeWidth = 2
+			case octet&0xF0 == 0xE0:
+				escapeWidth = 3
+			case octet&0xF8 == 0xF0:
+				escapeWidth = 4
+			default:
+				err = os.NewError("Found an incorrect leading UTF-8 octet")
+				return
+			}
+			left = escapeWidth // `left' will be decremented on the loop's end
+		} else {
+			// For multi-byte UTF-8 sequences, all octets after the first one
+			// must have the two most significant bits set to 10.
+			if octet&0xC0 != 0x80 {
+				err = os.NewError("Found an incorrect UTF-8 octet")
+				return
+			}
+		}
+		// Copy octet
+		buf.WriteByte(octet)
+	}
+	return
+}
+
 func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	const (
 		chompStrip = -1
