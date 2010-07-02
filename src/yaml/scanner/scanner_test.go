@@ -154,6 +154,60 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Verbatim tag",
+		"!<foo:bar>",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{10, 1, 11}}, "", "foo:bar"},
+			BasicToken{token.STREAM_END, token.Position{10, 2, 1}, token.Position{10, 2, 1}},
+		},
+	},
+	scanTest{
+		"Non-specific tag",
+		"!",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{1, 1, 2}}, "", "!"},
+			BasicToken{token.STREAM_END, token.Position{1, 2, 1}, token.Position{1, 2, 1}},
+		},
+	},
+	scanTest{
+		"Local tag",
+		"!local",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{6, 1, 7}}, "!", "local"},
+			BasicToken{token.STREAM_END, token.Position{6, 2, 1}, token.Position{6, 2, 1}},
+		},
+	},
+	scanTest{
+		"Built-in tag",
+		"!!str",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{5, 1, 6}}, "!!", "str"},
+			BasicToken{token.STREAM_END, token.Position{5, 2, 1}, token.Position{5, 2, 1}},
+		},
+	},
+	scanTest{
+		"Handle tag",
+		"!a!tag",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{6, 1, 7}}, "!a!", "tag"},
+			BasicToken{token.STREAM_END, token.Position{6, 2, 1}, token.Position{6, 2, 1}},
+		},
+	},
+	scanTest{
+		"Escaped tag",
+		"!e!tag%21",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			TagToken{BasicToken{token.TAG, token.Position{0, 1, 1}, token.Position{9, 1, 10}}, "!e!", "tag!"},
+			BasicToken{token.STREAM_END, token.Position{9, 2, 1}, token.Position{9, 2, 1}},
+		},
+	},
+	scanTest{
 		"Basic document",
 		`%YAML 1.2
 ---
@@ -202,6 +256,20 @@ func TestScanner(t *testing.T) {
 				}
 				if _, ok := expected.(ValueToken); ok && tok.String() != expected.String() {
 					t.Errorf("%v: token %d had wrong value %#v (expected %#v)", test, i, tok.String(), expected.String())
+				}
+				
+				if expectedTag, expectedTagOk := expected.(TagToken); expectedTagOk {
+					tagTok, tagTokOk := tok.(TagToken)
+					if tagTokOk {
+						if tagTok.Handle != expectedTag.Handle {
+							t.Errorf("%v: token %d has wrong handle %#v (expected %#v)", test, i, tagTok.Handle, expectedTag.Handle)
+						}
+						if tagTok.Suffix != expectedTag.Suffix {
+							t.Errorf("%v: token %d has wrong suffix %#v (expected %#v)", test, i, tagTok.Suffix, expectedTag.Suffix)
+						}
+					} else {
+						t.Errorf("%v: token %d was expected to be a tag", test, i)
+					}
 				}
 			}
 		} else {
