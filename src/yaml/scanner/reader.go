@@ -166,11 +166,25 @@ func (r *reader) CheckDigit(i int) bool {
 	return isDigit(r.Bytes()[i])
 }
 
+func (r *reader) CheckHexDigit(i int) bool {
+	if r.Len() <= i {
+		return false
+	}
+	return isHexDigit(r.Bytes()[i])
+}
+
 func (r *reader) CheckLetter(i int) bool {
 	if r.Len() <= i {
 		return false
 	}
 	return isLetter(r.Bytes()[i])
+}
+
+func (r *reader) CheckWord(i int) bool {
+	if r.Len() <= i {
+		return false
+	}
+	return isWordChar(r.Bytes()[i])
 }
 
 func (r *reader) CheckSpace(i int) bool {
