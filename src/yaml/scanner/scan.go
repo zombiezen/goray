@@ -228,7 +228,7 @@ func (s *Scanner) scanTagDirectiveValue() (handle, prefix string, err os.Error) 
 	return
 }
 
-func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
+func (s *Scanner) scanAnchor(kind token.Token) (tok ValueToken, err os.Error) {
 	startPos := s.GetPosition()
 	// Eat indicator
 	s.reader.Next(1)
@@ -249,18 +249,13 @@ func (s *Scanner) scanAnchor(kind token.Token) (tok Token, err os.Error) {
 		return
 	}
 	// Create token
-	tok = ValueToken{
-		BasicToken{
-			Kind:  kind,
-			Start: startPos,
-			End:   s.GetPosition(),
-		},
-		valueBuf.String(),
-	}
+	tok.Kind = kind
+	tok.Start, tok.End = startPos, s.GetPosition()
+	tok.Value = valueBuf.String()
 	return
 }
 
-func (s *Scanner) scanTag() (tok Token, err os.Error) {
+func (s *Scanner) scanTag() (tok TagToken, err os.Error) {
 	var handle, suffix string
 
 	startPos := s.GetPosition()
@@ -324,13 +319,9 @@ func (s *Scanner) scanTag() (tok Token, err os.Error) {
 	}
 
 	// Create token
-	{
-		tagTok := TagToken{}
-		tagTok.Kind = token.TAG
-		tagTok.Start, tagTok.End = startPos, s.GetPosition()
-		tagTok.Handle, tagTok.Suffix = handle, suffix
-		tok = tagTok
-	}
+	tok.Kind = token.TAG
+	tok.Start, tok.End = startPos, s.GetPosition()
+	tok.Handle, tok.Suffix = handle, suffix
 	err = nil
 	return
 }
@@ -448,7 +439,7 @@ func (s *Scanner) scanURIEscape(buf *bytes.Buffer) (err os.Error) {
 	return
 }
 
-func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
+func (s *Scanner) scanBlockScalar(style int) (tok ScalarToken, err os.Error) {
 	const (
 		chompStrip = -1
 		chompClip  = 0
@@ -600,14 +591,10 @@ func (s *Scanner) scanBlockScalar(style int) (tok Token, err os.Error) {
 	}
 
 	// Create token
-	{
-		scalarTok := ScalarToken{}
-		scalarTok.Kind = token.SCALAR
-		scalarTok.Start, scalarTok.End = startPos, endPos
-		scalarTok.Value = valueBuf.String()
-		scalarTok.Style = style
-		tok = scalarTok
-	}
+	tok.Kind = token.SCALAR
+	tok.Start, tok.End = startPos, endPos
+	tok.Value = valueBuf.String()
+	tok.Style = style
 	err = nil
 	return
 }
@@ -665,7 +652,7 @@ func (s *Scanner) scanBlockScalarBreaks(indent *int, startPos token.Position) (b
 	return
 }
 
-func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
+func (s *Scanner) scanFlowScalar(style int) (tok ScalarToken, err os.Error) {
 	startPos := s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	// Eat the left quote
@@ -786,14 +773,10 @@ func (s *Scanner) scanFlowScalar(style int) (tok Token, err os.Error) {
 	// Eat the right quote
 	s.reader.Next(1)
 	// Create token
-	{
-		scalarTok := ScalarToken{}
-		scalarTok.Kind = token.SCALAR
-		scalarTok.Start, scalarTok.End = startPos, s.GetPosition()
-		scalarTok.Style = style
-		scalarTok.Value = valueBuf.String()
-		tok = scalarTok
-	}
+	tok.Kind = token.SCALAR
+	tok.Start, tok.End = startPos, s.GetPosition()
+	tok.Style = style
+	tok.Value = valueBuf.String()
 	err = nil
 	return
 }
@@ -876,7 +859,7 @@ func (s *Scanner) scanEscapeSeq() (rune int, err os.Error) {
 	return
 }
 
-func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
+func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
 	startPos, endPos := s.GetPosition(), s.GetPosition()
 	valueBuf := new(bytes.Buffer)
 	indent := s.indent + 1
@@ -993,14 +976,10 @@ func (s *Scanner) scanPlainScalar() (tok Token, err os.Error) {
 	}
 
 	// Create token
-	{
-		scalarTok := ScalarToken{}
-		scalarTok.Kind = token.SCALAR
-		scalarTok.Start, scalarTok.End = startPos, endPos
-		scalarTok.Style = PlainScalarStyle
-		scalarTok.Value = valueBuf.String()
-		tok = scalarTok
-	}
+	tok.Kind = token.SCALAR
+	tok.Start, tok.End = startPos, endPos
+	tok.Style = PlainScalarStyle
+	tok.Value = valueBuf.String()
 	if leadingBlanks {
 		s.simpleKeyAllowed = true
 	}
