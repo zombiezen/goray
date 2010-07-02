@@ -46,6 +46,8 @@ type TagToken struct {
 	Suffix string
 }
 
+func (t TagToken) String() string { return t.Handle + t.Suffix }
+
 // Type of scalar
 const (
 	AnyScalarStyle = iota
