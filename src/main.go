@@ -113,6 +113,8 @@ func main() {
 	logging.MainLog.Debug("Using %d processor(s)", runtime.GOMAXPROCS(0))
 
 	// Open output file
+	// Normally, we want to truncate upon open, but we do that right before
+	// writing data so that we preserve data for as long as possible.
 	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	defer f.Close()
 	if err != nil {
@@ -212,6 +214,8 @@ func main() {
 	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
+
+	f.Truncate(0)
 	switch *format {
 	case "png":
 		err = png.Encode(f, outputImage)
