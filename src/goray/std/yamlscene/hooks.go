@@ -10,6 +10,7 @@ package yamlscene
 import (
 	"os"
 	"goray/core/color"
+	"goray/core/vector"
 
 	debugmaterial "goray/std/materials/debug"
 	"goray/std/objects/mesh"
@@ -24,6 +25,7 @@ func init() {
 	Constructor = make(yamldata.ConstructorMap)
 	Constructor[Prefix+"rgb"] = yamldata.ConstructorFunc(constructRGB)
 	Constructor[Prefix+"rgba"] = yamldata.ConstructorFunc(constructRGBA)
+	Constructor[Prefix+"vec"] = yamldata.ConstructorFunc(constructVector)
 
 	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
 	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)
@@ -63,4 +65,13 @@ func constructRGBA(n parser.Node) (data interface{}, err os.Error) {
 		return
 	}
 	return color.NewRGBA(comps[0], comps[1], comps[2], comps[3]), nil
+}
+
+func constructVector(n parser.Node) (data interface{}, err os.Error) {
+	comps, ok := floatSequence(n)
+	if !ok || len(comps) != 3 {
+		err = os.NewError("Vector must be a sequence of 3 floats")
+		return
+	}
+	return vector.New(comps[0], comps[1], comps[2]), nil
 }
