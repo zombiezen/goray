@@ -9,12 +9,15 @@ package point
 
 import (
 	"math"
+	"os"
 	"goray/fmath"
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
+	yamldata "yaml/data"
+	"yaml/parser"
 )
 
 type pointLight struct {
@@ -104,4 +107,19 @@ func (l *pointLight) IlluminatePdf(sp, spLight surface.Point) float { return 0.0
 
 func (l *pointLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float) {
 	return 1.0, 0.25, 1.0
+}
+
+func Construct(n parser.Node) (data interface{}, err os.Error) {
+	node, ok := n.(*parser.Mapping)
+	if !ok {
+		err = os.NewError("Point light must have a mapping")
+		return
+	}
+	
+	m := node.Map()
+	pos := m["position"].(vector.Vector3D)
+	col := m["color"].(color.Color)
+	intensity, _ := yamldata.AsFloat(m["intensity"])
+	data = New(pos, col, float(intensity))
+	return
 }

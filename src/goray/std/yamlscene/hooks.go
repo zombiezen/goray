@@ -13,6 +13,7 @@ import (
 	"goray/core/vector"
 
 	orthocam "goray/std/cameras/ortho"
+	pointlight "goray/std/lights/point"
 	debugmaterial "goray/std/materials/debug"
 	"goray/std/objects/mesh"
 
@@ -28,9 +29,10 @@ func init() {
 	Constructor[Prefix+"rgba"] = yamldata.ConstructorFunc(constructRGBA)
 	Constructor[Prefix+"vec"] = yamldata.ConstructorFunc(constructVector)
 
+	Constructor[StdPrefix+"cameras/ortho"] = yamldata.ConstructorFunc(orthocam.Construct)
+	Constructor[StdPrefix+"lights/point"] = yamldata.ConstructorFunc(pointlight.Construct)
 	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
 	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)
-	Constructor[StdPrefix+"cameras/ortho"] = yamldata.ConstructorFunc(orthocam.Construct)
 }
 
 func floatSequence(n parser.Node) (data []float, ok bool) {
