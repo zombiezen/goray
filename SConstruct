@@ -61,7 +61,7 @@ AlwaysBuild(version_file)
 env.Go(version_file)
 
 # Main build
-lib = SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray')
+lib = Alias('lib', SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray'))
 program = env.GoProgram('bin/goray', 'build/main.go')
 
 if env['testing']:
