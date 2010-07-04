@@ -80,5 +80,9 @@ func coreSchema(node Node) (tag string, err os.Error) {
 		}
 	}
 
+	if _, ok := node.(*Empty); ok {
+		return NullTag, nil
+	}
+
 	return failsafeSchema(node)
 }

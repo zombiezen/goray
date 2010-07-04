@@ -39,6 +39,10 @@ func (n basicNode) Data() interface{}      { return n.data }
 func (n *basicNode) setTag(t string)       { n.tag = t }
 func (n *basicNode) setData(d interface{}) { n.hasData = true; n.data = d }
 
+type Empty struct {
+	*basicNode
+}
+
 type KeyValuePair struct {
 	Key, Value Node
 }

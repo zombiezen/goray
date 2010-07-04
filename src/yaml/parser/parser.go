@@ -221,29 +221,29 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		err = os.NewError("Invalid node properties")
 		return
 	default:
-		node = nil
+		// Create an empty node
+		node = &Empty{new(basicNode)}
+		node.(*Empty).pos = tok.GetStart()
 	}
 
 	if err == nil {
-		if node != nil {
-			var data interface{}
+		var data interface{}
 
-			// Set up tag
-			if tag == "" {
-				tag, err = parser.schema.Resolve(node)
-				if err != nil {
-					return
-				}
-			}
-			node.setTag(tag)
-
-			// Construct data
-			data, err = parser.constructor.Construct(node)
+		// Set up tag
+		if tag == "" {
+			tag, err = parser.schema.Resolve(node)
 			if err != nil {
 				return
 			}
-			node.setData(data)
 		}
+		node.setTag(tag)
+
+		// Construct data
+		data, err = parser.constructor.Construct(node)
+		if err != nil {
+			return
+		}
+		node.setData(data)
 
 		if anchor != "" {
 			parser.anchors[anchor] = node
