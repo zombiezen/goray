@@ -929,7 +929,7 @@ func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
 		}
 
 		// Consume blank characters
-		if err = s.reader.CacheFull(1); err != nil {
+		if err = s.reader.Cache(1); err != nil {
 			return
 		}
 		for s.reader.CheckSpace(0) || s.reader.CheckBreak(0) {
@@ -964,7 +964,7 @@ func (s *Scanner) scanPlainScalar() (tok ScalarToken, err os.Error) {
 					}
 				}
 			}
-			if err = s.reader.CacheFull(1); err != nil {
+			if err = s.reader.Cache(1); err != nil {
 				return
 			}
 		}

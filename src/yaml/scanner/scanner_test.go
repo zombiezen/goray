@@ -45,6 +45,15 @@ var scannerTests = []scanTest{
 		},
 	},
 	scanTest{
+		"Plain literal with newline",
+		"Hello, World!\n",
+		[]Token{
+			BasicToken{token.STREAM_START, token.Position{0, 1, 1}, token.Position{0, 1, 1}},
+			ValueToken{BasicToken{token.SCALAR, token.Position{0, 1, 1}, token.Position{13, 1, 14}}, "Hello, World!"},
+			BasicToken{token.STREAM_END, token.Position{14, 2, 1}, token.Position{14, 2, 1}},
+		},
+	},
+	scanTest{
 		"Comment",
 		`# Comment`,
 		[]Token{
