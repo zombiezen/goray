@@ -11,10 +11,6 @@ import (
 	"yaml/token"
 )
 
-type Stream struct {
-	Documents []Document
-}
-
 type Document struct {
 	MajorVersion int
 	MinorVersion int
