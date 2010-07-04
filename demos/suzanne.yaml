@@ -1493,7 +1493,11 @@ camera: !std!cameras/ortho
 lights:
  - !std!lights/point
    position: !goray!vec [0,10,0]
-   color: !goray!rgb [1,0,0]
-   intensity: 200.0
+   color: !goray!rgb [1,0.8,0]
+   intensity: 50.0
+ - !std!lights/point
+   position: !goray!vec [2,2,5]
+   color: !goray!rgb [1,0.95,0]
+   intensity: 100.0
 integrator: !std!integrators/directlight { transparentShadows: false, shadowDepth: 3, rayDepth: 10 }
 ...
