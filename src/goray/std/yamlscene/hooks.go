@@ -13,9 +13,10 @@ import (
 	"goray/core/vector"
 
 	orthocam "goray/std/cameras/ortho"
+	directlight "goray/std/integrators/directlight"
 	pointlight "goray/std/lights/point"
 	debugmaterial "goray/std/materials/debug"
-	"goray/std/objects/mesh"
+	mesh "goray/std/objects/mesh"
 
 	yamldata "yaml/data"
 	"yaml/parser"
@@ -30,6 +31,7 @@ func init() {
 	Constructor[Prefix+"vec"] = yamldata.ConstructorFunc(constructVector)
 
 	Constructor[StdPrefix+"cameras/ortho"] = yamldata.ConstructorFunc(orthocam.Construct)
+	Constructor[StdPrefix+"integrators/directlight"] = yamldata.ConstructorFunc(directlight.Construct)
 	Constructor[StdPrefix+"lights/point"] = yamldata.ConstructorFunc(pointlight.Construct)
 	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
 	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)

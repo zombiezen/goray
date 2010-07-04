@@ -8,6 +8,7 @@
 package directlight
 
 import (
+	"os"
 	"goray/core/background"
 	"goray/core/color"
 	"goray/core/integrator"
@@ -18,6 +19,8 @@ import (
 	"goray/core/scene"
 	"goray/core/vector"
 	"goray/std/integrators/util"
+	yamldata "yaml/data"
+	"yaml/parser"
 )
 
 type directLighting struct {
@@ -153,4 +156,19 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		}
 	}
 	return color.NewRGBAFromColor(col, alpha)
+}
+
+func Construct(n parser.Node) (data interface{}, err os.Error) {
+	node, ok := n.(*parser.Mapping)
+	if !ok {
+		err = os.NewError("Direct light integrator must have a mapping")
+		return
+	}
+	
+	m := node.Map()
+	trShad, _ := yamldata.AsBool(m["transparentShadows"])
+	shadowDepth, _ := yamldata.AsInt(m["shadowDepth"])
+	rayDepth, _ := yamldata.AsInt(m["rayDepth"])
+	data = New(trShad, int(shadowDepth), int(rayDepth))
+	return
 }
