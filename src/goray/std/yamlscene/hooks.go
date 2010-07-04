@@ -12,6 +12,7 @@ import (
 	"goray/core/color"
 	"goray/core/vector"
 
+	orthocam "goray/std/cameras/ortho"
 	debugmaterial "goray/std/materials/debug"
 	"goray/std/objects/mesh"
 
@@ -29,6 +30,7 @@ func init() {
 
 	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
 	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)
+	Constructor[StdPrefix+"cameras/ortho"] = yamldata.ConstructorFunc(orthocam.Construct)
 }
 
 func floatSequence(n parser.Node) (data []float, ok bool) {

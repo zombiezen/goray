@@ -9,9 +9,12 @@
 package ortho
 
 import (
+	"os"
 	"goray/core/camera"
 	"goray/core/ray"
 	"goray/core/vector"
+	yamldata "yaml/data"
+	"yaml/parser"
 )
 
 /* A simple orthographic camera */
@@ -58,4 +61,40 @@ func (c *orthoCam) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 
 func (c *orthoCam) Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool) {
 	return 0.0, false
+}
+
+func Construct(n parser.Node) (data interface{}, err os.Error) {
+	node, ok := n.(*parser.Mapping)
+	if !ok {
+		err = os.NewError("Ortho node must be a mapping")
+		return
+	}
+	m := node.Map()
+	// Obtain position, look, and up
+	pos, posOk := m["position"].(vector.Vector3D)
+	look, lookOk := m["look"].(vector.Vector3D)
+	up, upOk := m["up"].(vector.Vector3D)
+	if !posOk || !lookOk || !upOk {
+		err = os.NewError("Ortho nodes must have position, look, and up vectors")
+		return
+	}
+	// Width and height
+	width, widthOk := yamldata.AsInt(m["width"])
+	height, heightOk := yamldata.AsInt(m["height"])
+	if !widthOk || !heightOk {
+		err = os.NewError("Ortho must have width and height")
+		return
+	}
+	// Aspect and scale
+	aspect, ok := yamldata.AsFloat(m["aspect"])
+	if !ok {
+		aspect = 1.0
+	}
+	scale, ok := yamldata.AsFloat(m["scale"])
+	if !ok {
+		scale = 1.0
+	}
+	// Create camera (finally!)
+	data = New(pos, look, up, int(width), int(height), float(aspect), float(scale))
+	return
 }
