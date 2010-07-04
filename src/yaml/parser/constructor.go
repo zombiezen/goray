@@ -90,7 +90,7 @@ func constructMap(n Node) (data interface{}, err os.Error) {
 func constructNull(n Node) (data interface{}, err os.Error) {
 	_, isScalar := n.(*Scalar)
 	_, isEmpty := n.(*Empty)
-	if !isScalar || !isEmpty {
+	if !isScalar && !isEmpty {
 		err = os.NewError("Non-scalar tagged as null")
 		return
 	}
