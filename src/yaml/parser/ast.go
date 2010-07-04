@@ -20,36 +20,46 @@ type Document struct {
 type Node interface {
 	Start() token.Position
 	Tag() string
+	Data() interface{}
+
+	setTag(string)
+	setData(interface{})
 }
 
 type basicNode struct {
-	pos token.Position
-	tag string
+	pos     token.Position
+	tag     string
+	hasData bool
+	data    interface{}
 }
 
-func (n basicNode) Start() token.Position { return n.pos }
-func (n basicNode) Tag() string           { return n.tag }
+func (n basicNode) Start() token.Position  { return n.pos }
+func (n basicNode) Tag() string            { return n.tag }
+func (n basicNode) Data() interface{}      { return n.data }
+func (n *basicNode) setTag(t string)       { n.tag = t }
+func (n *basicNode) setData(d interface{}) { n.hasData = true; n.data = d }
 
 type KeyValuePair struct {
 	Key, Value Node
 }
 
 type Mapping struct {
-	basicNode
+	*basicNode
 	Pairs []KeyValuePair
 }
 
+func (m *Mapping) Len() int { return len(m.Pairs) }
+
 type Sequence struct {
-	basicNode
+	*basicNode
 	Nodes []Node
 }
 
-func (seq *Sequence) At(i int) Node {
-	return seq.Nodes[i]
-}
+func (seq *Sequence) At(i int) Node { return seq.Nodes[i] }
+func (seq *Sequence) Len() int      { return len(seq.Nodes) }
 
 type Scalar struct {
-	basicNode
+	*basicNode
 	Value string
 }
 

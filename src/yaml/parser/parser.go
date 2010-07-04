@@ -21,16 +21,27 @@ type Parser struct {
 	doc         *Document
 	tagPrefixes map[string]string
 	anchors     map[string]Node
+	schema      Schema
+	constructor Constructor
 }
 
-func New(r io.Reader) *Parser {
-	return NewWithScanner(scanner.New(r))
+func New(r io.Reader, s Schema, c Constructor) *Parser {
+	return NewWithScanner(scanner.New(r), s, c)
 }
 
-func NewWithScanner(scan *scanner.Scanner) (p *Parser) {
+func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *Parser) {
+	if schema == nil {
+		schema = FailsafeSchema
+	}
+	if con == nil {
+		con = DefaultConstructor
+	}
+
 	p = new(Parser)
 	p.scanner = scan
 	p.scanQueue = list.New()
+	p.schema = schema
+	p.constructor = con
 	return p
 }
 
@@ -194,15 +205,15 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 
 	switch tok.GetKind() {
 	case token.SCALAR:
-		node, err = parser.parseScalar(tag)
+		node, err = parser.parseScalar()
 	case token.BLOCK_SEQUENCE_START:
-		node, err = parser.parseSequence(tag, true)
+		node, err = parser.parseSequence(true)
 	case token.FLOW_SEQUENCE_START:
-		node, err = parser.parseSequence(tag, false)
+		node, err = parser.parseSequence(false)
 	case token.BLOCK_MAPPING_START:
-		node, err = parser.parseMapping(tag, true)
+		node, err = parser.parseMapping(true)
 	case token.FLOW_MAPPING_START:
-		node, err = parser.parseMapping(tag, false)
+		node, err = parser.parseMapping(false)
 	case token.ALIAS:
 		parser.scan() // Eat alias token
 		return parser.resolveAlias(tok.String())
@@ -213,8 +224,30 @@ func (parser *Parser) parseNode() (node Node, err os.Error) {
 		node = nil
 	}
 
-	if err == nil && anchor != "" {
-		parser.anchors[anchor] = node
+	if err == nil {
+		if node != nil {
+			var data interface{}
+
+			// Set up tag
+			if tag == "" {
+				tag, err = parser.schema.Resolve(node)
+				if err != nil {
+					return
+				}
+			}
+			node.setTag(tag)
+
+			// Construct data
+			data, err = parser.constructor.Construct(node)
+			if err != nil {
+				return
+			}
+			node.setData(data)
+		}
+
+		if anchor != "" {
+			parser.anchors[anchor] = node
+		}
 	}
 
 	return
@@ -278,20 +311,20 @@ func (parser *Parser) resolveAlias(anchor string) (node Node, err os.Error) {
 	return
 }
 
-func (parser *Parser) parseScalar(tag string) (node *Scalar, err os.Error) {
+func (parser *Parser) parseScalar() (node *Scalar, err os.Error) {
 	tok, err := parser.scan()
 	if err != nil {
 		return
 	}
 
 	node = new(Scalar)
+	node.basicNode = new(basicNode)
 	node.pos = tok.GetStart()
-	node.tag = tag
 	node.Value = tok.String()
 	return
 }
 
-func (parser *Parser) parseSequence(tag string, block bool) (node *Sequence, err os.Error) {
+func (parser *Parser) parseSequence(block bool) (node *Sequence, err os.Error) {
 	var tok scanner.Token
 	var sep, sentinel token.Token
 
@@ -307,10 +340,19 @@ func (parser *Parser) parseSequence(tag string, block bool) (node *Sequence, err
 	}
 
 	node = new(Sequence)
+	node.basicNode = new(basicNode)
 	node.pos = tok.GetStart()
-	node.tag = tag
 	node.Nodes = make([]Node, 0, 2)
 	childCount := 0
+
+	// Block sequences have a leading separator
+	if block {
+		tok, err = parser.scan()
+		if tok.GetKind() != sep {
+			err = os.NewError("Expected leading block entry token")
+			return
+		}
+	}
 
 	for err == nil && tok.GetKind() != sentinel {
 		var child Node
@@ -342,7 +384,7 @@ func (parser *Parser) parseSequence(tag string, block bool) (node *Sequence, err
 	return
 }
 
-func (parser *Parser) parseMapping(tag string, block bool) (node *Mapping, err os.Error) {
+func (parser *Parser) parseMapping(block bool) (node *Mapping, err os.Error) {
 	var tok scanner.Token
 	var sentinel token.Token
 
@@ -358,8 +400,8 @@ func (parser *Parser) parseMapping(tag string, block bool) (node *Mapping, err o
 	}
 
 	node = new(Mapping)
+	node.basicNode = new(basicNode)
 	node.pos = tok.GetStart()
-	node.tag = tag
 	node.Pairs = make([]KeyValuePair, 0, 2)
 	pairCount := 0
 
