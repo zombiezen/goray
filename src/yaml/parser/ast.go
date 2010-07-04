@@ -54,6 +54,15 @@ type Mapping struct {
 
 func (m *Mapping) Len() int { return len(m.Pairs) }
 
+func (m *Mapping) Get(key string) (value Node, ok bool) {
+	for _, pair := range m.Pairs {
+		if pairKey, convOk := pair.Key.Data().(string); convOk && pairKey == key {
+			return pair.Value, true
+		}
+	}
+	return nil, false
+}
+
 type Sequence struct {
 	*basicNode
 	Nodes []Node
