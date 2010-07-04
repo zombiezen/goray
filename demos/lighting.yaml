@@ -1,0 +1,75 @@
+%YAML 1.2
+%TAG !goray! tag:goray/
+%TAG !std! tag:goray/std/
+---
+objects:
+   -  !std!objects/mesh
+      vertices:
+         -  [-0.5, -0.5, -0.5]
+         -  [0.5, -0.5, -0.5]
+         -  [0.5, 0.5, -0.5]
+         -  [-0.5, 0.5, -0.5]
+         -  [-0.5, -0.5, 0.5]
+         -  [0.5, -0.5, 0.5]
+         -  [0.5, 0.5, 0.5]
+         -  [-0.5, 0.5, 0.5]
+      faces:
+         # Back
+         -  vertices: [0, 3, 2]
+            material: &mat !std!materials/debug { color: !goray!rgb [1.0, 1.0, 1.0] }
+         -  vertices: [0, 2, 1]
+            material: *mat
+         # Top
+         -  vertices: [3, 7, 2]
+            material: *mat
+         -  vertices: [6, 2, 7]
+            material: *mat
+         # Bottom
+         -  vertices: [0, 1, 4]
+            material: *mat
+         -  vertices: [5, 4, 1]
+            material: *mat
+         # Left
+         -  vertices: [7, 3, 4]
+            material: *mat
+         -  vertices: [0, 4, 3]
+            material: *mat
+         # Right
+         -  vertices: [6, 5, 2]
+            material: *mat
+         -  vertices: [1, 2, 5]
+            material: *mat
+         # Front
+         -  vertices: [4, 6, 7]
+            material: *mat
+         -  vertices: [5, 6, 4]
+            material: *mat
+#   -  !std!objects/sphere
+#      center: [1.0, 0.0, 0.0]
+#      radius: 0.25
+camera: !std!cameras/ortho
+   position: !goray!vec [5.0, 5.0, 5.0]
+   look: !goray!vec [0.0, 0.0, 0.0]
+   up: !goray!vec [5.0, 6.0, 5.0]
+   width: 100
+   height: 100
+   aspect: 1.0
+   scale: 3.0
+lights:
+   -  !std!lights/point
+      position: !goray!vec [10.0, 0.0, 0.0]
+      color: !goray!rgb [1.0, 0.0, 0.0]
+      intensity: 200.0
+   -  !std!lights/point
+      position: !goray!vec [0.0, 10.0, 0.0]
+      color: !goray!rgb [0.0, 1.0, 0.0]
+      intensity: 100.0
+   -  !std!lights/point
+      position: !goray!vec [0.0, 0.0, 10.0]
+      color: !goray!rgb [0.0, 0.0, 1.0]
+      intensity: 50.0
+integrator: !std!integrators/directlight
+   transparentShadows: false
+   shadowDepth: 3
+   rayDepth: 10
+...
