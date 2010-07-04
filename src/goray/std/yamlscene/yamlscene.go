@@ -33,7 +33,7 @@ func Load(r io.Reader, sc *scene.Scene) (i integrator.Integrator, err os.Error) 
 	}
 
 	// Set up scene!
-	root, _ := yamldata.AsMap(doc.Content.Data())
+	root := doc.Content.(*parser.Mapping).Map()
 
 	objects, _ := yamldata.AsSequence(root["objects"])
 	for i, _ := range objects {
