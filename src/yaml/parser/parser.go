@@ -68,14 +68,47 @@ func (parser *Parser) unscan(tok scanner.Token) {
 }
 
 func (parser *Parser) Parse() (docs []*Document, err os.Error) {
-	//	docs = make([]Document, 0, 1)
-	//	for {
-	//		var newDoc *Document
-	//		newDoc, err = parser.ParseDocument()
-	//		if err != nil {
-	//			return
-	//		}
-	//	}
+	docs = make([]*Document, 0, 1)
+
+docLoop:
+	for {
+		var newDoc *Document
+
+		// Parse document
+		newDoc, err = parser.ParseDocument()
+		if err != nil {
+			return
+		}
+
+		// Add document to array
+		if cap(docs) < len(docs)+1 {
+			newDocs := make([]*Document, len(docs), cap(docs)*2)
+			copy(newDocs, docs)
+			docs = newDocs
+		}
+		docs = docs[0 : len(docs)+1]
+		docs[len(docs)-1] = newDoc
+
+		// Eat up any end document tokens
+	endDocLoop:
+		for {
+			var tok scanner.Token
+
+			if tok, err = parser.scan(); err != nil {
+				return
+			}
+
+			switch tok.GetKind() {
+			case token.DOCUMENT_END:
+				// Ignore
+			case token.STREAM_END:
+				break docLoop
+			default:
+				parser.unscan(tok)
+				break endDocLoop
+			}
+		}
+	}
 	return
 }
 
@@ -96,6 +129,7 @@ func (parser *Parser) ParseDocument() (doc *Document, err os.Error) {
 	if doc.Content, err = parser.parseNode(); err != nil {
 		return
 	}
+	parser.doc = nil
 	return
 }
 
