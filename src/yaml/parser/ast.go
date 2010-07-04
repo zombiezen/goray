@@ -63,6 +63,14 @@ func (m *Mapping) Get(key string) (value Node, ok bool) {
 	return nil, false
 }
 
+func (node *Mapping) Map() (m map[interface{}]interface{}) {
+	m = make(map[interface{}]interface{}, len(node.Pairs))
+	for _, pair := range node.Pairs {
+		m[pair.Key.Data()] = pair.Value.Data()
+	}
+	return
+}
+
 type Sequence struct {
 	*basicNode
 	Nodes []Node
@@ -70,6 +78,14 @@ type Sequence struct {
 
 func (seq *Sequence) At(i int) Node { return seq.Nodes[i] }
 func (seq *Sequence) Len() int      { return len(seq.Nodes) }
+
+func (seq *Sequence) Slice() (s []interface{}) {
+	s = make([]interface{}, len(seq.Nodes))
+	for i, n := range seq.Nodes {
+		s[i] = n.Data()
+	}
+	return
+}
 
 type Scalar struct {
 	*basicNode

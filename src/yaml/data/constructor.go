@@ -60,12 +60,7 @@ func constructSeq(n parser.Node) (data interface{}, err os.Error) {
 		err = os.NewError("Non-sequence given to sequence")
 		return
 	}
-
-	a := make([]interface{}, node.Len())
-	for i := 0; i < node.Len(); i++ {
-		a[i] = node.At(i).Data()
-	}
-	data = a
+	data = node.Slice()
 	return
 }
 
@@ -75,12 +70,7 @@ func constructMap(n parser.Node) (data interface{}, err os.Error) {
 		err = os.NewError("Non-mapping given to map")
 		return
 	}
-
-	m := make(map[interface{}]interface{}, node.Len())
-	for _, pair := range node.Pairs {
-		m[pair.Key.Data()] = pair.Value.Data()
-	}
-	data = m
+	data = node.Map()
 	return
 }
 
