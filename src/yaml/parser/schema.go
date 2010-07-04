@@ -53,14 +53,14 @@ func failsafeSchema(node Node) (tag string, err os.Error) {
 }
 
 var (
-	csNullPat  = regexp.MustCompile(`null|Null|NULL|~`)
-	csBoolPat  = regexp.MustCompile(`(true|True|TRUE)|(false|False|FALSE)`)
-	csDecPat   = regexp.MustCompile(`([\-+]?)([0-9]+)`)
-	csOctPat   = regexp.MustCompile(`0o([0-7]+)`)
-	csHexPat   = regexp.MustCompile(`0x([0-9a-fA-F]+)`)
-	csFloatPat = regexp.MustCompile(`([\-+]?)(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][\-+]?[0-9]+)?`)
-	csInfPat   = regexp.MustCompile(`([\-+]?)\.(inf|Inf|INF)`)
-	csNanPat   = regexp.MustCompile(`\.(nan|NaN|NAN)`)
+	csNullPat  = regexp.MustCompile(`^(null|Null|NULL|~)$`)
+	csBoolPat  = regexp.MustCompile(`^(true|True|TRUE)$|^(false|False|FALSE)$`)
+	csDecPat   = regexp.MustCompile(`^([\-+]?)([0-9]+)$`)
+	csOctPat   = regexp.MustCompile(`^0o([0-7]+)$`)
+	csHexPat   = regexp.MustCompile(`^0x([0-9a-fA-F]+)$`)
+	csFloatPat = regexp.MustCompile(`^([\-+]?)(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][\-+]?[0-9]+)?$`)
+	csInfPat   = regexp.MustCompile(`^([\-+]?)\.(inf|Inf|INF)$`)
+	csNanPat   = regexp.MustCompile(`^\.(nan|NaN|NAN)$`)
 )
 
 func coreSchema(node Node) (tag string, err os.Error) {
