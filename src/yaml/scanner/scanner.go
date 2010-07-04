@@ -58,13 +58,11 @@ func New(r io.Reader) (s *Scanner) {
 func (s *Scanner) GetPosition() token.Position { return s.reader.Pos }
 
 func (s *Scanner) Scan() (result Token, err os.Error) {
-	if s.tokenQueue.Len() == 0 {
-		if s.ended {
-			return
-		}
-		if err = s.prepare(); err != nil {
-			return
-		}
+	if s.tokenQueue.Len() == 0 && s.ended {
+		return
+	}
+	if err = s.prepare(); err != nil {
+		return
 	}
 	elem := s.tokenQueue.Front()
 	result = elem.Value.(Token)
