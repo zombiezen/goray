@@ -10,9 +10,12 @@ package yamlscene
 import (
 	"io"
 	"os"
+	"goray/core/camera"
 	"goray/core/integrator"
+	"goray/core/light"
+	"goray/core/object"
 	"goray/core/scene"
-	yamlData "yaml/data"
+	yamldata "yaml/data"
 	"yaml/parser"
 )
 
@@ -23,14 +26,31 @@ const (
 
 func Load(r io.Reader, sc *scene.Scene) (i integrator.Integrator, err os.Error) {
 	// Parse
-	p := parser.New(r, yamlData.CoreSchema, yamlData.ConstructorFunc(realConstructor))
+	p := parser.New(r, yamldata.CoreSchema, yamldata.ConstructorFunc(realConstructor))
 	doc, err := p.ParseDocument()
 	if err != nil {
 		return
 	}
 
 	// Set up scene!
-	root := doc.Content.Data().(map[interface{}]interface{})
+	root, _ := yamldata.AsMap(doc.Content.Data())
+
+	objects, _ := yamldata.AsSequence(root["objects"])
+	for i, _ := range objects {
+		obj := objects[i].(object.Object3D)
+		sc.AddObject(obj)
+	}
+
+	lights, _ := yamldata.AsSequence(root["lights"])
+	for i, _ := range lights {
+		l := lights[i].(light.Light)
+		sc.AddLight(l)
+	}
+
+	camera, _ := root["camera"].(camera.Camera)
+	sc.SetCamera(camera)
+
+	// Get integrator and finish
 	i = root["integrator"].(integrator.Integrator)
 	return
 }
@@ -39,5 +59,5 @@ func realConstructor(n parser.Node) (interface{}, os.Error) {
 	if _, ok := Constructor[n.Tag()]; ok {
 		return Constructor.Construct(n)
 	}
-	return yamlData.DefaultConstructor.Construct(n)
+	return yamldata.DefaultConstructor.Construct(n)
 }
