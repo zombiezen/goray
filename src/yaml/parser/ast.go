@@ -8,7 +8,6 @@
 package parser
 
 import (
-	"reflect"
 	"yaml/token"
 )
 
@@ -69,71 +68,3 @@ type Scalar struct {
 }
 
 func (s *Scalar) String() string { return s.Value }
-
-// Data retrieval
-
-func GetNodeBool(node Node) (b bool, ok bool) {
-	b, ok = node.Data().(bool)
-	return
-}
-
-func GetNodeFloat(node Node) (f float64, ok bool) {
-	val := reflect.NewValue(node.Data())
-	ok = true
-	
-	switch realVal := val.(type) {
-	case *reflect.FloatValue:
-		f = realVal.Get()
-	case *reflect.IntValue:
-		f = float64(realVal.Get())
-	case *reflect.UintValue:
-		f = float64(realVal.Get())
-	default:
-		ok = false
-	}
-	return
-}
-
-func GetNodeUint(node Node) (i uint64, ok bool) {
-	val := reflect.NewValue(node.Data())
-	ok = true
-	
-	switch realVal := val.(type) {
-	case *reflect.UintValue:
-		i = realVal.Get()
-	case *reflect.IntValue:
-		if realVal.Get() >= 0 {
-			i = uint64(realVal.Get())
-		} else {
-			ok = false
-		}
-	default:
-		ok = false
-	}
-	return
-}
-
-func GetNodeInt(node Node) (i int64, ok bool) {
-	val := reflect.NewValue(node.Data())
-	ok = true
-	
-	switch realVal := val.(type) {
-	case *reflect.IntValue:
-		i = realVal.Get()
-	case *reflect.UintValue:
-		i = int64(realVal.Get())
-	default:
-		ok = false
-	}
-	return
-}
-
-func GetNodeSequence(node Node) (seq []interface{}, ok bool) {
-	seq, ok = node.Data().([]interface{})
-	return
-}
-
-func GetNodeMap(node Node) (m map[interface{}]interface{}, ok bool) {
-	m, ok = node.Data().(map[interface{}]interface{})
-	return
-}

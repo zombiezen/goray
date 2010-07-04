@@ -15,6 +15,16 @@ import (
 	"yaml/token"
 )
 
+type Schema interface {
+	Resolve(Node) (tag string, err os.Error)
+}
+
+type Constructor interface {
+	Construct(Node) (data interface{}, err os.Error)
+}
+
+const DefaultPrefix = "tag:yaml.org,2002:"
+
 type Parser struct {
 	scanner     *scanner.Scanner
 	scanQueue   *list.List
@@ -30,13 +40,6 @@ func New(r io.Reader, s Schema, c Constructor) *Parser {
 }
 
 func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *Parser) {
-	if schema == nil {
-		schema = FailsafeSchema
-	}
-	if con == nil {
-		con = DefaultConstructor
-	}
-
 	p = new(Parser)
 	p.scanner = scan
 	p.scanQueue = list.New()
@@ -47,7 +50,7 @@ func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *P
 
 func (parser *Parser) reset() {
 	parser.tagPrefixes = make(map[string]string)
-	parser.tagPrefixes["!!"] = "tag:yaml.org,2002:"
+	parser.tagPrefixes["!!"] = DefaultPrefix
 	parser.anchors = make(map[string]Node)
 }
 

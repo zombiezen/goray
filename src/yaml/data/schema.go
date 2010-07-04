@@ -1,50 +1,47 @@
 //
-//	yaml/parser/schema.go
+//	yaml/data/schema.go
 //	goray
 //
 //	Created by Ross Light on 2010-07-03.
 //
 
-package parser
+package data
 
 import (
 	"os"
 	"regexp"
+	"yaml/parser"
 )
 
 const (
-	YAMLDefaultPrefix = "tag:yaml.org,2002:"
+	StringTag   = parser.DefaultPrefix + "str"
+	SequenceTag = parser.DefaultPrefix + "seq"
+	MappingTag  = parser.DefaultPrefix + "map"
 
-	StringTag   = YAMLDefaultPrefix + "str"
-	SequenceTag = YAMLDefaultPrefix + "seq"
-	MappingTag  = YAMLDefaultPrefix + "map"
-
-	NullTag  = YAMLDefaultPrefix + "null"
-	BoolTag  = YAMLDefaultPrefix + "bool"
-	IntTag   = YAMLDefaultPrefix + "int"
-	FloatTag = YAMLDefaultPrefix + "float"
+	NullTag  = parser.DefaultPrefix + "null"
+	BoolTag  = parser.DefaultPrefix + "bool"
+	IntTag   = parser.DefaultPrefix + "int"
+	FloatTag = parser.DefaultPrefix + "float"
 )
 
-type Schema interface {
-	Resolve(Node) (tag string, err os.Error)
-}
+type Schema parser.Schema
 
-type SchemaFunc func(Node) (string, os.Error)
+type SchemaFunc func(parser.Node) (string, os.Error)
 
-func (f SchemaFunc) Resolve(n Node) (string, os.Error) { return f(n) }
+func (f SchemaFunc) Resolve(n parser.Node) (string, os.Error) { return f(n) }
 
 var (
 	FailsafeSchema Schema = SchemaFunc(failsafeSchema)
 	CoreSchema     = SchemaFunc(coreSchema)
 )
 
-func failsafeSchema(node Node) (tag string, err os.Error) {
+func failsafeSchema(node parser.Node) (tag string, err os.Error) {
 	switch node.(type) {
-	case *Scalar:
+	case *parser.Scalar:
 		tag = StringTag
-	case *Sequence:
+	case *parser.Sequence:
 		tag = SequenceTag
-	case *Mapping:
+	case *parser.Mapping:
 		tag = MappingTag
 	default:
 		err = os.NewError("Unrecognized node given to failsafe schema")
@@ -63,8 +60,8 @@ var (
 	csNanPat   = regexp.MustCompile(`^\.(nan|NaN|NAN)$`)
 )
 
-func coreSchema(node Node) (tag string, err os.Error) {
-	if scalar, ok := node.(*Scalar); ok {
+func coreSchema(node parser.Node) (tag string, err os.Error) {
+	if scalar, ok := node.(*parser.Scalar); ok {
 		s := scalar.String()
 		switch {
 		case csNullPat.MatchString(s):
@@ -80,7 +77,7 @@ func coreSchema(node Node) (tag string, err os.Error) {
 		}
 	}
 
-	if _, ok := node.(*Empty); ok {
+	if _, ok := node.(*parser.Empty); ok {
 		return NullTag, nil
 	}
 
