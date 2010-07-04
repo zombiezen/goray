@@ -10,8 +10,9 @@ package yamlscene
 import (
 	"os"
 	"goray/core/color"
-	
+
 	debugmaterial "goray/std/materials/debug"
+	"goray/std/objects/mesh"
 
 	yamldata "yaml/data"
 	"yaml/parser"
@@ -23,8 +24,9 @@ func init() {
 	Constructor = make(yamldata.ConstructorMap)
 	Constructor[Prefix+"rgb"] = yamldata.ConstructorFunc(constructRGB)
 	Constructor[Prefix+"rgba"] = yamldata.ConstructorFunc(constructRGBA)
-	
+
 	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
+	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)
 }
 
 func floatSequence(n parser.Node) (data []float, ok bool) {
@@ -32,7 +34,7 @@ func floatSequence(n parser.Node) (data []float, ok bool) {
 	if !ok {
 		return
 	}
-	
+
 	data = make([]float, seq.Len())
 	for i := 0; i < seq.Len(); i++ {
 		var f float64
