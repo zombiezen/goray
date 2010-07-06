@@ -61,11 +61,14 @@ AlwaysBuild(version_file)
 env.Go(version_file)
 
 # Main build
-lib = Alias('lib', SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray'))
+lib_objects = SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray')
+yaml_objects = SConscript('src/yaml/SConscript', exports='env', variant_dir=var_dir + '/yaml')
+lib = Alias('lib', lib_objects)
+yaml = Alias('yaml', yaml_objects)
 program = env.GoProgram('bin/goray', 'build/main.go')
 
 if env['testing']:
-    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', lib))
+    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', [lib_objects, yaml_objects]))
     Default(test_suite)
 else:
     Default(lib, program)

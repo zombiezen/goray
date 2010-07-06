@@ -8,11 +8,13 @@
 package debug
 
 import (
+	"os"
 	"goray/core/color"
 	"goray/core/material"
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
+	yamldata "yaml/data"
 )
 
 type debugMaterial struct {
@@ -56,4 +58,15 @@ func (mat *debugMaterial) ScatterPhoton(state *render.State, sp surface.Point, w
 
 func (mat *debugMaterial) GetFlags() material.BSDF {
 	return material.BSDFDiffuse
+}
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	col, ok := m["color"].(color.Color)
+	if !ok {
+		err = os.NewError("Color must be an RGB")
+		return
+	}
+	
+	data = New(col)
+	return
 }

@@ -14,6 +14,7 @@ package mesh
 
 import (
 	"fmt"
+	"os"
 	"goray/fmath"
 	"goray/core/bound"
 	"goray/core/light"
@@ -23,6 +24,7 @@ import (
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
+	yamldata "yaml/data"
 )
 
 /* UV holds a set of texture coordinates. */
@@ -480,4 +482,51 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 	normal[1] = e[0][2]*e[1][0] - e[0][0]*e[1][2]
 	normal[2] = e[0][0]*e[1][1] - e[0][1]*e[1][0]
 	return planeBoxOverlap(normal, v[0], boxhalfsize)
+}
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	m = m.Copy()
+	m.SetDefault("vertices", make(yamldata.Sequence, 0))
+	m.SetDefault("faces", make(yamldata.Sequence, 0))
+
+	vertices, ok := yamldata.AsSequence(m["vertices"])
+	if !ok {
+		err = os.NewError("Vertices must be a sequence")
+		return
+	}
+
+	faces, ok := yamldata.AsSequence(m["faces"])
+	if !ok {
+		err = os.NewError("Faces must be a sequence")
+		return
+	}
+
+	mesh := New(len(faces), false)
+
+	// Parse vertices
+	// TODO: Error handling
+	vertexData := make([]vector.Vector3D, len(vertices))
+	for i, _ := range vertices {
+		vseq, _ := yamldata.AsSequence(vertices[i])
+		x, _ := yamldata.AsFloat(vseq[0])
+		y, _ := yamldata.AsFloat(vseq[1])
+		z, _ := yamldata.AsFloat(vseq[2])
+		vertexData[i] = vector.New(float(x), float(y), float(z))
+	}
+	mesh.SetData(vertexData, nil, nil)
+
+	// Parse faces
+	// TODO: Error handling
+	for i, _ := range faces {
+		fmap, _ := yamldata.AsMap(faces[i])
+		vindices, _ := yamldata.AsSequence(fmap["vertices"])
+		a, _ := yamldata.AsInt(vindices[0])
+		b, _ := yamldata.AsInt(vindices[1])
+		c, _ := yamldata.AsInt(vindices[2])
+		tri := NewTriangle(int(a), int(b), int(c), mesh)
+		tri.SetMaterial(fmap["material"].(material.Material))
+		mesh.AddTriangle(tri)
+	}
+
+	return mesh, nil
 }

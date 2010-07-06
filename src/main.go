@@ -21,19 +21,10 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/version"
-	"goray/core/color"
 	"goray/core/integrator"
-	"goray/core/object"
 	"goray/core/render"
 	"goray/core/scene"
-	"goray/core/vector"
-
-	"goray/std/cameras/ortho"
-	"goray/std/integrators/directlight"
-	pointLight "goray/std/lights/point"
-	debugMaterial "goray/std/materials/debug"
-	"goray/std/objects/mesh"
-	"goray/std/primitives/sphere"
+	"goray/std/yamlscene"
 )
 
 func printInstructions() {
@@ -46,11 +37,13 @@ func printVersion() {
 	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
 	// Copyright notice
 	fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
+	fmt.Println("Copyright © 2006 Kirill Simonov")
 	fmt.Println("Copyright © 2010 Ross Light")
 	fmt.Println()
 	fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
 	fmt.Println("Alfredo de Greef.")
-	fmt.Println("Go rewrite by Ross Light")
+	fmt.Println("Parts of the YAML parser are ported from libyaml (written by Kirill Simonov).")
+	fmt.Println("Go rewrite by Ross Light in 2010.")
 	fmt.Println()
 	fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
 	fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
@@ -76,8 +69,8 @@ func main() {
 	showHelp := flag.Bool("help", false, "display this help")
 	format := flag.String("f", "png", "the output format")
 	outputPath := flag.String("o", "goray.png", "path for the output file")
-	width := flag.Int("w", 100, "the output width")
-	height := flag.Int("h", 100, "the output height")
+	//width := flag.Int("w", 100, "the output width")
+	//height := flag.Int("h", 100, "the output height")
 	debug := flag.Int("d", 0, "set debug verbosity level")
 	showVersion := flag.Bool("v", false, "display the version")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
@@ -94,11 +87,17 @@ func main() {
 		return
 	}
 
-	// Eventually, we will take an input file.
-	//	if flag.NArg() != 1 {
-	//		printInstructions()
-	//		return
-	//	}
+	// Open input file
+	if flag.NArg() != 1 {
+		printInstructions()
+		return
+	}
+	inFile, err := os.Open(flag.Arg(0), os.O_RDONLY, 0)
+	if err != nil {
+		logging.MainLog.Critical("Error opening input file: %v", err)
+		return
+	}
+	defer inFile.Close()
 
 	// Set up logging
 	{
@@ -115,12 +114,14 @@ func main() {
 	// Open output file
 	// Normally, we want to truncate upon open, but we do that right before
 	// writing data so that we preserve data for as long as possible.
-	f, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
-	defer f.Close()
+	outFile, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	if err != nil {
 		logging.MainLog.Critical("Error opening output file: %v", err)
 		return
 	}
+	defer outFile.Close()
+	
+	// Set up scene
 	sc := scene.New()
 
 	logging.MainLog.Info("Setting up scene...")
@@ -130,63 +131,15 @@ func main() {
 			return "  SCENE: " + rec.String()
 		},
 	))
-	// We should be doing this:
-	//ok := parseXMLFile(f, scene)
-	// For now, we'll do this:
-	cube := mesh.New(12, false)
-	cube.SetData([]vector.Vector3D{
-		vector.New(-0.5, -0.5, -0.5),
-		vector.New(0.5, -0.5, -0.5),
-		vector.New(0.5, 0.5, -0.5),
-		vector.New(-0.5, 0.5, -0.5),
-
-		vector.New(-0.5, -0.5, 0.5),
-		vector.New(0.5, -0.5, 0.5),
-		vector.New(0.5, 0.5, 0.5),
-		vector.New(-0.5, 0.5, 0.5),
-	},
-		nil, nil)
-	faces := [][3]int{
-		// Back
-		[3]int{0, 3, 2},
-		[3]int{0, 2, 1},
-		// Top
-		[3]int{3, 7, 2},
-		[3]int{6, 2, 7},
-		// Bottom
-		[3]int{0, 1, 4},
-		[3]int{5, 4, 1},
-		// Left
-		[3]int{7, 3, 4},
-		[3]int{0, 4, 3},
-		// Right
-		[3]int{6, 5, 2},
-		[3]int{1, 2, 5},
-		// Front
-		[3]int{4, 6, 7},
-		[3]int{5, 6, 4},
+	
+	// Parse input file
+	integ, err := yamlscene.Load(inFile, sc)
+	if err != nil {
+		logging.MainLog.Critical("Error parsing input file: %v", err)
+		return
 	}
 
-	mat := debugMaterial.New(color.NewRGB(1.0, 1.0, 1.0))
-	for _, fdata := range faces {
-		face := mesh.NewTriangle(fdata[0], fdata[1], fdata[2], cube)
-		face.SetMaterial(mat)
-		cube.AddTriangle(face)
-	}
-
-	sc.SetCamera(ortho.New(
-		vector.New(5.0, 5.0, 5.0), // Position
-		vector.New(0.0, 0.0, 0.0), // Look
-		vector.New(5.0, 6.0, 5.0), // Up
-		*width, *height,           // Size
-		1.0, 3.0, // Aspect, Scale
-	))
-	sc.AddLight(pointLight.New(vector.New(10.0, 0.0, 0.0), color.NewRGB(1.0, 0.0, 0.0), 200.0))
-	sc.AddLight(pointLight.New(vector.New(0.0, 10.0, 0.0), color.NewRGB(0.0, 1.0, 0.0), 100.0))
-	sc.AddLight(pointLight.New(vector.New(0.0, 0.0, 10.0), color.NewRGB(0.0, 0.0, 1.0), 50.0))
-	sc.AddObject(cube)
-	sc.AddObject(object.PrimitiveObject{sphere.New(vector.New(1, 0, 0), 0.25, mat)})
-
+	// Update scene (build tree structures and whatnot)
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
 		sc.Update()
@@ -203,7 +156,7 @@ func main() {
 				return "  RENDER: " + rec.String()
 			},
 		)
-		outputImage = integrator.Render(sc, directlight.New(false, 3, 10), renderLog)
+		outputImage = integrator.Render(sc, integ, renderLog)
 	})
 	if err != nil {
 		logging.MainLog.Error("Rendering error: %v", err)
@@ -215,10 +168,10 @@ func main() {
 
 	logging.MainLog.Info("Writing and finishing...")
 
-	f.Truncate(0)
+	outFile.Truncate(0)
 	switch *format {
 	case "png":
-		err = png.Encode(f, outputImage)
+		err = png.Encode(outFile, outputImage)
 	}
 
 	if err != nil {

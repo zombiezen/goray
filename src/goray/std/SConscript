@@ -11,6 +11,7 @@ packages = [
     env.Go('materials/debug'),
     env.Go('objects/mesh'),
     env.Go('primitives/sphere'),
+	env.Go('yamlscene', Glob('yamlscene/*.go')),
 ]
 
 Return('packages')

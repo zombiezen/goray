@@ -9,12 +9,14 @@ package point
 
 import (
 	"math"
+	"os"
 	"goray/fmath"
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
+	yamldata "yaml/data"
 )
 
 type pointLight struct {
@@ -104,4 +106,12 @@ func (l *pointLight) IlluminatePdf(sp, spLight surface.Point) float { return 0.0
 
 func (l *pointLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float) {
 	return 1.0, 0.25, 1.0
+}
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	pos := m["position"].(vector.Vector3D)
+	col := m["color"].(color.Color)
+	intensity, _ := yamldata.AsFloat(m["intensity"])
+	data = New(pos, col, float(intensity))
+	return
 }
