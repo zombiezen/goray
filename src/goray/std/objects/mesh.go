@@ -25,7 +25,6 @@ import (
 	"goray/core/surface"
 	"goray/core/vector"
 	yamldata "yaml/data"
-	"yaml/parser"
 )
 
 /* UV holds a set of texture coordinates. */
@@ -485,34 +484,21 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 	return planeBoxOverlap(normal, v[0], boxhalfsize)
 }
 
-func Construct(n parser.Node) (data interface{}, err os.Error) {
-	var vertices []interface{}
-	var faces []interface{}
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	m = m.Copy()
+	m.SetDefault("vertices", make(yamldata.Sequence, 0))
+	m.SetDefault("faces", make(yamldata.Sequence, 0))
 
-	m, ok := n.(*parser.Mapping)
+	vertices, ok := yamldata.AsSequence(m["vertices"])
 	if !ok {
-		err = os.NewError("Mesh must be a mapping")
+		err = os.NewError("Vertices must be a sequence")
 		return
 	}
 
-	if verticesNode, ok := m.Get("vertices"); ok {
-		vertices, ok = yamldata.AsSequence(verticesNode.Data())
-		if !ok {
-			err = os.NewError("Vertices must be a sequence")
-			return
-		}
-	} else {
-		vertices = make([]interface{}, 0)
-	}
-
-	if facesNode, ok := m.Get("faces"); ok {
-		faces, ok = yamldata.AsSequence(facesNode.Data())
-		if !ok {
-			err = os.NewError("Faces must be a sequence")
-			return
-		}
-	} else {
-		faces = make([]interface{}, 0)
+	faces, ok := yamldata.AsSequence(m["faces"])
+	if !ok {
+		err = os.NewError("Faces must be a sequence")
+		return
 	}
 
 	mesh := New(len(faces), false)

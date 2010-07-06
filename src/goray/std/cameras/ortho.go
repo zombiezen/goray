@@ -14,7 +14,6 @@ import (
 	"goray/core/ray"
 	"goray/core/vector"
 	yamldata "yaml/data"
-	"yaml/parser"
 )
 
 /* A simple orthographic camera */
@@ -63,13 +62,7 @@ func (c *orthoCam) Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool) 
 	return 0.0, false
 }
 
-func Construct(n parser.Node) (data interface{}, err os.Error) {
-	node, ok := n.(*parser.Mapping)
-	if !ok {
-		err = os.NewError("Ortho node must be a mapping")
-		return
-	}
-	m := node.Map()
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	// Obtain position, look, and up
 	pos, posOk := m["position"].(vector.Vector3D)
 	look, lookOk := m["look"].(vector.Vector3D)

@@ -22,16 +22,27 @@ import (
 	"yaml/parser"
 )
 
+type MapConstruct func(yamldata.Map) (interface{}, os.Error)
+
+func (f MapConstruct) Construct(n parser.Node) (data interface{}, err os.Error) {
+	if node, ok := n.(*parser.Mapping); ok {
+		return f(node.Map())
+	}
+
+	err = os.NewError("Constructor requires a mapping")
+	return
+}
+
 var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	Prefix + "rgb":  yamldata.ConstructorFunc(constructRGB),
 	Prefix + "rgba": yamldata.ConstructorFunc(constructRGBA),
 	Prefix + "vec":  yamldata.ConstructorFunc(constructVector),
 
-	StdPrefix + "cameras/ortho":           yamldata.ConstructorFunc(orthocam.Construct),
-	StdPrefix + "integrators/directlight": yamldata.ConstructorFunc(directlight.Construct),
-	StdPrefix + "lights/point":            yamldata.ConstructorFunc(pointlight.Construct),
-	StdPrefix + "materials/debug":         yamldata.ConstructorFunc(debugmaterial.Construct),
-	StdPrefix + "objects/mesh":            yamldata.ConstructorFunc(mesh.Construct),
+	StdPrefix + "cameras/ortho":           MapConstruct(orthocam.Construct),
+	StdPrefix + "integrators/directlight": MapConstruct(directlight.Construct),
+	StdPrefix + "lights/point":            MapConstruct(pointlight.Construct),
+	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),
+	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
 }
 
 func floatSequence(n parser.Node) (data []float, ok bool) {

@@ -14,7 +14,7 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
-	"yaml/parser"
+	yamldata "yaml/data"
 )
 
 type debugMaterial struct {
@@ -60,19 +60,8 @@ func (mat *debugMaterial) GetFlags() material.BSDF {
 	return material.BSDFDiffuse
 }
 
-func Construct(n parser.Node) (data interface{}, err os.Error) {
-	m, ok := n.(*parser.Mapping)
-	if !ok {
-		err = os.NewError("Debug material value must be a mapping")
-		return
-	}
-	
-	c, ok := m.Get("color")
-	if !ok {
-		err = os.NewError("Debug material requires color key")
-		return
-	}
-	col, ok := c.Data().(color.Color)
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	col, ok := m["color"].(color.Color)
 	if !ok {
 		err = os.NewError("Color must be an RGB")
 		return
