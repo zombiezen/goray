@@ -71,12 +71,12 @@ func AsInt(data interface{}) (i int64, ok bool) {
 }
 
 func AsSequence(data interface{}) (seq Sequence, ok bool) {
-	seq, ok = data.(Sequence)
+	seq, ok = data.([]interface{})
 	return
 }
 
 func AsMap(data interface{}) (m Map, ok bool) {
-	m, ok = data.(Map)
+	m, ok = data.(map[interface{}]interface{})
 	return
 }
 
