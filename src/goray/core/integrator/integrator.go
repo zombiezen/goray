@@ -124,3 +124,40 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 	}()
 	return ch
 }
+
+/* WorkerIntegrate integrates an image using a set number of jobs. */
+func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
+	const numWorkers = 2
+	cam := s.GetCamera()
+	w, h := cam.ResolutionX(), cam.ResolutionY()
+	if h < numWorkers {
+		return SimpleIntegrate(s, in, log)
+	}
+
+	ch := make(chan render.Fragment, 100)
+	go func() {
+		defer close(ch)
+		// Set up end signals
+		signals := make([]chan bool, numWorkers)
+		for i, _ := range signals {
+			signals[i] = make(chan bool)
+		}
+		// Start workers
+		rowsPerWorker := h / numWorkers
+		for i := 0; i < numWorkers; i++ {
+			go func(baseY int, finish chan<- bool) {
+				for y := 0; y < baseY+rowsPerWorker; y++ {
+					for x := 0; x < w; x++ {
+						ch <- RenderPixel(s, in, x, y)
+					}
+				}
+				finish <- true
+			}(i*rowsPerWorker, signals[i])
+		}
+		// Join goroutines
+		for _, sig := range signals {
+			<-sig
+		}
+	}()
+	return ch
+}
