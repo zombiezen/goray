@@ -11,6 +11,9 @@ import (
 	"reflect"
 )
 
+type Sequence []interface{}
+type Map map[interface{}]interface{}
+
 func AsBool(data interface{}) (b bool, ok bool) {
 	b, ok = data.(bool)
 	return
@@ -67,12 +70,42 @@ func AsInt(data interface{}) (i int64, ok bool) {
 	return
 }
 
-func AsSequence(data interface{}) (seq []interface{}, ok bool) {
-	seq, ok = data.([]interface{})
+func AsSequence(data interface{}) (seq Sequence, ok bool) {
+	seq, ok = data.(Sequence)
 	return
 }
 
-func AsMap(data interface{}) (m map[interface{}]interface{}, ok bool) {
-	m, ok = data.(map[interface{}]interface{})
+func AsMap(data interface{}) (m Map, ok bool) {
+	m, ok = data.(Map)
+	return
+}
+
+// HasKeys returns whether a given map contains all of the keys given.
+func (m Map) HasKeys(keys ...interface{}) bool {
+	for _, k := range keys {
+		if _, found := m[k]; !found {
+			return false
+		}
+	}
+	return true
+}
+
+// CopyMap creates a shallow copy of a map.
+func (m Map) Copy() (clone Map) {
+	clone = make(Map, len(m))
+	for k, v := range m {
+		clone[k] = v
+	}
+	return
+}
+
+// SetDefault adds a new key to a map if the key isn't already present, and
+// returns the latest value for the key.
+func (m Map) SetDefault(k, d interface{}) (v interface{}) {
+	v, ok := m[k]
+	if !ok {
+		m[k] = d
+		v = d
+	}
 	return
 }
