@@ -25,16 +25,17 @@ import (
 var Constructor yamldata.ConstructorMap
 
 func init() {
-	Constructor = make(yamldata.ConstructorMap)
-	Constructor[Prefix+"rgb"] = yamldata.ConstructorFunc(constructRGB)
-	Constructor[Prefix+"rgba"] = yamldata.ConstructorFunc(constructRGBA)
-	Constructor[Prefix+"vec"] = yamldata.ConstructorFunc(constructVector)
+	Constructor = yamldata.ConstructorMap{
+		Prefix+"rgb": yamldata.ConstructorFunc(constructRGB),
+		Prefix+"rgba": yamldata.ConstructorFunc(constructRGBA),
+		Prefix+"vec": yamldata.ConstructorFunc(constructVector),
 
-	Constructor[StdPrefix+"cameras/ortho"] = yamldata.ConstructorFunc(orthocam.Construct)
-	Constructor[StdPrefix+"integrators/directlight"] = yamldata.ConstructorFunc(directlight.Construct)
-	Constructor[StdPrefix+"lights/point"] = yamldata.ConstructorFunc(pointlight.Construct)
-	Constructor[StdPrefix+"materials/debug"] = yamldata.ConstructorFunc(debugmaterial.Construct)
-	Constructor[StdPrefix+"objects/mesh"] = yamldata.ConstructorFunc(mesh.Construct)
+		StdPrefix+"cameras/ortho": yamldata.ConstructorFunc(orthocam.Construct),
+		StdPrefix+"integrators/directlight": yamldata.ConstructorFunc(directlight.Construct),
+		StdPrefix+"lights/point": yamldata.ConstructorFunc(pointlight.Construct),
+		StdPrefix+"materials/debug": yamldata.ConstructorFunc(debugmaterial.Construct),
+		StdPrefix+"objects/mesh": yamldata.ConstructorFunc(mesh.Construct),
+	}
 }
 
 func floatSequence(n parser.Node) (data []float, ok bool) {
