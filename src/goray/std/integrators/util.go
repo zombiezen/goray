@@ -33,32 +33,38 @@ type colorFunc func(int) color.Color
 	colorSum returns the sum of all of the colors returned by the function.
 
 	The function given is called with [0, n) and it should return a color.
-	These calls happen concurrently and then the result of each function call
-	is summed to get the final return value.
+	If concurrent is true, then these calls happen concurrently.  The result of
+	each function call is summed to get the final return value.
 */
-func colorSum(n int, f colorFunc) (col color.Color) {
-	// Set up channels
-	channels := make([]chan color.Color, n)
-	for i, _ := range channels {
-		channels[i] = make(chan color.Color)
-	}
-	// Start sampling
-	for i := 0; i < n; i++ {
-		go func(i int) {
-			defer close(channels[i])
-			channels[i] <- f(i)
-		}(i)
-	}
-	// Collect samples
+func colorSum(n int, concurrent bool, f colorFunc) (col color.Color) {
 	col = color.Black
-	for _, ch := range channels {
-		col = color.Add(col, <-ch)
+	if concurrent {
+		// Set up channels
+		channels := make([]chan color.Color, n)
+		for i, _ := range channels {
+			channels[i] = make(chan color.Color, 1)
+		}
+		// Start sampling
+		for i := 0; i < n; i++ {
+			go func(i int) {
+				defer close(channels[i])
+				channels[i] <- f(i)
+			}(i)
+		}
+		// Collect samples
+		for _, ch := range channels {
+			col = color.Add(col, <-ch)
+		}
+	} else {
+		for i := 0; i < n; i++ {
+			col = color.Add(col, f(i))
+		}
 	}
 	return
 }
 
 func sample(n int, f colorFunc) color.Color {
-	return color.ScalarDiv(colorSum(n, f), float(n))
+	return color.ScalarDiv(colorSum(n, true, f), float(n))
 }
 
 func halSeq(n int, base, start uint) (seq []float) {
@@ -75,7 +81,7 @@ func halSeq(n int, base, start uint) (seq []float) {
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
-	return colorSum(len(lights), func(i int) (col color.Color) {
+	return colorSum(len(lights), true, func(i int) (col color.Color) {
 		switch l := lights[i].(type) {
 		case light.DiracLight:
 			// Light with delta distribution
