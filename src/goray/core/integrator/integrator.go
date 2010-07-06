@@ -85,7 +85,7 @@ func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 
 /* BlockIntegrate integrates an image in small batches. */
 func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
-	const numWorkers = 16
+	const numWorkers = 8
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
 	ch := make(chan render.Fragment, numWorkers*2)
@@ -94,7 +94,7 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 		// Set up end signals
 		signals := make([]chan bool, numWorkers)
 		for i, _ := range signals {
-			signals[i] = make(chan bool)
+			signals[i] = make(chan bool, 1)
 		}
 		// Calculate the number of batches needed
 		batchCount, extras := w*h/numWorkers, w*h%numWorkers
