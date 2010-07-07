@@ -72,7 +72,7 @@ func main() {
 	//width := flag.Int("w", 100, "the output width")
 	//height := flag.Int("h", 100, "the output height")
 	debug := flag.Int("d", 0, "set debug verbosity level")
-	showVersion := flag.Bool("v", false, "display the version")
+	showVersion := flag.Bool("version", false, "display the version")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
 
 	flag.Usage = printInstructions
