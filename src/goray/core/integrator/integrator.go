@@ -9,6 +9,7 @@
 package integrator
 
 import (
+	"runtime"
 	"goray/logging"
 	"goray/core/color"
 	"goray/core/ray"
@@ -46,7 +47,7 @@ func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Imag
 	s.Update()
 	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
 	i.Preprocess(s)
-	ch := BlockIntegrate(s, i, log)
+	ch := WorkerIntegrate(s, i, log)
 	img.Acquire(ch)
 	return
 }
@@ -146,9 +147,10 @@ func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 		rowsPerWorker := h / numWorkers
 		for i := 0; i < numWorkers; i++ {
 			go func(baseY int, finish chan<- bool) {
-				for y := 0; y < baseY+rowsPerWorker; y++ {
+				for y := baseY; y < baseY+rowsPerWorker; y++ {
 					for x := 0; x < w; x++ {
 						ch <- RenderPixel(s, in, x, y)
+						runtime.Gosched()
 					}
 				}
 				finish <- true
