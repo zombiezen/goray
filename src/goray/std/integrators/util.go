@@ -81,7 +81,7 @@ func halSeq(n int, base, start uint) (seq []float) {
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
-	return colorSum(len(lights), true, func(i int) (col color.Color) {
+	return colorSum(len(lights), false, func(i int) (col color.Color) {
 		switch l := lights[i].(type) {
 		case light.DiracLight:
 			// Light with delta distribution
