@@ -4,6 +4,7 @@ Import('env')
 
 packages = [
 	env.Go('cameras/ortho'),
+	env.Go('cameras/perspective'),
     env.Go('integrators/directlight'),
     env.Go('integrators/trivial'),
     env.Go('integrators/util'),

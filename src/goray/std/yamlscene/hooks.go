@@ -13,6 +13,7 @@ import (
 	"goray/core/vector"
 
 	orthocam "goray/std/cameras/ortho"
+	perspectivecam "goray/std/cameras/perspective"
 	directlight "goray/std/integrators/directlight"
 	pointlight "goray/std/lights/point"
 	debugmaterial "goray/std/materials/debug"
@@ -39,6 +40,7 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	Prefix + "vec":  yamldata.ConstructorFunc(constructVector),
 
 	StdPrefix + "cameras/ortho":           MapConstruct(orthocam.Construct),
+	StdPrefix + "cameras/perspective":     MapConstruct(perspectivecam.Construct),
 	StdPrefix + "integrators/directlight": MapConstruct(directlight.Construct),
 	StdPrefix + "lights/point":            MapConstruct(pointlight.Construct),
 	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),

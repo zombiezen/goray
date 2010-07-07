@@ -47,14 +47,13 @@ objects:
 #   -  !std!objects/sphere
 #      center: [1.0, 0.0, 0.0]
 #      radius: 0.25
-camera: !std!cameras/ortho
+camera: !std!cameras/perspective
    position: !goray!vec [5.0, 5.0, 5.0]
    look: !goray!vec [0.0, 0.0, 0.0]
    up: !goray!vec [5.0, 6.0, 5.0]
    width: 100
    height: 100
-   aspect: 1.0
-   scale: 3.0
+   focalDistance: 4.0
 lights:
    -  !std!lights/point
       position: !goray!vec [10.0, 0.0, 0.0]

@@ -1482,14 +1482,13 @@ objects:
    - {vertices: [3, 47, 45], material: *mat}
    - {vertices: [46, 0, 2], material: *mat}
    - {vertices: [46, 2, 44], material: *mat}
-camera: !std!cameras/ortho
+camera: !std!cameras/perspective
   position: !goray!vec [0,0,5]
   look: !goray!vec [0,0,0]
   up: !goray!vec [0,1,5]
   width: 512
   height: 512
-  aspect: 1.0
-  scale: 3.0
+  focalDistance: 2.0
 lights:
  - !std!lights/point
    position: !goray!vec [0,10,0]
