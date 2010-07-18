@@ -5,6 +5,11 @@
 //	Created by Ross Light on 2010-06-24.
 //
 
+/*
+	The scanner package is responsible for parsing a YAML document and
+	transforming it into a sequence of events.  This corresponds to the parsing
+	stage in the YAML 1.2 specification.
+*/
 package scanner
 
 import (
@@ -23,6 +28,7 @@ type simpleKey struct {
 	TokenNumber uint
 }
 
+// A Scanner generates a sequence of lexical tokens from a reader containing YAML data.
 type Scanner struct {
 	reader      *reader
 	tokenQueue  *list.List
@@ -39,6 +45,7 @@ type Scanner struct {
 	flowLevel uint
 }
 
+// New creates a new Scanner from a reader.
 func New(r io.Reader) (s *Scanner) {
 	s = new(Scanner)
 	s.reader = newReader(r)
@@ -55,6 +62,8 @@ func New(r io.Reader) (s *Scanner) {
 // Scanner has to do some look-ahead to do its job.
 func (s *Scanner) GetPosition() token.Position { return s.reader.Pos }
 
+// Scan returns the next token in the stream.  If the stream has already ended,
+// then this method will return nil, nil.
 func (s *Scanner) Scan() (result Token, err os.Error) {
 	if s.tokenQueue.Len() == 0 && s.ended {
 		return
@@ -69,6 +78,8 @@ func (s *Scanner) Scan() (result Token, err os.Error) {
 	return
 }
 
+// prepare ensures that there is a token to return.  This will look ahead a few
+// tokens in some cases to ensure that the tokens are logical.
 func (s *Scanner) prepare() (err os.Error) {
 	for {
 		needMore := false
@@ -99,6 +110,7 @@ func (s *Scanner) prepare() (err os.Error) {
 	return nil
 }
 
+// fetch adds the next token in the stream to the queue.
 func (s *Scanner) fetch() (err os.Error) {
 	if !s.started {
 		s.streamStart()

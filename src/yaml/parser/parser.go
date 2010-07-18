@@ -5,6 +5,12 @@
 //	Created by Ross Light on 2010-07-02.
 //
 
+/*
+	The parser package takes a sequence of tokens and transforms it into a
+	representation graph (and optionally into native data structures).  This
+	corresponds to the composing and constructing stages in the YAML 1.2
+	specification.
+*/
 package parser
 
 import (
@@ -15,16 +21,19 @@ import (
 	"yaml/token"
 )
 
+// A Schema determines the tag for a node without an explicit tag.
 type Schema interface {
 	Resolve(Node) (tag string, err os.Error)
 }
 
+// A Constructor converts a Node into a Go data structure.
 type Constructor interface {
 	Construct(Node) (data interface{}, err os.Error)
 }
 
 const DefaultPrefix = "tag:yaml.org,2002:"
 
+// A Parser transforms a YAML stream into data structures.
 type Parser struct {
 	scanner     *scanner.Scanner
 	scanQueue   *list.List
@@ -35,10 +44,12 @@ type Parser struct {
 	constructor Constructor
 }
 
+// New creates a new parser that reads from the given reader.
 func New(r io.Reader, s Schema, c Constructor) *Parser {
 	return NewWithScanner(scanner.New(r), s, c)
 }
 
+// NewWithScanner creates a new parser that reads from an existing scanner.
 func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *Parser) {
 	p = new(Parser)
 	p.scanner = scan
@@ -48,6 +59,7 @@ func NewWithScanner(scan *scanner.Scanner, schema Schema, con Constructor) (p *P
 	return p
 }
 
+// reset reverts document-specific variables to their initial state.
 func (parser *Parser) reset() {
 	parser.tagPrefixes = make(map[string]string)
 	parser.tagPrefixes["!!"] = DefaultPrefix
@@ -81,6 +93,7 @@ func (parser *Parser) unscan(tok scanner.Token) {
 	parser.scanQueue.PushFront(tok)
 }
 
+// Parse returns all of the documents in the stream.
 func (parser *Parser) Parse() (docs []*Document, err os.Error) {
 	docs = make([]*Document, 0, 1)
 
@@ -126,6 +139,7 @@ docLoop:
 	return
 }
 
+// ParseDocument returns the next document in the stream.
 func (parser *Parser) ParseDocument() (doc *Document, err os.Error) {
 	if parser.doc != nil {
 		err = os.NewError("ParseDocument called in the middle of parsing another document")

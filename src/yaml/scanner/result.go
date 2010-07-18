@@ -12,6 +12,7 @@ import (
 	"yaml/token"
 )
 
+// Token holds data for a single lexical unit in a YAML document.
 type Token interface {
 	GetKind() token.Token
 	GetStart() token.Position
@@ -19,6 +20,7 @@ type Token interface {
 	String() string
 }
 
+// BasicToken holds the essential information for a Token.
 type BasicToken struct {
 	Kind       token.Token
 	Start, End token.Position
@@ -40,6 +42,7 @@ type ValueToken struct {
 
 func (t ValueToken) String() string { return t.Value }
 
+// TagToken holds information for a token of TAG type (i.e. a tag property).
 type TagToken struct {
 	BasicToken
 	Handle string
@@ -48,7 +51,7 @@ type TagToken struct {
 
 func (t TagToken) String() string { return t.Handle + t.Suffix }
 
-// Type of scalar
+// Scalar styles
 const (
 	AnyScalarStyle = iota
 	PlainScalarStyle
@@ -58,11 +61,13 @@ const (
 	FoldedScalarStyle
 )
 
+// A ScalarToken holds a value and the style as it appeared in the YAML document.
 type ScalarToken struct {
 	ValueToken
 	Style int
 }
 
+// VersionDirective stores a %YAML directive.
 type VersionDirective struct {
 	BasicToken
 	Major, Minor int
@@ -72,6 +77,7 @@ func (vd VersionDirective) String() string {
 	return fmt.Sprintf("%%YAML %d.%d", vd.Major, vd.Minor)
 }
 
+// TagDirective stores a %TAG directive.
 type TagDirective struct {
 	BasicToken
 	Handle string

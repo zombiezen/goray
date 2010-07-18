@@ -5,12 +5,16 @@
 //	Created by Ross Light on 2010-06-24.
 //
 
+// The token package contains constants for YAML token types.
 package token
 
 import "fmt"
 
+// Token holds the type of a token.
+type Token int
+
 const (
-	NO_TOKEN = iota
+	NO_TOKEN Token = iota
 
 	STREAM_START
 	STREAM_END
@@ -40,8 +44,7 @@ const (
 	SCALAR
 )
 
-type Token int
-
+// String returns the constant name for the token.
 func (t Token) String() string {
 	switch t {
 	case NO_TOKEN:
@@ -92,12 +95,14 @@ func (t Token) String() string {
 	return fmt.Sprintf("Token(%d)", int(t))
 }
 
+// A Position refers to a location in a YAML document.
 type Position struct {
-	Index  int
-	Line   int
-	Column int
+	Index  int // Index is a 0-based offset from the start of the file.
+	Line   int // Line is a 1-based line count.
+	Column int // Column is a 1-based column number.  After a newline, the Column will be 1.
 }
 
+// String returns a user-friendly representation of a position.
 func (pos Position) String() string {
 	return fmt.Sprintf("%d:%d", pos.Line, pos.Column)
 }

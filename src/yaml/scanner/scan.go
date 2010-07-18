@@ -14,6 +14,7 @@ import (
 	"yaml/token"
 )
 
+// scanToNextToken discards any non-token characters from the reader.
 func (s *Scanner) scanToNextToken() (err os.Error) {
 	for {
 		// Allow the BOM mark to start a line

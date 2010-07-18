@@ -13,6 +13,7 @@ import (
 	"yaml/parser"
 )
 
+// Canonical YAML tags
 const (
 	StringTag   = parser.DefaultPrefix + "str"
 	SequenceTag = parser.DefaultPrefix + "seq"
@@ -24,12 +25,15 @@ const (
 	FloatTag = parser.DefaultPrefix + "float"
 )
 
+// A Schema determines the tag for a node without an explicit tag.
 type Schema parser.Schema
 
+// SchemaFunc is a function type that fulfills the Schema interface.
 type SchemaFunc func(parser.Node) (string, os.Error)
 
 func (f SchemaFunc) Resolve(n parser.Node) (string, os.Error) { return f(n) }
 
+// Schemas from the YAML 1.2 specification
 var (
 	FailsafeSchema Schema = SchemaFunc(failsafeSchema)
 	CoreSchema     = SchemaFunc(coreSchema)

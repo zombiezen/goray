@@ -14,24 +14,15 @@ import (
 	"yaml/parser"
 )
 
-func init() {
-	m := make(ConstructorMap)
-	m[StringTag] = ConstructorFunc(constructStr)
-	m[SequenceTag] = ConstructorFunc(constructSeq)
-	m[MappingTag] = ConstructorFunc(constructMap)
-	m[NullTag] = ConstructorFunc(constructNull)
-	m[BoolTag] = ConstructorFunc(constructBool)
-	m[IntTag] = ConstructorFunc(constructInt)
-	m[FloatTag] = ConstructorFunc(constructFloat)
-	DefaultConstructor = m
-}
-
+// A Constructor converts a Node into a Go data structure.
 type Constructor parser.Constructor
 
+// ConstructorFunc is a function that implements the Constructor interface.
 type ConstructorFunc func(parser.Node) (interface{}, os.Error)
 
 func (f ConstructorFunc) Construct(n parser.Node) (interface{}, os.Error) { return f(n) }
 
+// ConstructorMap uses constructors associated with string tags to construct a value.
 type ConstructorMap map[string]Constructor
 
 func (m ConstructorMap) Construct(n parser.Node) (data interface{}, err os.Error) {
@@ -42,7 +33,16 @@ func (m ConstructorMap) Construct(n parser.Node) (data interface{}, err os.Error
 	return
 }
 
-var DefaultConstructor Constructor
+// DefaultConstructor constructs all of the core data types.
+var DefaultConstructor Constructor = ConstructorMap{
+	StringTag:   ConstructorFunc(constructStr),
+	SequenceTag: ConstructorFunc(constructSeq),
+	MappingTag:  ConstructorFunc(constructMap),
+	NullTag:     ConstructorFunc(constructNull),
+	BoolTag:     ConstructorFunc(constructBool),
+	IntTag:      ConstructorFunc(constructInt),
+	FloatTag:    ConstructorFunc(constructFloat),
+}
 
 func constructStr(n parser.Node) (data interface{}, err os.Error) {
 	node, ok := n.(*parser.Scalar)

@@ -14,13 +14,15 @@ import (
 	"yaml/token"
 )
 
+// reader is an arbitrarily buffered reader.
 type reader struct {
-	*bytes.Buffer
+	Buffer *bytes.Buffer
 	Reader io.Reader
 	Pos    token.Position
 	lastCR bool
 }
 
+// newReader creates a new reader.
 func newReader(r io.Reader) *reader {
 	initPos := token.Position{
 		Index:  0,
@@ -35,6 +37,8 @@ func newReader(r io.Reader) *reader {
 	}
 }
 
+// updatePos updates the Pos field of the reader.  The data passed into the
+// method is what was most recently read.
 func (r *reader) updatePos(data []byte) {
 	r.Pos.Index += len(data)
 	// If the last character from the previous update was a CR and the first
@@ -68,6 +72,9 @@ func (r *reader) updatePos(data []byte) {
 	}
 }
 
+// Cache reads characters into the buffer until the buffer contains n
+// characters, or an error occurs, whichever comes first.  An EOF will not
+// return an error; the cache will simply contain less characters.
 func (r *reader) Cache(n int) (err os.Error) {
 	// Do we already have enough buffered?
 	if r.Len() >= n {
@@ -75,10 +82,12 @@ func (r *reader) Cache(n int) (err os.Error) {
 	}
 	// Read more bytes
 	fillSize := int64(n - r.Len())
-	_, err = io.Copyn(r, r.Reader, fillSize)
+	_, err = io.Copyn(r.Buffer, r.Reader, fillSize)
 	return
 }
 
+// CacheFull is the same as Cache, except it will return an io.ErrUnexpectedEOF
+// if an EOF is discovered.
 func (r *reader) CacheFull(n int) (err os.Error) {
 	err = r.Cache(n)
 	if err == nil && r.Len() < n {
@@ -87,6 +96,8 @@ func (r *reader) CacheFull(n int) (err os.Error) {
 	return
 }
 
+// Read reads up to len(p) bytes into p.  If the buffer is not empty, then any
+// bytes from the buffer will be returned first.
 func (r *reader) Read(p []byte) (n int, err os.Error) {
 	if r.Buffer.Len() > 0 {
 		n, _ = r.Buffer.Read(p)
@@ -97,6 +108,8 @@ func (r *reader) Read(p []byte) (n int, err os.Error) {
 	return
 }
 
+// ReadByte reads a single byte.  If the buffer is not empty, then the byte
+// returned will be the buffer's first byte.
 func (r *reader) ReadByte() (c byte, err os.Error) {
 	if err = r.CacheFull(1); err != nil {
 		if err == io.ErrUnexpectedEOF {
@@ -108,6 +121,8 @@ func (r *reader) ReadByte() (c byte, err os.Error) {
 	return
 }
 
+// ReadBreak reads a line break at the current position.  This will correctly
+// handle CRLF sequences.
 func (r *reader) ReadBreak() (bytes []byte, err os.Error) {
 	if err := r.Cache(2); err != nil || r.Len() == 0 {
 		return
@@ -126,12 +141,23 @@ func (r *reader) ReadBreak() (bytes []byte, err os.Error) {
 	return
 }
 
+// Next returns a slice containing the next n bytes in the buffer.  If n is
+// greater than the size of the buffer, the entire buffer's contents will be
+// returned.
 func (r *reader) Next(n int) (bytes []byte) {
 	bytes = r.Buffer.Next(n)
 	r.updatePos(bytes)
 	return
 }
 
+// Bytes returns a slice of the contents of the buffer.
+func (r *reader) Bytes() []byte { return r.Buffer.Bytes() }
+// Len returns the number of bytes in the buffer.
+func (r *reader) Len() int { return r.Buffer.Len() }
+
+// Check returns whether the buffer contains the given substring at i.  If the
+// buffer is not big enough to possibly contain the substring, Check returns
+// false.
 func (r *reader) Check(i int, st string) bool {
 	if r.Len() < i+len(st) {
 		return false
@@ -139,6 +165,8 @@ func (r *reader) Check(i int, st string) bool {
 	return st == string(r.Bytes()[i:i+len(st)])
 }
 
+// CheckAny returns whether the character at i in the buffer is any one of the
+// characters in chars.
 func (r *reader) CheckAny(i int, chars string) bool {
 	if r.Len() <= i {
 		return false
@@ -152,6 +180,7 @@ func (r *reader) CheckAny(i int, chars string) bool {
 	return false
 }
 
+// CheckBreak returns whether the character at i in the buffer is a line break.
 func (r *reader) CheckBreak(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -159,6 +188,7 @@ func (r *reader) CheckBreak(i int) bool {
 	return isBreak(r.Bytes()[i])
 }
 
+// CheckDigit returns whether the character at i in the buffer is an ASCII digit.
 func (r *reader) CheckDigit(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -166,6 +196,7 @@ func (r *reader) CheckDigit(i int) bool {
 	return isDigit(r.Bytes()[i])
 }
 
+// CheckHexDigit returns whether the character at i in the buffer is a hexadecimal digit.
 func (r *reader) CheckHexDigit(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -173,6 +204,7 @@ func (r *reader) CheckHexDigit(i int) bool {
 	return isHexDigit(r.Bytes()[i])
 }
 
+// CheckLetter returns whether the character at i in the buffer is an ASCII letter.
 func (r *reader) CheckLetter(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -180,6 +212,7 @@ func (r *reader) CheckLetter(i int) bool {
 	return isLetter(r.Bytes()[i])
 }
 
+// CheckWord returns whether the character at i in the buffer is an ASCII alphanumeric.
 func (r *reader) CheckWord(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -187,6 +220,7 @@ func (r *reader) CheckWord(i int) bool {
 	return isWordChar(r.Bytes()[i])
 }
 
+// CheckSpace returns whether the character at i in the buffer is a space or tab character.
 func (r *reader) CheckSpace(i int) bool {
 	if r.Len() <= i {
 		return false
@@ -195,7 +229,7 @@ func (r *reader) CheckSpace(i int) bool {
 }
 
 // CheckBlank returns whether the buffer ends before the given index, or if it
-// doesn't, whether that index contains whitespace.
+// doesn't, whether that index contains whitespace or a linebreak.
 func (r *reader) CheckBlank(i int) bool {
 	if r.Len() <= i {
 		return true
@@ -203,6 +237,8 @@ func (r *reader) CheckBlank(i int) bool {
 	return r.CheckSpace(i) || r.CheckBreak(i)
 }
 
+// SkipSpaces discards characters until it finds a non-whitespace character or
+// an error.
 func (r *reader) SkipSpaces() {
 	if err := r.CacheFull(1); err != nil {
 		return

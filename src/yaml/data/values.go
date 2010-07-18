@@ -5,20 +5,30 @@
 //	Created by Ross Light on 2010-07-04.
 //
 
+/*
+	The data package has various ways to work with generic data.  It was
+	designed for YAML data, but many of the same functions are useful for
+	generic mappings and such.
+*/
 package data
 
 import (
 	"reflect"
 )
 
+// Sequence is an ordered collection of values.
 type Sequence []interface{}
+
+// Map is an unordered collection of values associated with key values.
 type Map map[interface{}]interface{}
 
+// AsBool converts an untyped value to a boolean.
 func AsBool(data interface{}) (b bool, ok bool) {
 	b, ok = data.(bool)
 	return
 }
 
+// AsFloat converts an untyped value to a floating-point number.
 func AsFloat(data interface{}) (f float64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
@@ -36,6 +46,7 @@ func AsFloat(data interface{}) (f float64, ok bool) {
 	return
 }
 
+// AsUint converts an untyped value to an unsigned integer.
 func AsUint(data interface{}) (i uint64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
@@ -55,6 +66,7 @@ func AsUint(data interface{}) (i uint64, ok bool) {
 	return
 }
 
+// AsInt converts an untyped value to a signed integer.
 func AsInt(data interface{}) (i int64, ok bool) {
 	val := reflect.NewValue(data)
 	ok = true
@@ -70,11 +82,13 @@ func AsInt(data interface{}) (i int64, ok bool) {
 	return
 }
 
+// AsSequence converts an untyped value to a sequence of values.
 func AsSequence(data interface{}) (seq Sequence, ok bool) {
 	seq, ok = data.([]interface{})
 	return
 }
 
+// AsMap converts an untyped value to a map of values.
 func AsMap(data interface{}) (m Map, ok bool) {
 	m, ok = data.(map[interface{}]interface{})
 	return
