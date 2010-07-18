@@ -80,7 +80,7 @@ func (s *Scanner) prepare() (err os.Error) {
 			if err = s.removeStaleSimpleKeys(); err != nil {
 				return
 			}
-			for v := range s.simpleKeyStack.Iter() {
+			for _, v := range s.simpleKeyStack {
 				skey := v.(*simpleKey)
 				if skey.Possible && skey.TokenNumber == s.parsedCount {
 					needMore = true
@@ -188,7 +188,7 @@ func (s *Scanner) insertToken(num uint, t Token) {
 }
 
 func (s *Scanner) removeStaleSimpleKeys() (err os.Error) {
-	for val := range s.simpleKeyStack.Iter() {
+	for _, val := range s.simpleKeyStack {
 		key := val.(*simpleKey)
 
 		// A simple key is:

@@ -104,8 +104,7 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 /* GetLights returns all of the lights added to the scene. */
 func (s *Scene) GetLights() []light.Light {
 	temp := make([]light.Light, s.lights.Len())
-	it := s.lights.Iter()
-	for i, val := 0, <-it; !closed(it); i, val = i+1, <-it {
+	for i, val := range s.lights {
 		temp[i] = val.(light.Light)
 	}
 	return temp

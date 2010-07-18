@@ -214,8 +214,7 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int
 	}
 
 	for axis := 0; axis < 3; axis++ {
-		edges := new(container.Vector)
-		edges.Resize(0, len(vals)*2)
+		edges := make(container.Vector, 0, len(vals)*2)
 		for _, v := range vals {
 			min, max := state.GetDimension(v, axis)
 			if fmath.Eq(min, max) {
@@ -225,13 +224,13 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int
 				edges.Push(boundEdge{max, upperB})
 			}
 		}
-		sort.Sort(edges)
+		sort.Sort(&edges)
 
 		capArea := d[(axis+1)%3] * d[(axis+2)%3]
 		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
 
 		nBelow, nAbove := 0, len(vals)
-		for tmp := range edges.Iter() {
+		for _, tmp := range edges {
 			e := tmp.(boundEdge)
 			if e.boundEnd == upperB {
 				nAbove--
