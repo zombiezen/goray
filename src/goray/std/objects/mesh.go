@@ -1,14 +1,14 @@
 //
-//  goray/std/objects/mesh.go
-//  goray
+//	goray/std/objects/mesh.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-04.
+//	Created by Ross Light on 2010-06-04.
 //
 
 /*
-   The mesh package provides mesh objects constructed from triangles.
+	The mesh package provides mesh objects constructed from triangles.
 
-   The basic workflow for making a working mesh is: create the mesh, set the mesh's data, then add the triangles.
+	The basic workflow for making a working mesh is: create the mesh, set the mesh's data, then add the triangles.
 */
 package mesh
 
@@ -27,12 +27,12 @@ import (
 	yamldata "yaml/data"
 )
 
-/* UV holds a set of texture coordinates. */
+// UV holds a set of texture coordinates.
 type UV struct {
 	U, V float
 }
 
-/* A Mesh is a collection of triangles. */
+// A Mesh is a collection of triangles.
 type Mesh struct {
 	triangles []*Triangle
 	vertices  []vector.Vector3D
@@ -44,7 +44,7 @@ type Mesh struct {
 	hidden    bool
 }
 
-/* New creates an empty mesh. */
+// New creates an empty mesh.
 func New(ntris int, hasOrco bool) (mesh *Mesh) {
 	mesh = new(Mesh)
 	mesh.triangles = make([]*Triangle, 0, ntris)
@@ -72,23 +72,23 @@ func (mesh *Mesh) SetLight(l light.Light) { mesh.light = l }
 //func (mesh *Mesh) EnableSampling() bool {}
 //func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {}
 
-/*
-   SetData changes the mesh's data.
-
-   For memory efficiency, the actual data for a mesh isn't stored in the triangles; the data is
-   stored in the mesh.  The triangles simply contain indices that point to parts of the various
-   arrays kept by the mesh.  Because most meshes have connected faces, this means that each
-   vertex is stored once, instead of three times (much better!).
-
-   Both normals and uvs are optional.  If you don't want to enable per-vertex normals or
-   UV coordinates, then pass nil for the corresponding parameter.  Any triangles that don't
-   have per-vertex normals set will use the computed normal.
-*/
+// SetData changes the mesh's data.
+//
+// For memory efficiency, the actual data for a mesh isn't stored in the
+// triangles; the data is stored in the mesh.  The triangles simply contain
+// indices that point to parts of the various arrays kept by the mesh.  Because
+// most meshes have connected faces, this means that each vertex is stored once,
+// instead of three times (much better!).
+//
+// Both normals and uvs are optional.  If you don't want to enable per-vertex
+// normals or UV coordinates, then pass nil for the corresponding parameter.
+// Any triangles that don't have per-vertex normals set will use the computed
+// normal.
 func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D, uvs []UV) {
 	mesh.vertices, mesh.normals, mesh.uvs = vertices, normals, uvs
 }
 
-/* AddTriangle adds a face to the mesh. */
+// AddTriangle adds a face to the mesh.
 func (mesh *Mesh) AddTriangle(t *Triangle) {
 	if len(mesh.triangles)+1 > cap(mesh.triangles) {
 		newTris := make([]*Triangle, len(mesh.triangles), cap(mesh.triangles)*2)
@@ -100,7 +100,7 @@ func (mesh *Mesh) AddTriangle(t *Triangle) {
 	mesh.triangles[t.index] = t
 }
 
-/* Triangle stores information for a single triangle. */
+// Triangle stores information for a single triangle.
 type Triangle struct {
 	va, vb, vc    int // va, vb, and vc are the vertex indices in the mesh's array.
 	na, nb, nc    int // na, nb, and nc are the normal indices in the mesh's array (if per-vertex normals are enabled).
@@ -111,7 +111,7 @@ type Triangle struct {
 	mesh          *Mesh
 }
 
-/* NewTriangle creates a new triangle. */
+// NewTriangle creates a new triangle.
 func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
 	tri = &Triangle{
 		va: a, vb: b, vc: c,

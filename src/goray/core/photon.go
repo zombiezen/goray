@@ -1,8 +1,8 @@
 //
-//  goray/core/photon.go
-//  goray
+//	goray/core/photon.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-06
+//	Created by Ross Light on 2010-06-06
 //
 
 package photon

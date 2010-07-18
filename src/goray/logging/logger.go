@@ -1,8 +1,8 @@
 //
-//  goray/logging/logger.go
-//  goray
+//	goray/logging/logger.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-07.
+//	Created by Ross Light on 2010-06-07.
 //
 
 /*
@@ -27,71 +27,69 @@ import (
 	"os"
 )
 
-/*
-   MainLog is the global logger object for the program.
-   You do not have to use it if you don't want to.
-*/
+// MainLog is the global logger object for the program.
+// You do not have to use it if you don't want to.
 var MainLog = NewLogger()
 
-/* Logger dispatches records to a set of handlers. */
+// Logger dispatches records to a set of handlers.
 type Logger struct {
 	handlers vector.Vector
 	ch       chan Record
 }
 
-/* NewLogger creates a Logger object without any handlers attached. */
+// NewLogger creates a Logger object without any handlers attached.
 func NewLogger() (log *Logger) {
 	return new(Logger)
 }
 
-/* AddHandler adds a new handler to the logger. */
+// AddHandler adds a new handler to the logger.
 func (log *Logger) AddHandler(handler Handler) {
 	log.handlers.Push(handler)
 }
 
-/* Log creates a new BasicRecord and sends it to the handlers. */
+// Log creates a new BasicRecord and sends it to the handlers.
 func (log *Logger) Log(level Level, message string) {
 	shortcut(level, log, "%s", message)
 }
 
-/* Logf creates a new BasicRecord from a Printf format string and sends it to the handlers. */
+// Logf creates a new BasicRecord from a Printf format string and sends it to the handlers.
 func (log *Logger) Logf(level Level, format string, args ...interface{}) {
 	shortcut(level, log, format, args)
 }
 
-/* VerboseDebug is a shortcut for Logf(VerboseDebugLevel). */
+// VerboseDebug is a shortcut for Logf(VerboseDebugLevel).
 func (log *Logger) VerboseDebug(format string, args ...interface{}) {
 	VerboseDebug(log, format, args)
 }
-/* Debug is a shortcut for Logf(DebugLevel). */
+// Debug is a shortcut for Logf(DebugLevel).
 func (log *Logger) Debug(format string, args ...interface{}) {
 	Debug(log, format, args)
 }
-/* Info is a shortcut for Logf(InfoLevel). */
+// Info is a shortcut for Logf(InfoLevel).
 func (log *Logger) Info(format string, args ...interface{}) {
 	Info(log, format, args)
 }
-/* Warning is a shortcut for Logf(WarningLevel). */
+// Warning is a shortcut for Logf(WarningLevel).
 func (log *Logger) Warning(format string, args ...interface{}) {
 	Warning(log, format, args)
 }
-/* Error is a shortcut for Logf(ErrorLevel). */
+// Error is a shortcut for Logf(ErrorLevel).
 func (log *Logger) Error(format string, args ...interface{}) {
 	Error(log, format, args)
 }
-/* Critical is a shortcut for Logf(CriticalLevel). */
+// Critical is a shortcut for Logf(CriticalLevel).
 func (log *Logger) Critical(format string, args ...interface{}) {
 	Critical(log, format, args)
 }
 
-/* Handle dispatches a record to the logger's handlers. */
+// Handle dispatches a record to the logger's handlers.
 func (log *Logger) Handle(rec Record) {
 	log.handlers.Do(func(h interface{}) {
 		h.(Handler).Handle(rec)
 	})
 }
 
-/* Close tells all of the logger's handlers to close. */
+// Close tells all of the logger's handlers to close.
 func (log *Logger) Close() os.Error {
 	log.handlers.Do(func(h interface{}) {
 		closer, ok := h.(io.Closer)

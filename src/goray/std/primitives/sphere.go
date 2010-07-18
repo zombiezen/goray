@@ -1,11 +1,11 @@
 //
-//  goray/std/primitives/sphere.go
-//  goray
+//	goray/std/primitives/sphere.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-05.
+//	Created by Ross Light on 2010-06-05.
 //
 
-/* The sphere package provides a spherical primitive */
+// The sphere package provides a spherical primitive.
 package sphere
 
 import (
@@ -25,7 +25,7 @@ type sphere struct {
 	material material.Material
 }
 
-/* New creates a spherical primitive. */
+// New creates a spherical primitive.
 func New(center vector.Vector3D, radius float, material material.Material) primitive.Primitive {
 	return &sphere{center, radius, material}
 }

@@ -1,8 +1,8 @@
 //
-//  goray/std/integrators/directlight.go
-//  goray
+//	goray/std/integrators/directlight.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-06.
+//	Created by Ross Light on 2010-06-06.
 //
 
 package directlight

@@ -1,8 +1,8 @@
 //
-//  goray/core/color/ops.go
-//  goray
+//	goray/core/color/ops.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-23.
+//	Created by Ross Light on 2010-06-23.
 //
 
 package color
@@ -11,17 +11,17 @@ import (
 	"goray/fmath"
 )
 
-/* IsBlack determines whether a color is absolute black. */
+// IsBlack determines whether a color is absolute black.
 func IsBlack(c Color) bool {
 	return c.GetR() == 0 && c.GetG() == 0 && c.GetB() == 0
 }
 
-/* GetEnergy calculates the overall brightness of a color. */
+// GetEnergy calculates the overall brightness of a color.
 func GetEnergy(c Color) float {
 	return (c.GetR() + c.GetG() + c.GetB()) * 0.33333333333333
 }
 
-/* Invert computes the inverse of the color.  However, black will always be black. */
+// Invert computes the inverse of the color.  However, black will always be black.
 func Invert(c Color) Color {
 	doInvert := func(comp float) float {
 		if comp == 0.0 {
@@ -32,62 +32,62 @@ func Invert(c Color) Color {
 	return NewRGB(doInvert(c.GetR()), doInvert(c.GetG()), doInvert(c.GetB()))
 }
 
-/* Abs ensures that a color is positive. */
+// Abs ensures that a color is positive.
 func Abs(c Color) Color {
 	return NewRGB(fmath.Abs(c.GetR()), fmath.Abs(c.GetG()), fmath.Abs(c.GetB()))
 }
 
-/* Add creates a new color that is equivalent to the sum of the colors given to it, disregarding alpha information. */
+// Add creates a new color that is equivalent to the sum of the colors given to it, disregarding alpha information.
 func Add(c1, c2 Color) Color {
 	return NewRGB(c1.GetR()+c2.GetR(), c1.GetG()+c2.GetG(), c1.GetB()+c2.GetB())
 }
 
-/* AddAlpha creates a new color that is equivalent to the sum of the colors given to it. */
+// AddAlpha creates a new color that is equivalent to the sum of the colors given to it.
 func AddAlpha(c1, c2 AlphaColor) AlphaColor {
 	return NewRGBA(c1.GetR()+c2.GetR(), c1.GetG()+c2.GetG(), c1.GetB()+c2.GetB(), c1.GetA()+c2.GetA())
 }
 
-/* Sub creates a new color that is equivalent to the difference of the colors given to it, disregarding alpha information. */
+// Sub creates a new color that is equivalent to the difference of the colors given to it, disregarding alpha information.
 func Sub(c1, c2 Color) Color {
 	return NewRGB(c1.GetR()-c2.GetR(), c1.GetG()-c2.GetG(), c1.GetB()-c2.GetB())
 }
 
-/* SubAlpha creates a new color that is equivalent to the difference of the colors given to it. */
+// SubAlpha creates a new color that is equivalent to the difference of the colors given to it.
 func SubAlpha(c1, c2 AlphaColor) AlphaColor {
 	return NewRGBA(c1.GetR()-c2.GetR(), c1.GetG()-c2.GetG(), c1.GetB()-c2.GetB(), c1.GetA()-c2.GetA())
 }
 
-/* Mul creates a new color that is equivalent to the product of the colors given to it, disregarding alpha information. */
+// Mul creates a new color that is equivalent to the product of the colors given to it, disregarding alpha information.
 func Mul(c1, c2 Color) Color {
 	return NewRGB(c1.GetR()*c2.GetR(), c1.GetG()*c2.GetG(), c1.GetB()*c2.GetB())
 }
 
-/* MulAlpha creates a new color that is equivalent to the product of the colors given to it. */
+// MulAlpha creates a new color that is equivalent to the product of the colors given to it.
 func MulAlpha(c1, c2 AlphaColor) AlphaColor {
 	return NewRGBA(c1.GetR()*c2.GetR(), c1.GetG()*c2.GetG(), c1.GetB()*c2.GetB(), c1.GetA()*c2.GetA())
 }
 
-/* ScalarMul creates a new color that is equivalent to the color multiplied by a constant factor, disregarding alpha information. */
+// ScalarMul creates a new color that is equivalent to the color multiplied by a constant factor, disregarding alpha information.
 func ScalarMul(c Color, f float) Color {
 	return NewRGB(c.GetR()*f, c.GetG()*f, c.GetB()*f)
 }
 
-/* ScalarMulAlpha creates a new color that is equivalent to the color multiplied by a constant factor. */
+// ScalarMulAlpha creates a new color that is equivalent to the color multiplied by a constant factor.
 func ScalarMulAlpha(c AlphaColor, f float) AlphaColor {
 	return NewRGBA(c.GetR()*f, c.GetG()*f, c.GetB()*f, c.GetA()*f)
 }
 
-/* ScalarDiv creates a new color that is equivalent to the color divided by a constant factor, disregarding alpha information. */
+// ScalarDiv creates a new color that is equivalent to the color divided by a constant factor, disregarding alpha information.
 func ScalarDiv(c Color, f float) Color {
 	return NewRGB(c.GetR()/f, c.GetG()/f, c.GetB()/f)
 }
 
-/* ScalarDivAlpha creates a new color that is equivalent to the color divided by a constant factor. */
+// ScalarDivAlpha creates a new color that is equivalent to the color divided by a constant factor.
 func ScalarDivAlpha(c AlphaColor, f float) AlphaColor {
 	return NewRGBA(c.GetR()/f, c.GetG()/f, c.GetB()/f, c.GetA()/f)
 }
 
-/* Mix creates a new color that is the additive mix of the two colors, disregarding alpha information. */
+// Mix creates a new color that is the additive mix of the two colors, disregarding alpha information.
 func Mix(a, b Color, point float) Color {
 	if point < 0 {
 		return b
@@ -97,7 +97,7 @@ func Mix(a, b Color, point float) Color {
 	return Add(ScalarMul(a, point), ScalarMul(b, 1-point))
 }
 
-/* MixAlpha creates a new color that is the additive mix of the two colors, using alpha to influence the mixing. */
+// MixAlpha creates a new color that is the additive mix of the two colors, using alpha to influence the mixing.
 func MixAlpha(a, b AlphaColor, point float) AlphaColor {
 	if point < 0 {
 		return b

@@ -1,11 +1,11 @@
 //
-//  goray/core/surface/surface.go
-//  goray
+//	goray/core/surface/surface.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-29.
+//	Created by Ross Light on 2010-05-29.
 //
 
-/* The surface package provides structures for representing the surface of an object. */
+// The surface package provides structures for representing the surface of an object.
 package surface
 
 import (
@@ -13,7 +13,7 @@ import (
 	"goray/core/vector"
 )
 
-/* Point represents a single point on an object's surface. */
+// Point represents a single point on an object's surface.
 type Point struct {
 	// The associated material, light, 3D object, and primitive.
 	// You will have to convert these to the appropriate type, due to dependency
@@ -34,16 +34,14 @@ type Point struct {
 	SurfaceU, SurfaceV float           // Raw surface parametric coordinates; required to evaluate Vmaps
 }
 
-/*
-   Differentials computes and stores data for surface intersections for differential rays.
-   For more information, see http://www.opticalres.com/white%20papers/DifferentialRayTracing.pdf
-*/
+// Differentials computes and stores data for surface intersections for differential rays.
+// For more information, see http://www.opticalres.com/white%20papers/DifferentialRayTracing.pdf
 type Differentials struct {
 	X, Y  vector.Vector3D
 	Point Point
 }
 
-/* NewDifferentials creates a new Differentials struct. */
+// NewDifferentials creates a new Differentials struct.
 func NewDifferentials(p Point, r *ray.DifferentialRay) Differentials {
 	d := -vector.Dot(p.Normal, p.Position)
 	tx := -(vector.Dot(p.Normal, r.FromX) + d) / vector.Dot(p.Normal, r.DirX)
@@ -57,10 +55,8 @@ func NewDifferentials(p Point, r *ray.DifferentialRay) Differentials {
 	}
 }
 
-/*
-   ReflectRay computes differentials for a scattered ray.
-   For an explanation, see: http://en.wikipedia.org/wiki/Specular_reflection
-*/
+// ReflectRay computes differentials for a scattered ray.
+// For an explanation, see: http://en.wikipedia.org/wiki/Specular_reflection
 func (d Differentials) ReflectRay(in, out *ray.DifferentialRay) {
 	// Compute ray differential for specular reflection
 	out.FromX = vector.Add(d.Point.Position, d.X)
@@ -72,10 +68,8 @@ func (d Differentials) ReflectRay(in, out *ray.DifferentialRay) {
 	out.DirY = vector.Add(out.Dir(), vector.ScalarMul(incidenceY, -1), vector.ScalarMul(d.Point.Normal, 2*normDy))
 }
 
-/*
-   RefractRay computes differentials for a scattered ray.
-   For an explanation, see: http://en.wikipedia.org/wiki/Snell's_law#Vector_form
-*/
+// RefractRay computes differentials for a scattered ray.
+// For an explanation, see: http://en.wikipedia.org/wiki/Snell's_law#Vector_form
 func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float) {
 	out.FromX = vector.Add(d.Point.Position, d.X)
 	out.FromY = vector.Add(d.Point.Position, d.Y)

@@ -1,11 +1,11 @@
 //
-//  goray/core/light/light.go
-//  goray
+//	goray/core/light/light.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-23.
+//	Created by Ross Light on 2010-05-23.
 //
 
-/* The light package provides an interface for an entity that provides light. */
+// The light package provides an interface for an entity that provides light.
 package light
 
 import (
@@ -22,7 +22,7 @@ const (
 	TypeNone = 0
 )
 
-/* A light sample */
+// Sample holds data for a light sample.
 type Sample struct {
 	S1, S2  float         // 2D sample value for choosing a surface point on the light.
 	S3, S4  float         // 2D sample value for choosing an outgoing direction on the light (EmitSample)
@@ -34,43 +34,41 @@ type Sample struct {
 	Point   surface.Point // Surface point on the light source.  This may only be complete enough to call other light methods with it!
 }
 
-/* An entity that illuminates a scene. */
+// An entity that illuminates a scene.
 type Light interface {
-	/* GetFlags returns the type of light the light is. */
+	// GetFlags returns the type of light the light is.
 	GetFlags() uint
-	/* SetScene sets up a light for use with a scene. */
+	// SetScene sets up a light for use with a scene.
 	SetScene(scene interface{})
-	/* NumSamples returns the preferred number of samples for direct lighting. */
+	// NumSamples returns the preferred number of samples for direct lighting.
 	NumSamples() int
-	/* TotalEnergy returns the light's color energy emitted during a frame. */
+	// TotalEnergy returns the light's color energy emitted during a frame.
 	TotalEnergy() color.Color
-	/* EmitPhoton computes the values necessary for a photon */
+	// EmitPhoton computes the values necessary for a photon.
 	EmitPhoton(s1, s2, s3, s4 float) (color.Color, ray.Ray, float)
-	/* EmitSample creates a light emission sample.  It's more suited to bidirectional methods than EmitPhoton. */
+	// EmitSample creates a light emission sample.  It's more suited to bidirectional methods than EmitPhoton.
 	EmitSample(s *Sample) (vector.Vector3D, color.Color)
-	/* EmitPdf returns the PDFs for sampling with EmitSample. */
+	// EmitPdf returns the PDFs for sampling with EmitSample.
 	EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float)
-	/* CanIlluminate returns whether the light can illuminate a certain point. */
+	// CanIlluminate returns whether the light can illuminate a certain point.
 	CanIlluminate(pt vector.Vector3D) bool
-	/*
-		IlluminateSample samples the illumination at a given point.
-		
-		The Sample passed in will be filled with the proper sample values and
-		the ray will be the ray that casted the light.
-	*/
+	// IlluminateSample samples the illumination at a given point.
+	//
+	// The Sample passed in will be filled with the proper sample values and
+	// the ray will be the ray that casted the light.
 	IlluminateSample(sp surface.Point, wi ray.Ray, s *Sample) bool
-	/* IlluminatePdf returns the PDF for sampling with IllumSample. */
+	// IlluminatePdf returns the PDF for sampling with IllumSample.
 	IlluminatePdf(sp, spLight surface.Point) float
 }
 
 type Intersecter interface {
-	/* Intersect intersects the light source with a ray, giving back the distance, the energy, and 1/PDF. */
+	// Intersect intersects the light source with a ray, giving back the distance, the energy, and 1/PDF.
 	Intersect(r ray.Ray) (dist float, col color.Color, ipdf float, ok bool)
 }
 
 type DiracLight interface {
 	Light
 
-	/* Illuminate computes the amount of light to add to a given surface point. */
+	// Illuminate computes the amount of light to add to a given surface point.
 	Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, ok bool)
 }

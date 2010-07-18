@@ -46,15 +46,13 @@ func New(r io.Reader) (s *Scanner) {
 	return s
 }
 
-/*
-	GetPosition returns the position of the first unread byte from the
-	underlying reader.
-
-	This does not necessarily correspond to the starting position of the token
-	that will be returned next by Scan, nor does it even correspond to the
-	position in the reader (more bytes may have actually been read).  The
-	Scanner has to do some look-ahead to do its job.
-*/
+// GetPosition returns the position of the first unread byte from the
+// underlying reader.
+//
+// This does not necessarily correspond to the starting position of the token
+// that will be returned next by Scan, nor does it even correspond to the
+// position in the reader (more bytes may have actually been read).  The
+// Scanner has to do some look-ahead to do its job.
 func (s *Scanner) GetPosition() token.Position { return s.reader.Pos }
 
 func (s *Scanner) Scan() (result Token, err os.Error) {

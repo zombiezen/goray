@@ -1,21 +1,21 @@
 //
-//  goray/core/kdtree/node.go
-//  goray
+//	goray/core/kdtree/node.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-21.
+//	Created by Ross Light on 2010-06-21.
 //
 
 package kdtree
 
-/* Value is a type for the individual elements stored in the leaves of the tree. */
+// Value is a type for the individual elements stored in the leaves of the tree.
 type Value interface{}
 
-/* Node is the common interface for leaf and interior nodes. */
+// Node is the common interface for leaf and interior nodes.
 type Node interface {
 	IsLeaf() bool
 }
 
-/* Leaf is the node type that actually stores values. */
+// Leaf is the node type that actually stores values.
 type Leaf struct {
 	values []Value
 }
@@ -24,7 +24,7 @@ func newLeaf(vals []Value) *Leaf      { return &Leaf{vals} }
 func (leaf *Leaf) IsLeaf() bool       { return true }
 func (leaf *Leaf) GetValues() []Value { return leaf.values }
 
-/* Interior is represents a planar split. */
+// Interior is represents a planar split.
 type Interior struct {
 	axis        int8
 	pivot       float

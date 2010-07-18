@@ -1,8 +1,8 @@
 //
-//  goray/core/intersect/intersect.go
-//  goray
+//	goray/core/intersect/intersect.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-29.
+//	Created by Ross Light on 2010-05-29.
 //
 
 /*
@@ -24,19 +24,17 @@ import (
 	"goray/core/vector"
 )
 
-/*
-   Interface defines a type that can detect ray collisions.
-
-   For most cases, this will involve an algorithm that partitions the scene to make these operations faster.
-*/
+// Interface defines a type that can detect ray collisions.
+//
+// For most cases, this will involve an algorithm that partitions the scene to make these operations faster.
 type Interface interface {
-	/* Intersect determines the primitive that a ray collides with. */
+	// Intersect determines the primitive that a ray collides with.
 	Intersect(r ray.Ray, dist float) primitive.Collision
-	/* IsShadowed checks whether a ray collides with any primitives (for shadow-detection). */
+	// IsShadowed checks whether a ray collides with any primitives (for shadow-detection).
 	IsShadowed(r ray.Ray, dist float) bool
-	/* DoTransparentShadows computes the color of a transparent shadow after bouncing around. */
+	// DoTransparentShadows computes the color of a transparent shadow after bouncing around.
 	DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool
-	/* GetBound returns a bounding box that contains all of the primitives that the intersecter knows about. */
+	// GetBound returns a bounding box that contains all of the primitives that the intersecter knows about.
 	GetBound() *bound.Bound
 }
 
@@ -45,10 +43,8 @@ type simple struct {
 	bound *bound.Bound
 }
 
-/*
-   NewSimple creates a partitioner that doesn't split up the scene at all.
-   This should only be used for debugging code, the complexity is O(N).
-*/
+// NewSimple creates a partitioner that doesn't split up the scene at all.
+// This should only be used for debugging code, the complexity is O(N).
 func NewSimple(prims []primitive.Primitive) Interface {
 	part := &simple{prims, prims[0].GetBound()}
 	for _, p := range part.prims[1:] {

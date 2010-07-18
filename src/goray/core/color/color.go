@@ -1,16 +1,16 @@
 //
-//  goray/core/color/color.go
-//  goray
+//	goray/core/color/color.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-22.
+//	Created by Ross Light on 2010-05-22.
 //
 
 /*
-   The color package provides abstracted color.
+	The color package provides abstracted color.
 
-   This interface specifically differes from the image.Color interfaces because the render
-   uses floating point math.  Also, colors in this package are not clamped to [0, 1], they
-   are clamped to [0, Inf).
+	This interface specifically differes from the image.Color interfaces because
+	the render uses floating point math.  Also, colors in this package are not
+	clamped to [0, 1], they are clamped to [0, Inf).
 */
 package color
 
@@ -30,25 +30,25 @@ func quantizeComponent(f float) uint32 {
 	return temp
 }
 
-/* Alpha defines anything that has an alpha channel. */
+// Alpha defines anything that has an alpha channel.
 type Alpha interface {
 	GetA() float
 }
 
-/* Color defines anything that has red, green, and blue channels. */
+// Color defines anything that has red, green, and blue channels.
 type Color interface {
 	GetR() float
 	GetG() float
 	GetB() float
 }
 
-/* AlphaColor defines anything that has red, green, blue, and alpha channels. */
+// AlphaColor defines anything that has red, green, blue, and alpha channels.
 type AlphaColor interface {
 	Color
 	Alpha
 }
 
-/* Gray defines a grayscale color.  It fulfills the Color interface. */
+// Gray defines a grayscale color.  It fulfills the Color interface.
 type Gray float
 
 func (g Gray) GetR() float { return float(g) }
@@ -67,7 +67,7 @@ func (g Gray) String() string {
 	return fmt.Sprintf("Gray(%.3f)", float(g))
 }
 
-/* RGB defines a color that has red, green, and blue channels.  It fulfills the Color interface. */
+// RGB defines a color that has red, green, and blue channels.  It fulfills the Color interface.
 type RGB struct {
 	R, G, B float
 }
@@ -111,7 +111,7 @@ func (c *RGBA) Copy(src AlphaColor) {
 	c.A = src.GetA()
 }
 
-/* NewRGBAFromColor creates an RGBA value from a color and an alpha value. */
+// NewRGBAFromColor creates an RGBA value from a color and an alpha value.
 func NewRGBAFromColor(c Color, a float) RGBA {
 	newColor := RGBA{A: a}
 	newColor.RGB.Copy(c)
@@ -164,5 +164,5 @@ func toGorayColor(col image.Color) image.Color {
 	)
 }
 
-/* Model is the color model for the renderer. */
+// Model is the color model for the renderer.
 var Model image.ColorModel = image.ColorModelFunc(toGorayColor)

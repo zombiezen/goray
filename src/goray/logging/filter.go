@@ -1,8 +1,8 @@
 //
-//  goray/logging/filter.go
-//  goray
+//	goray/logging/filter.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-22.
+//	Created by Ross Light on 2010-06-22.
 //
 
 package logging
@@ -14,19 +14,15 @@ import (
 	"time"
 )
 
-/*
-   FilterFunc defines a function that operates on a record.
-
-   Possible operations include modifying the record as it passes through,
-   returning nil to prevent the record's propagation, or even just passing the
-   record through as-is.
-*/
+// FilterFunc defines a function that operates on a record.
+//
+// Possible operations include modifying the record as it passes through,
+// returning nil to prevent the record's propagation, or even just passing the
+// record through as-is.
 type FilterFunc func(Record) Record
 
-/*
-   Filter defines a Handler that runs records through a function before passing
-   them to another Handler.
-*/
+// Filter defines a Handler that runs records through a function before passing
+// them to another Handler.
 type Filter struct {
 	Handler Handler
 	Func    FilterFunc
@@ -46,7 +42,7 @@ func (filter Filter) Close() os.Error {
 	return nil
 }
 
-/* NewMinLevelFilter creates a new Filter that removes records that are below a certain level. */
+// NewMinLevelFilter creates a new Filter that removes records that are below a certain level.
 func NewMinLevelFilter(handler Handler, minLevel Level) Filter {
 	return Filter{handler, func(rec Record) Record {
 		if rec.Level() < minLevel {
@@ -56,23 +52,21 @@ func NewMinLevelFilter(handler Handler, minLevel Level) Filter {
 	}}
 }
 
-/*
-	FormatFunc defines a function that takes a record and returns a formatted
-	message.
-
-	Along with NewFormatFilter, this provides a simple way to format your log
-	messages.
-*/
+// FormatFunc defines a function that takes a record and returns a formatted
+// message.
+//
+// Along with NewFormatFilter, this provides a simple way to format your log
+// messages.
 type FormatFunc func(Record) string
 
-/* NewFormatFilter creates a new Filter that formats records that pass through it. */
+// NewFormatFilter creates a new Filter that formats records that pass through it.
 func NewFormatFilter(handler Handler, f FormatFunc) Filter {
 	return Filter{handler, func(rec Record) Record {
 		return NewFormattedRecord(rec, f(rec))
 	}}
 }
 
-/* DefaultFormatter returns a Filter that formats a record into a reasonable log string. */
+// DefaultFormatter returns a Filter that formats a record into a reasonable log string.
 func DefaultFormatter(handler Handler) Filter {
 	return NewFormatFilter(handler, func(rec Record) string {
 		switch orig := GetUnformattedRecord(rec).(type) {

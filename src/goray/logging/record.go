@@ -1,8 +1,8 @@
 //
-//  goray/logging/record.go
-//  goray
+//	goray/logging/record.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-22.
+//	Created by Ross Light on 2010-06-22.
 //
 
 package logging
@@ -22,7 +22,7 @@ const (
 	CriticalLevel
 )
 
-/* Level is an integer representing the severity of a record. */
+// Level is an integer representing the severity of a record.
 type Level int
 
 func (lvl Level) String() string {
@@ -43,25 +43,25 @@ func (lvl Level) String() string {
 	return fmt.Sprintf("Level%d", int(lvl))
 }
 
-/* Record defines a simple log record. */
+// Record defines a simple log record.
 type Record interface {
 	Level() Level
 	String() string
 }
 
-/* DatedRecord defines a log record that has a timestamp. */
+// DatedRecord defines a log record that has a timestamp.
 type DatedRecord interface {
 	Record
 	Timestamp() *time.Time
 }
 
-/* StringRecord is a simple, info-level record. */
+// StringRecord is a simple, info-level record.
 type StringRecord string
 
 func (rec StringRecord) Level() Level   { return InfoLevel }
 func (rec StringRecord) String() string { return string(rec) }
 
-/* BasicRecord stores a message and a level. */
+// BasicRecord stores a message and a level.
 type BasicRecord struct {
 	Message     string
 	RecordLevel Level
@@ -72,7 +72,7 @@ func (rec BasicRecord) Level() Level          { return rec.RecordLevel }
 func (rec BasicRecord) String() string        { return rec.Message }
 func (rec BasicRecord) Timestamp() *time.Time { return rec.Time }
 
-/* A FormattedRecord wraps another record with a customized string. */
+// A FormattedRecord wraps another record with a customized string.
 type FormattedRecord struct {
 	Original Record
 	Message  string
@@ -85,7 +85,7 @@ func NewFormattedRecord(orig Record, msg string) FormattedRecord {
 func (rec FormattedRecord) Level() Level   { return rec.Original.Level() }
 func (rec FormattedRecord) String() string { return rec.Message }
 
-/* GetUnformattedRecord returns the original, unformatted record for a given record. */
+// GetUnformattedRecord returns the original, unformatted record for a given record.
 func GetUnformattedRecord(rec Record) Record {
 	if fmtRec, ok := rec.(FormattedRecord); ok {
 		return fmtRec.Original

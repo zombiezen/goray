@@ -29,13 +29,11 @@ const (
 
 type colorFunc func(int) color.Color
 
-/*
-	colorSum returns the sum of all of the colors returned by the function.
-
-	The function given is called with [0, n) and it should return a color.
-	If concurrent is true, then these calls happen concurrently.  The result of
-	each function call is summed to get the final return value.
-*/
+// colorSum returns the sum of all of the colors returned by the function.
+//
+// The function given is called with [0, n) and it should return a color.
+// If concurrent is true, then these calls happen concurrently.  The result of
+// each function call is summed to get the final return value.
 func colorSum(n int, concurrent bool, f colorFunc) (col color.Color) {
 	col = color.Black
 	if concurrent {
@@ -77,7 +75,7 @@ func halSeq(n int, base, start uint) (seq []float) {
 	return
 }
 
-/* EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2. */
+// EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2.
 func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 

@@ -5,36 +5,34 @@
 //	Created by Ross Light on 2010-06-16.
 //
 
-/*
-	The montecarlo package provides numerical algorithms helpful for performing
-	Monte Carlo approximations.
-*/
+// The montecarlo package provides numerical algorithms helpful for performing
+// Monte Carlo approximations.
 package montecarlo
 
-/* Halton is a fast, incremental Halton sequence generator. */
+// Halton is a fast, incremental Halton sequence generator.
 type Halton struct {
 	base    uint
 	invBase float64
 	value   float64
 }
 
-/* NewHalton creates a new Halton sequence generator. */
+// NewHalton creates a new Halton sequence generator.
 func NewHalton(base uint) (h *Halton) {
 	h = new(Halton)
 	h.SetBase(base)
 	return
 }
 
-/* SetBase changes the Halton generator's base number.  This will reset the generator. */
+// SetBase changes the Halton generator's base number.  This will reset the generator.
 func (h *Halton) SetBase(base uint) {
 	h.base, h.invBase = base, 1.0/float64(base)
 	h.Reset()
 }
 
-/* Reset starts the generator over without changing the base. */
+// Reset starts the generator over without changing the base.
 func (h *Halton) Reset() { h.value = 0.0 }
 
-/* SetStart changes the generator to start with the given index in the sequence. */
+// SetStart changes the generator to start with the given index in the sequence.
 func (h *Halton) SetStart(i uint) {
 	h.value = 0
 	for f, factor := h.invBase, h.invBase; i > 0; {
@@ -44,7 +42,7 @@ func (h *Halton) SetStart(i uint) {
 	}
 }
 
-/* Float64 returns the next number in the sequence with 64 bits of precision. */
+// Float64 returns the next number in the sequence with 64 bits of precision.
 func (hal *Halton) Float64() float64 {
 	r := 1 - hal.value - 1e-10
 	if hal.invBase < r {
@@ -61,13 +59,11 @@ func (hal *Halton) Float64() float64 {
 
 func (h *Halton) Float() float { return float(h.Float64()) }
 
-/*
-	VanDerCorput returns the next number in the van der Corput sequence.
-
-	This function can also be used to generate Sobol sequences and Larcher &
-	Pillichshammer sequences.  The particular algorithm used is described in
-	"Efficient Multidimensional Sampling" by Alexander Keller.
-*/
+// VanDerCorput returns the next number in the van der Corput sequence.
+//
+// This function can also be used to generate Sobol sequences and Larcher &
+// Pillichshammer sequences.  The particular algorithm used is described in
+// "Efficient Multidimensional Sampling" by Alexander Keller.
 func VanDerCorput(bits, r uint32) float {
 	const multRatio = 0.00000000023283064365386962890625
 

@@ -32,7 +32,7 @@ func (t BasicToken) String() string {
 	return fmt.Sprintf("%v %v", t.Start, t.Kind)
 }
 
-/* ValueToken defines a token that holds a string value.  It is used for anchors, aliases, and scalars. */
+// ValueToken defines a token that holds a string value.  It is used for anchors, aliases, and scalars.
 type ValueToken struct {
 	BasicToken
 	Value string

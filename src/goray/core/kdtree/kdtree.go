@@ -1,11 +1,11 @@
 //
-//  goray/core/kdtree/kdtree.go
-//  goray
+//	goray/core/kdtree/kdtree.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-02.
+//	Created by Ross Light on 2010-06-02.
 //
 
-/* The kdtree package provides a generic kd-tree implementation. */
+// The kdtree package provides a generic kd-tree implementation.
 package kdtree
 
 import (
@@ -15,13 +15,13 @@ import (
 	"goray/core/vector"
 )
 
-/* Tree is a generic kd-tree */
+// Tree is a generic kd-tree.
 type Tree struct {
 	root  Node
 	bound *bound.Bound
 }
 
-/* A DimensionFunc calculates the range of a value in a particular axis. */
+// A DimensionFunc calculates the range of a value in a particular axis.
 type DimensionFunc func(v Value, axis int) (min, max float)
 
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
@@ -37,7 +37,7 @@ const (
 	DefaultFaultTolerance = 2
 )
 
-/* Options allows you to tune the parameters of kd-tree construction. */
+// Options allows you to tune the parameters of kd-tree construction.
 type Options struct {
 	GetDimension   DimensionFunc
 	SplitFunc      SplitFunc
@@ -47,7 +47,7 @@ type Options struct {
 	FaultTolerance uint // FaultTolerance specifies the number of bad splits before a branch is considered a fault.
 }
 
-/* MakeOptions creates a new set of build options with some reasonable defaults. */
+// MakeOptions creates a new set of build options with some reasonable defaults.
 func MakeOptions(f DimensionFunc, log logging.Handler) Options {
 	return Options{
 		GetDimension:   f,
@@ -59,7 +59,7 @@ func MakeOptions(f DimensionFunc, log logging.Handler) Options {
 	}
 }
 
-/* BuildState holds information for building a level of a kd-tree. */
+// BuildState holds information for building a level of a kd-tree.
 type BuildState struct {
 	Options
 	OldCost    float
@@ -70,7 +70,7 @@ func (state BuildState) getBound(v Value) *bound.Bound {
 	return getBound(v, state.GetDimension)
 }
 
-/* New creates a new kd-tree from an unordered collection of values. */
+// New creates a new kd-tree from an unordered collection of values.
 func New(vals []Value, opts Options) (tree *Tree) {
 	tree = new(Tree)
 	state := BuildState{opts, float(len(vals)), 0}
@@ -87,7 +87,7 @@ func New(vals []Value, opts Options) (tree *Tree) {
 	return tree
 }
 
-/* Depth returns the number of levels in the tree (excluding leaves). */
+// Depth returns the number of levels in the tree (excluding leaves).
 func (tree *Tree) Depth() int {
 	var nodeDepth func(Node) int
 	nodeDepth = func(n Node) int {
@@ -187,8 +187,8 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	return newInterior(axis, pivot, <-leftChan, <-rightChan)
 }
 
-/* GetRoot returns the root of the kd-tree. */
+// GetRoot returns the root of the kd-tree.
 func (tree *Tree) GetRoot() Node { return tree.root }
 
-/* GetBound returns a bounding box that encloses all objects in the tree. */
+// GetBound returns a bounding box that encloses all objects in the tree.
 func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }

@@ -1,8 +1,8 @@
 //
-//  goray/std/integrators/trivial.go
-//  goray
+//	goray/std/integrators/trivial.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-03.
+//	Created by Ross Light on 2010-06-03.
 //
 
 package trivial

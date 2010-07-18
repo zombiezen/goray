@@ -1,8 +1,8 @@
 //
-//  goray/core/kdtree/split.go
-//  goray
+//	goray/core/kdtree/split.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-21.
+//	Created by Ross Light on 2010-06-21.
 //
 
 package kdtree

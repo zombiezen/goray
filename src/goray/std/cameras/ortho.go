@@ -1,11 +1,11 @@
 //
-//  goray/std/cameras/ortho.go
-//  goray
+//	goray/std/cameras/ortho.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-22.
+//	Created by Ross Light on 2010-06-22.
 //
 
-/* The ortho package provides an orthographic camera. */
+// The ortho package provides an orthographic camera.
 package ortho
 
 import (
@@ -16,14 +16,14 @@ import (
 	yamldata "yaml/data"
 )
 
-/* A simple orthographic camera */
+// orthoCam is a simple orthographic camera.
 type orthoCam struct {
 	resx, resy         int
 	position           vector.Vector3D
 	vlook, vup, vright vector.Vector3D
 }
 
-/* NewOrtho creates a new orthographic camera */
+// NewOrtho creates a new orthographic camera.
 func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float) camera.Camera {
 	c := new(orthoCam)
 	c.resx, c.resy = resx, resy

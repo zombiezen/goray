@@ -1,11 +1,11 @@
 //
-//  goray/core/ray/ray.go
-//  goray
+//	goray/core/ray/ray.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-23.
+//	Created by Ross Light on 2010-05-23.
 //
 
-/* The ray package contains data structures for describing rays. */
+// The ray package contains data structures for describing rays.
 package ray
 
 import "fmt"
@@ -29,7 +29,7 @@ type Ray interface {
 	SetTime(float)
 }
 
-/* Ray defines the path of light. */
+// Ray defines the path of light.
 type simpleRay struct {
 	from       vector.Vector3D
 	dir        vector.Vector3D
@@ -57,10 +57,8 @@ func (r *simpleRay) String() string {
 	return fmt.Sprintf("Ray{From: %v, Dir: %v, TMin: %.2f, TMax: %.2f, Time: %.2f}", r.from, r.dir, r.tMin, r.tMax, r.time)
 }
 
-/*
-   DifferentialRay stores additional information about a ray for use in surface intersections.
-   For an explanation, see http://www.opticalres.com/white%20papers/DifferentialRayTracing.pdf
-*/
+// DifferentialRay stores additional information about a ray for use in surface intersections.
+// For an explanation, see http://www.opticalres.com/white%20papers/DifferentialRayTracing.pdf
 type DifferentialRay struct {
 	*simpleRay
 	FromX, FromY vector.Vector3D
@@ -68,7 +66,7 @@ type DifferentialRay struct {
 }
 
 func NewDifferential() *DifferentialRay {
-    return &DifferentialRay{simpleRay: New().(*simpleRay)}
+	return &DifferentialRay{simpleRay: New().(*simpleRay)}
 }
 
 func (r *DifferentialRay) String() string {

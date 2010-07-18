@@ -1,8 +1,8 @@
 //
-//  goray/version.go
-//  goray
+//	goray/version.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-04.
+//	Created by Ross Light on 2010-06-04.
 //
 
 package version

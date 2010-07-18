@@ -1,8 +1,8 @@
 //
-//  goray/std/lights/point.go
-//  goray
+//	goray/std/lights/point.go
+//	goray
 //
-//  Created by Ross Light on 2010-06-02.
+//	Created by Ross Light on 2010-06-02.
 //
 
 package point

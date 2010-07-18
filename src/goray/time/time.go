@@ -5,7 +5,7 @@
 //	Created by Ross Light on 2010-06-09.
 //
 
-/* The time package provides a convenient way to time an operation. */
+// The time package provides a convenient way to time an operation.
 package time
 
 import (
@@ -22,7 +22,7 @@ const (
 	Day        = 24 * Hour
 )
 
-/* Stopwatch calls a function and returns how long it took for the function to return. */
+// Stopwatch calls a function and returns how long it took for the function to return.
 func Stopwatch(f func()) Time {
 	startTime := stdtime.Nanoseconds()
 	f()
@@ -30,10 +30,10 @@ func Stopwatch(f func()) Time {
 	return Time(float64(endTime-startTime) * Nanosecond)
 }
 
-/* Time is a type that represents a duration of time. */
+// Time is a type that represents a duration of time.
 type Time float64
 
-/* Split returns the components of the time in hours, minutes, and seconds. */
+// Split returns the components of the time in hours, minutes, and seconds.
 func (t Time) Split() (hours, minutes int, seconds float64) {
 	seconds = float64(t)
 	hours = int(t / Hour)
@@ -43,7 +43,7 @@ func (t Time) Split() (hours, minutes int, seconds float64) {
 	return
 }
 
-/* String returns a human-readable representation of the time. */
+// String returns a human-readable representation of the time.
 func (t Time) String() string {
 	h, m, s := t.Split()
 	switch {

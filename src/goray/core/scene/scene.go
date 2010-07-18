@@ -1,11 +1,11 @@
 //
-//  goray/core/scene/scene.go
-//  goray
+//	goray/core/scene/scene.go
+//	goray
 //
-//  Created by Ross Light on 2010-05-23.
+//	Created by Ross Light on 2010-05-23.
 //
 
-/* The scene package provides the basic mechanism for establishing an environment to render. */
+// The scene package provides the basic mechanism for establishing an environment to render.
 package scene
 
 import (
@@ -44,11 +44,9 @@ func (c *changeSet) Clear()                 { *c = 0 }
 
 type ObjectID uint
 
-/*
-   Scene stores all of the entities that define an environment to render.
-   Scene also functions as a high-level API for goray: once you have created a scene, you can create geometry,
-   add entities, and render an image.
-*/
+// Scene stores all of the entities that define an environment to render.
+// Scene also functions as a high-level API for goray: once you have created a scene, you can create geometry,
+// add entities, and render an image.
 type Scene struct {
 	changes    changeSet
 	nextFreeID ObjectID
@@ -70,7 +68,7 @@ type Scene struct {
 	doDepth             bool
 }
 
-/* New creates a new scene */
+// New creates a new scene.
 func New() *Scene {
 	s := new(Scene)
 	s.log = logging.NewLogger()
@@ -91,7 +89,7 @@ func New() *Scene {
 
 func (s *Scene) GetLog() *logging.Logger { return s.log }
 
-/* AddLight adds a light to the scene. */
+// AddLight adds a light to the scene.
 func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	if l == nil {
 		return os.NewError("Attempted to insert nil light")
@@ -101,7 +99,7 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	return
 }
 
-/* GetLights returns all of the lights added to the scene. */
+// GetLights returns all of the lights added to the scene.
 func (s *Scene) GetLights() []light.Light {
 	temp := make([]light.Light, s.lights.Len())
 	for i, val := range s.lights {
@@ -110,12 +108,12 @@ func (s *Scene) GetLights() []light.Light {
 	return temp
 }
 
-/* AddMaterial adds a material to the scene. */
+// AddMaterial adds a material to the scene.
 func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
 	return os.NewError("We don't support named materials yet")
 }
 
-/* AddObject adds a three-dimensional object to the scene. */
+// AddObject adds a three-dimensional object to the scene.
 func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 	id = s.nextFreeID
 	if _, found := s.objects[id]; found {
@@ -129,28 +127,28 @@ func (s *Scene) AddObject(obj object.Object3D) (id ObjectID, err os.Error) {
 	return
 }
 
-/* GetObject retrieves the object with a given ID. */
+// GetObject retrieves the object with a given ID.
 func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
 	obj, found = s.objects[id]
 	return
 }
 
-/* AddVolumeRegion adds a volumetric effect to the scene. */
+// AddVolumeRegion adds a volumetric effect to the scene.
 func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes.Push(vr) }
 
-/* GetCamera returns the scene's current camera. */
+// GetCamera returns the scene's current camera.
 func (s *Scene) GetCamera() camera.Camera { return s.camera }
 
-/* SetCamera changes the scene's current camera. */
+// SetCamera changes the scene's current camera.
 func (s *Scene) SetCamera(cam camera.Camera) { s.camera = cam }
 
-/* GetBackground returns the scene's current background. */
+// GetBackground returns the scene's current background.
 func (s *Scene) GetBackground() background.Background { return s.background }
 
-/* SetBackground changes the scene's current background. */
+// SetBackground changes the scene's current background.
 func (s *Scene) SetBackground(bg background.Background) { s.background = bg }
 
-/* SetAntialiasing changes the parameters for antialiasing. */
+// SetAntialiasing changes the parameters for antialiasing.
 func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold float) {
 	if numSamples < 1 {
 		numSamples = 1
@@ -165,12 +163,12 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
-/* GetBound returns a bounding box that contains every object in the scene. */
+// GetBound returns a bounding box that contains every object in the scene.
 func (s *Scene) GetBound() *bound.Bound { return s.sceneBound }
 
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
-/* Intersect returns the surface point that intersects with the given ray. */
+// Intersect returns the surface point that intersects with the given ray.
 func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
 	// Determine distance to check
 	if dist < 0 {
@@ -187,7 +185,7 @@ func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
 	return s.intersect.Intersect(r, dist)
 }
 
-/* IsShadowed returns whether a ray will cast a shadow. */
+// IsShadowed returns whether a ray will cast a shadow.
 func (s *Scene) IsShadowed(r ray.Ray, dist float) bool {
 	if s.intersect == nil {
 		s.log.Warning("IsShadowed called without an Update")
@@ -201,10 +199,8 @@ func (s *Scene) IsShadowed(r ray.Ray, dist float) bool {
 	return s.intersect.IsShadowed(r, dist)
 }
 
-/*
-   Update causes the scene state to prepare for rendering.
-   This is a potentially expensive operation.  It will be called automatically before a Render.
-*/
+// Update causes the scene state to prepare for rendering.
+// This is a potentially expensive operation.  It will be called automatically before a Render.
 func (s *Scene) Update() (err os.Error) {
 	if s.camera == nil {
 		return os.NewError("Scene has no camera")
