@@ -1,5 +1,5 @@
 //
-//	goray/core/photon.go
+//	goray/core/photon/photon.go
 //	goray
 //
 //	Created by Ross Light on 2010-06-06
