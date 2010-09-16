@@ -87,6 +87,10 @@ func (i *Image) At(x, y int) image.Color {
 	return i.data[y][x]
 }
 
+func (i *Image) Bounds() image.Rectangle {
+	return image.Rect(0, 0, i.width, i.height)
+}
+
 // Clear sets all of the pixels in the image to a given color.
 func (i *Image) Clear(clearColor color.AlphaColor) {
 	for y := 0; y < i.height; y++ {

@@ -93,7 +93,7 @@ func constructBool(n parser.Node) (data interface{}, err os.Error) {
 		err = os.NewError("Non-scalar tagged as bool")
 		return
 	}
-	groups := csBoolPat.MatchStrings(s)
+	groups := csBoolPat.FindStringSubmatch(s)
 
 	if len(groups) > 0 {
 		if groups[1] != "" {
@@ -119,9 +119,9 @@ func constructInt(n parser.Node) (data interface{}, err os.Error) {
 
 	if csDecPat.MatchString(s) {
 		return strconv.Atoi64(s)
-	} else if groups := csHexPat.MatchStrings(s); len(groups) > 0 {
+	} else if groups := csHexPat.FindStringSubmatch(s); len(groups) > 0 {
 		return strconv.Btoui64(groups[1], 16)
-	} else if groups := csOctPat.MatchStrings(s); len(groups) > 0 {
+	} else if groups := csOctPat.FindStringSubmatch(s); len(groups) > 0 {
 		return strconv.Btoui64(groups[1], 8)
 	}
 

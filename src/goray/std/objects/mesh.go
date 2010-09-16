@@ -348,7 +348,7 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 			axis1, axis2 = X, Y
 		}
 
-		v1, v2 = &v[i], &v[j]
+		v1, v2 = v[i][:], v[j][:]
 		a, b = e[edgeNum][axis2], e[edgeNum][axis1]
 		fa, fb = f[axis2], f[axis1]
 
