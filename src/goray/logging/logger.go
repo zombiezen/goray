@@ -54,32 +54,32 @@ func (log *Logger) Log(level Level, message string) {
 
 // Logf creates a new BasicRecord from a Printf format string and sends it to the handlers.
 func (log *Logger) Logf(level Level, format string, args ...interface{}) {
-	shortcut(level, log, format, args)
+	shortcut(level, log, format, args...)
 }
 
 // VerboseDebug is a shortcut for Logf(VerboseDebugLevel).
 func (log *Logger) VerboseDebug(format string, args ...interface{}) {
-	VerboseDebug(log, format, args)
+	VerboseDebug(log, format, args...)
 }
 // Debug is a shortcut for Logf(DebugLevel).
 func (log *Logger) Debug(format string, args ...interface{}) {
-	Debug(log, format, args)
+	Debug(log, format, args...)
 }
 // Info is a shortcut for Logf(InfoLevel).
 func (log *Logger) Info(format string, args ...interface{}) {
-	Info(log, format, args)
+	Info(log, format, args...)
 }
 // Warning is a shortcut for Logf(WarningLevel).
 func (log *Logger) Warning(format string, args ...interface{}) {
-	Warning(log, format, args)
+	Warning(log, format, args...)
 }
 // Error is a shortcut for Logf(ErrorLevel).
 func (log *Logger) Error(format string, args ...interface{}) {
-	Error(log, format, args)
+	Error(log, format, args...)
 }
 // Critical is a shortcut for Logf(CriticalLevel).
 func (log *Logger) Critical(format string, args ...interface{}) {
-	Critical(log, format, args)
+	Critical(log, format, args...)
 }
 
 // Handle dispatches a record to the logger's handlers.

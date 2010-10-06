@@ -21,33 +21,33 @@ type Handler interface {
 
 func shortcut(level Level, log Handler, format string, args ...interface{}) {
 	if log != nil {
-		log.Handle(BasicRecord{fmt.Sprintf(format, args), level, time.UTC()})
+		log.Handle(BasicRecord{fmt.Sprintf(format, args...), level, time.UTC()})
 	}
 }
 
 // VerboseDebug is a shortcut for sending a record to a handler at VerboseDebugLevel.
 func VerboseDebug(log Handler, format string, args ...interface{}) {
-	shortcut(VerboseDebugLevel, log, format, args)
+	shortcut(VerboseDebugLevel, log, format, args...)
 }
 // Debug is a shortcut for sending a record to a handler at DebugLevel.
 func Debug(log Handler, format string, args ...interface{}) {
-	shortcut(DebugLevel, log, format, args)
+	shortcut(DebugLevel, log, format, args...)
 }
 // Info is a shortcut for sending a record to a handler at InfoLevel.
 func Info(log Handler, format string, args ...interface{}) {
-	shortcut(InfoLevel, log, format, args)
+	shortcut(InfoLevel, log, format, args...)
 }
 // Warning is a shortcut for sending a record to a handler at WarningLevel.
 func Warning(log Handler, format string, args ...interface{}) {
-	shortcut(WarningLevel, log, format, args)
+	shortcut(WarningLevel, log, format, args...)
 }
 // Error is a shortcut for sending a record to a handler at ErrorLevel.
 func Error(log Handler, format string, args ...interface{}) {
-	shortcut(ErrorLevel, log, format, args)
+	shortcut(ErrorLevel, log, format, args...)
 }
 // Critical is a shortcut for sending a record to a handler at CriticalLevel.
 func Critical(log Handler, format string, args ...interface{}) {
-	shortcut(CriticalLevel, log, format, args)
+	shortcut(CriticalLevel, log, format, args...)
 }
 
 type writerHandler struct {
