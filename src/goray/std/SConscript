@@ -3,16 +3,16 @@
 Import('env')
 
 packages = [
-	env.Go('cameras/ortho'),
-	env.Go('cameras/perspective'),
+    env.Go('cameras/ortho'),
+    env.Go('cameras/perspective'),
     env.Go('integrators/directlight'),
     env.Go('integrators/trivial'),
     env.Go('integrators/util'),
     env.Go('lights/point'),
     env.Go('materials/debug'),
-    env.Go('objects/mesh'),
+    env.Go('objects/mesh', Glob('objects/mesh/*.go')),
     env.Go('primitives/sphere'),
-	env.Go('yamlscene', Glob('yamlscene/*.go')),
+    env.Go('yamlscene', Glob('yamlscene/*.go')),
 ]
 
 Return('packages')
