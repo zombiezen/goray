@@ -63,7 +63,7 @@ type Primitive interface {
 type Clipper interface {
 	// ClipToBound calculates the overlapping bounding box of a given bounding box and the primitive.
 	// It returns true only if a valid clip exists.
-	ClipToBound(bound *bound.Bound, axis int) (clipped *bound.Bound, ok bool)
+	ClipToBound(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{})
 }
 
 type ClipPrimitive interface {

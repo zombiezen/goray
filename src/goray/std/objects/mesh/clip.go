@@ -23,13 +23,7 @@ func dvec2vec(v dVector) vector.Vector3D {
 	return vector.New(float(v[0]), float(v[1]), float(v[2]))
 }
 
-func triBoxClip(bMin, bMax [3]float64, triverts [3][3]float64) (poly []dVector, box *bound.Bound) {
-	poly = make([]dVector, 4)
-	for i, vert := range triverts {
-		poly[i] = dVector(vert)
-	}
-	poly[3] = dVector(triverts[0])
-
+func triBoxClip(bMin, bMax [3]float64, poly []dVector) ([]dVector, *bound.Bound) {
 	for axis := 0; axis < 3; axis++ { // for each axis
 		// clip lower bound
 		poly = triClip(axis, bMin[axis], poly, cmpMin)
@@ -46,7 +40,7 @@ func triBoxClip(bMin, bMax [3]float64, triverts [3][3]float64) (poly []dVector, 
 		}
 		if len(poly) == 0 {
 			// entire polygon clipped
-			return
+			return nil, nil
 		}
 	}
 
@@ -65,28 +59,23 @@ func triBoxClip(bMin, bMax [3]float64, triverts [3][3]float64) (poly []dVector, 
 		g[2] = math.Fmax(g[2], poly[i][2])
 	}
 
-	box = bound.New(dvec2vec(a), dvec2vec(g))
-	return
+	return poly, bound.New(dvec2vec(a), dvec2vec(g))
 }
 
-func triPlaneClip(axis int, pos float64, lower bool, triverts [3][3]float64) (poly []dVector, box *bound.Bound) {
-	poly = make([]dVector, 4)
-	for i, vert := range triverts {
-		poly[i] = dVector(vert)
-	}
-	poly[3] = dVector(triverts[0])
-
+func triPlaneClip(axis int, pos float64, lower bool, poly []dVector) ([]dVector, *bound.Bound) {
 	if lower {
 		poly = triClip(axis, pos, poly, cmpMin)
 	} else {
 		poly = triClip(axis, pos, poly, cmpMax)
 	}
 
-	if len(poly) > 9 {
-		panic("clipped polygon is too complex")
-	}
-	if len(poly) < 2 {
+	switch {
+	case len(poly) == 0:
+		return nil, nil
+	case len(poly) < 2:
 		panic("clipped polygon degenerated")
+	case len(poly) > 9:
+		panic("clipped polygon is too complex")
 	}
 
 	a, g := poly[0], poly[0]
@@ -100,8 +89,7 @@ func triPlaneClip(axis int, pos float64, lower bool, triverts [3][3]float64) (po
 		g[2] = math.Fmax(g[2], poly[i][2])
 	}
 
-	box = bound.New(dvec2vec(a), dvec2vec(g))
-	return
+	return poly, bound.New(dvec2vec(a), dvec2vec(g))
 }
 
 // triClip is the internal clipping function. It's not very user-friendly; use triBoxClip or triPlaneClip.

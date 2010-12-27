@@ -216,15 +216,21 @@ func (tri *Triangle) GetSurfaceArea() float {
 	return vector.Cross(edge1, edge2).Length() * 0.5
 }
 
-func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int) (clipped *bound.Bound, ok bool) {
+func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			clipped, ok = nil, false
+			clipped, newData = nil, nil
 		}
 	}()
 
-	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
-	tPoints := [3][3]float64{[3]float64(vec2dvec(a)), [3]float64(vec2dvec(b)), [3]float64(vec2dvec(c))}
+	var poly []dVector
+	if oldData == nil {
+		a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
+		poly = []dVector{vec2dvec(a), vec2dvec(b), vec2dvec(c), vec2dvec(a)}
+	} else {
+		poly = oldData.([]dVector)
+	}
+
 	if axis >= 0 {
 		lower := (axis &^ 3) != 0
 		axis = axis & 3
@@ -236,15 +242,13 @@ func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int) (clipped *bound.B
 			split = float64(bound.GetMax().GetComponent(axis))
 		}
 
-		_, clipped = triPlaneClip(axis, split, lower, tPoints)
-		ok = true
+		newData, clipped = triPlaneClip(axis, split, lower, poly)
 		return
 	}
 
 	// Full clip
 	bMin := [3]float64(vec2dvec(bound.GetMin()))
 	bMax := [3]float64(vec2dvec(bound.GetMax()))
-	_, clipped = triBoxClip(bMin, bMax, tPoints)
-	ok = true
+	newData, clipped = triBoxClip(bMin, bMax, poly)
 	return
 }
