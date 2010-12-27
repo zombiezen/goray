@@ -60,13 +60,13 @@ type Primitive interface {
 	GetMaterial() material.Material
 }
 
-type Clippable interface {
+type Clipper interface {
 	// ClipToBound calculates the overlapping bounding box of a given bounding box and the primitive.
 	// It returns true only if a valid clip exists.
-	ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool)
+	ClipToBound(bound *bound.Bound, axis int) (clipped *bound.Bound, ok bool)
 }
 
-type ClippablePrimitive interface {
+type ClipPrimitive interface {
 	Primitive
-	Clippable
+	Clipper
 }

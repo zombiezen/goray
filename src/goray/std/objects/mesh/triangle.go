@@ -215,3 +215,36 @@ func (tri *Triangle) GetSurfaceArea() float {
 	edge1, edge2 := vector.Sub(b, a), vector.Sub(c, a)
 	return vector.Cross(edge1, edge2).Length() * 0.5
 }
+
+func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int) (clipped *bound.Bound, ok bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			clipped, ok = nil, false
+		}
+	}()
+
+	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
+	tPoints := [3][3]float64{[3]float64(vec2dvec(a)), [3]float64(vec2dvec(b)), [3]float64(vec2dvec(c))}
+	if axis >= 0 {
+		lower := (axis &^ 3) != 0
+		axis = axis & 3
+
+		var split float64
+		if lower {
+			split = float64(bound.GetMin().GetComponent(axis))
+		} else {
+			split = float64(bound.GetMax().GetComponent(axis))
+		}
+
+		_, clipped = triPlaneClip(axis, split, lower, tPoints)
+		ok = true
+		return
+	}
+
+	// Full clip
+	bMin := [3]float64(vec2dvec(bound.GetMin()))
+	bMax := [3]float64(vec2dvec(bound.GetMax()))
+	_, clipped = triBoxClip(bMin, bMax, tPoints)
+	ok = true
+	return
+}

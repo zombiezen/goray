@@ -15,6 +15,14 @@ import (
 
 type dVector [3]float64
 
+func vec2dvec(v vector.Vector3D) dVector {
+	return dVector{float64(v.X), float64(v.Y), float64(v.Z)}
+}
+
+func dvec2vec(v dVector) vector.Vector3D {
+	return vector.New(float(v[0]), float(v[1]), float(v[2]))
+}
+
 func triBoxClip(bMin, bMax [3]float64, triverts [3][3]float64) (poly []dVector, box *bound.Bound) {
 	poly = make([]dVector, 4)
 	for i, vert := range triverts {
@@ -57,9 +65,8 @@ func triBoxClip(bMin, bMax [3]float64, triverts [3][3]float64) (poly []dVector, 
 		g[2] = math.Fmax(g[2], poly[i][2])
 	}
 
-	avec := vector.New(float(a[0]), float(a[1]), float(a[2]))
-	gvec := vector.New(float(g[0]), float(g[1]), float(g[2]))
-	return poly, bound.New(avec, gvec)
+	box = bound.New(dvec2vec(a), dvec2vec(g))
+	return
 }
 
 func triPlaneClip(axis int, pos float64, lower bool, triverts [3][3]float64) (poly []dVector, box *bound.Bound) {
@@ -93,9 +100,8 @@ func triPlaneClip(axis int, pos float64, lower bool, triverts [3][3]float64) (po
 		g[2] = math.Fmax(g[2], poly[i][2])
 	}
 
-	avec := vector.New(float(a[0]), float(a[1]), float(a[2]))
-	gvec := vector.New(float(g[0]), float(g[1]), float(g[2]))
-	return poly, bound.New(avec, gvec)
+	box = bound.New(dvec2vec(a), dvec2vec(g))
+	return
 }
 
 // triClip is the internal clipping function. It's not very user-friendly; use triBoxClip or triPlaneClip.
@@ -118,8 +124,8 @@ func triClip(axis int, bound float64, poly []dVector, cmp func(a, b float64) boo
 				t := (bound - p1[axis]) / (p2[axis] - p1[axis])
 				dv := dVector{}
 				dv[axis] = bound
-				dv[nextAxis] = p2[nextAxis] + t * (p1[nextAxis] - p2[nextAxis])
-				dv[prevAxis] = p2[prevAxis] + t * (p1[prevAxis] - p2[prevAxis])
+				dv[nextAxis] = p2[nextAxis] + t*(p1[nextAxis]-p2[nextAxis])
+				dv[prevAxis] = p2[prevAxis] + t*(p1[prevAxis]-p2[prevAxis])
 				cpoly = append(cpoly, dv)
 				p1_inside = false
 			}
@@ -131,8 +137,8 @@ func triClip(axis int, bound float64, poly []dVector, cmp func(a, b float64) boo
 				t := (bound - p2[axis]) / (p1[axis] - p2[axis])
 				dv := dVector{}
 				dv[axis] = bound
-				dv[nextAxis] = p2[nextAxis] + t * (p1[nextAxis] - p2[nextAxis])
-				dv[prevAxis] = p2[prevAxis] + t * (p1[prevAxis] - p2[prevAxis])
+				dv[nextAxis] = p2[nextAxis] + t*(p1[nextAxis]-p2[nextAxis])
+				dv[prevAxis] = p2[prevAxis] + t*(p1[prevAxis]-p2[prevAxis])
 				cpoly = append(cpoly, dv, p2)
 				p1_inside = true
 			case p2[axis] == bound:
