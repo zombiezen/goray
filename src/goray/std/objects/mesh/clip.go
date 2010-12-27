@@ -99,7 +99,7 @@ func triClip(axis int, bound float64, poly []dVector, cmp func(a, b float64) boo
 	cpoly = make([]dVector, 0, 11)
 	p1_inside := poly[0][axis] == bound || cmp(poly[0][axis], bound)
 
-	for i, _ := range poly {
+	for i := 0; i < len(poly) - 1; i++ {
 		p1, p2 := poly[i], poly[i+1]
 
 		if p1_inside {
