@@ -9,6 +9,7 @@ package mesh
 
 import (
 	"fmt"
+	"goray/logging"
 	"goray/fmath"
 	"goray/core/bound"
 	"goray/core/material"
@@ -220,6 +221,7 @@ func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface
 	defer func() {
 		if err := recover(); err != nil {
 			clipped, newData = nil, nil
+			logging.Warning(logging.MainLog, "ClipToBound panic: %v", err)
 		}
 	}()
 

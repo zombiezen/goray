@@ -248,6 +248,7 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 
 	clipVals = make([]Value, 0, len(vals))
 	clipData = make([]ClipInfo, 0, len(vals))
+	nClip := 0
 	for i, v := range vals {
 		if clipv, ok := v.(primitive.Clipper); ok {
 			info := state.getClipInfo(i)
@@ -267,8 +268,10 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 				} else {
 					clipBox = bound.Union(clipBox, newBound)
 				}
+			} else {
+				// TODO: Handle "error in clipping" case differently?
+				nClip++
 			}
-			// TODO: Handle "error in clipping" case differently?
 		} else {
 			if clipBox == nil {
 				clipBox = state.getBound(v)
@@ -278,6 +281,10 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 			clipVals = append(clipVals, v)
 			clipData = append(clipData, ClipInfo{})
 		}
+	}
+
+	if nClip > 0 {
+		logging.VerboseDebug(state.Log, "Clipped %d values", nClip)
 	}
 
 	return
