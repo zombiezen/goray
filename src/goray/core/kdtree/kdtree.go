@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"goray/logging"
 	"goray/core/bound"
+	"goray/core/primitive"
 	"goray/core/vector"
 )
 
@@ -35,6 +36,7 @@ const (
 	DefaultMaxDepth       = 64
 	DefaultLeafSize       = 2
 	DefaultFaultTolerance = 2
+	DefaultClipThreshold  = 32
 )
 
 // Options allows you to tune the parameters of kd-tree construction.
@@ -45,6 +47,7 @@ type Options struct {
 	MaxDepth       int  // MaxDepth limits how many levels the tree can have
 	LeafSize       int  // LeafSize is the desired leaf size.  Some leaves may not obey this size.
 	FaultTolerance uint // FaultTolerance specifies the number of bad splits before a branch is considered a fault.
+	ClipThreshold  uint // ClipThreshold specifies the maximum number of values in a node to do primitive clipping.
 }
 
 // MakeOptions creates a new set of build options with some reasonable defaults.
@@ -56,24 +59,46 @@ func MakeOptions(f DimensionFunc, log logging.Handler) Options {
 		MaxDepth:       DefaultMaxDepth,
 		LeafSize:       DefaultLeafSize,
 		FaultTolerance: DefaultFaultTolerance,
+		ClipThreshold:  DefaultClipThreshold,
 	}
+}
+
+type ClipInfo struct {
+	Bound        *bound.Bound
+	InternalData interface{}
 }
 
 // BuildState holds information for building a level of a kd-tree.
 type BuildState struct {
 	Options
+	TreeBound  *bound.Bound
 	OldCost    float
 	BadRefines uint
+	Clips      []ClipInfo
+	ClipAxis   int
 }
 
 func (state BuildState) getBound(v Value) *bound.Bound {
 	return getBound(v, state.GetDimension)
 }
 
+func (state BuildState) getClipInfo(idx int) ClipInfo {
+	if state.Clips == nil {
+		return ClipInfo{}
+	}
+	return state.Clips[idx]
+}
+
 // New creates a new kd-tree from an unordered collection of values.
 func New(vals []Value, opts Options) (tree *Tree) {
 	tree = new(Tree)
-	state := BuildState{opts, float(len(vals)), 0}
+	state := BuildState{
+		Options:    opts,
+		OldCost:    float(len(vals)),
+		BadRefines: 0,
+		ClipAxis:   -1,
+	}
+
 	if len(vals) > 0 {
 		tree.bound = bound.New(state.getBound(vals[0]).Get())
 		for _, v := range vals[1:] {
@@ -82,6 +107,8 @@ func New(vals []Value, opts Options) (tree *Tree) {
 	} else {
 		tree.bound = bound.New(vector.New(0, 0, 0), vector.New(0, 0, 0))
 	}
+	state.TreeBound = tree.bound
+
 	tree.root = build(vals, tree.bound, state)
 	logging.Debug(opts.Log, "kd-tree is %d levels deep", tree.Depth())
 	return tree
@@ -131,12 +158,17 @@ func (tree *Tree) String() string {
 }
 
 func build(vals []Value, bd *bound.Bound, state BuildState) Node {
+	// Clip any primitives
+	if uint(len(vals)) <= state.ClipThreshold {
+		vals, state.Clips, bd = clip(vals, bd, state)
+	}
 	// If we're within acceptable bounds (or we're just sick of building the tree),
 	// then make a leaf.
 	if len(vals) <= state.LeafSize || state.MaxDepth <= 0 {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
+	// TODO: Make split functions aware of clipping
 	axis, pivot, cost := state.SplitFunc(vals, bd, state)
 	// Is this bad?
 	if cost > state.OldCost {
@@ -149,15 +181,16 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	}
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
-	for _, v := range vals {
+	leftClip, rightClip := make([]ClipInfo, 0, len(vals)), make([]ClipInfo, 0, len(vals))
+	for i, v := range vals {
 		vMin, vMax := state.GetDimension(v, axis)
 		if vMin < pivot {
-			left = left[0 : len(left)+1]
-			left[len(left)-1] = v
+			left = append(left, v)
+			leftClip = append(leftClip, state.getClipInfo(i))
 		}
 		if vMin >= pivot || vMax > pivot {
-			right = right[0 : len(right)+1]
-			right[len(right)-1] = v
+			right = append(right, v)
+			rightClip = append(rightClip, state.getClipInfo(i))
 		}
 	}
 	// Calculate new bounds
@@ -175,16 +208,79 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	}
 	// Build subtrees
 	state.OldCost = cost
-	leftChan, rightChan := make(chan Node), make(chan Node)
+	leftChan, rightChan := make(chan Node, 1), make(chan Node, 1)
 	state.MaxDepth--
 	go func() {
-		leftChan <- build(left, leftBound, state)
+		leftState := state
+		leftState.ClipAxis = axis
+		leftState.Clips = leftClip
+		leftChan <- build(left, leftBound, leftState)
 	}()
 	go func() {
-		rightChan <- build(right, rightBound, state)
+		rightState := state
+		rightState.ClipAxis = axis | 1<<2
+		rightState.Clips = rightClip
+		rightChan <- build(right, rightBound, rightState)
 	}()
 	// Return interior node
 	return newInterior(axis, pivot, <-leftChan, <-rightChan)
+}
+
+func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Value, clipData []ClipInfo, clipBox *bound.Bound) {
+	const treeSizeWeight = 1e-5
+	const nodeSizeWeight = 0.021
+
+	if len(vals) == 0 {
+		return vals, []ClipInfo{}, nodeBound
+	}
+
+	var bExt [2][3]float
+	for axis := 0; axis < 3; axis++ {
+		treeSize := state.TreeBound.GetMax().GetComponent(axis) - state.TreeBound.GetMin().GetComponent(axis)
+		nodeSize := nodeBound.GetMax().GetComponent(axis) - nodeBound.GetMin().GetComponent(axis)
+		delta := treeSize*treeSizeWeight + nodeSize*nodeSizeWeight
+
+		bExt[0][axis] = nodeBound.GetMin().GetComponent(axis) - delta
+		bExt[1][axis] = nodeBound.GetMax().GetComponent(axis) + delta
+	}
+
+	bd := bound.New(vector.New(bExt[0][0], bExt[0][1], bExt[0][2]), vector.New(bExt[1][0], bExt[1][1], bExt[1][2]))
+
+	clipVals = make([]Value, 0, len(vals))
+	clipData = make([]ClipInfo, 0, len(vals))
+	for i, v := range vals {
+		if clipv, ok := v.(primitive.Clipper); ok {
+			info := state.getClipInfo(i)
+			if info.Bound == nil {
+				info.Bound = state.getBound(v)
+			}
+			newBound, newData := clipv.ClipToBound(bd, state.ClipAxis, info.InternalData)
+			if newBound != nil {
+				// Polygon clipped and still with us.
+				info.Bound, info.InternalData = newBound, newData
+				clipVals = append(clipVals, v)
+				clipData = append(clipData, info)
+
+				// Update bound
+				if clipBox == nil {
+					clipBox = newBound
+				} else {
+					clipBox = bound.Union(clipBox, newBound)
+				}
+			}
+			// TODO: Handle "error in clipping" case differently?
+		} else {
+			if clipBox == nil {
+				clipBox = state.getBound(v)
+			} else {
+				clipBox = bound.Union(clipBox, state.getBound(v))
+			}
+			clipVals = append(clipVals, v)
+			clipData = append(clipData, ClipInfo{})
+		}
+	}
+
+	return
 }
 
 // GetRoot returns the root of the kd-tree.
