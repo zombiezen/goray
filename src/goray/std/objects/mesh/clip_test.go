@@ -9,7 +9,6 @@ package mesh
 
 import (
 	"testing"
-	"goray/logging"
 	"goray/core/bound"
 	"goray/core/vector"
 )
@@ -32,7 +31,7 @@ var boxTests = []boxClipTest{
 		Min:     [3]float64{0, 0, 0},
 		Max:     [3]float64{1, 1, 1},
 		PolyIn:  []dVector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
-		PolyOut: []dVector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
+		PolyOut: []dVector{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
 		Region:  bound.New(vector.New(0.1, 0.1, 0.1), vector.New(0.9, 0.9, 0.9)),
 	},
 }
@@ -81,20 +80,7 @@ func (test boxClipTest) Run(t *testing.T) {
 	}
 }
 
-type testLogHandler struct {
-	t *testing.T
-}
-
-func (self testLogHandler) Handle(rec logging.Record) {
-	self.t.Logf("LOG: %s", rec)
-}
-
 func TestBoxClip(t *testing.T) {
-	logging.MainLog.AddHandler(testLogHandler{t})
-	defer func() {
-		logging.MainLog = logging.NewLogger()
-	}()
-
 	for i, test := range boxTests {
 		t.Logf("** Test [%d]", i)
 		test.Run(t)
