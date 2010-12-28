@@ -82,6 +82,13 @@ func (state BuildState) getBound(v Value) *bound.Bound {
 	return getBound(v, state.GetDimension)
 }
 
+func (state BuildState) getClippedDimension(i int, v Value, axis int) (min, max float) {
+	if info := state.getClipInfo(i); info.Bound != nil {
+		return info.Bound.GetMin().GetComponent(axis), info.Bound.GetMax().GetComponent(axis)
+	}
+	return state.GetDimension(v, axis)
+}
+
 func (state BuildState) getClipInfo(idx int) ClipInfo {
 	if state.Clips == nil {
 		return ClipInfo{}
@@ -168,7 +175,6 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 		return newLeaf(vals)
 	}
 	// Pick a pivot
-	// TODO: Make split functions aware of clipping
 	axis, pivot, cost := state.SplitFunc(vals, bd, state)
 	// Is this bad?
 	if cost > state.OldCost {

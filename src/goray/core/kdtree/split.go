@@ -29,16 +29,12 @@ func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pi
 func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float, cost float) {
 	axis = bd.GetLargestAxis()
 	data := make([]float, 0, len(vals)*2)
-	for _, v := range vals {
-		min, max := state.GetDimension(v, axis)
+	for i, v := range vals {
+		min, max := state.getClippedDimension(i, v, axis)
 		if fmath.Eq(min, max) {
-			i := len(data)
-			data = data[0 : len(data)+1]
-			data[i] = min
+			data = append(data, min)
 		} else {
-			i := len(data)
-			data = data[0 : len(data)+2]
-			data[i], data[i+1] = min, max
+			data = append(data, min, max)
 		}
 	}
 	sort.SortFloats(data)
@@ -68,8 +64,8 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int,
 		s := numBins / d[axis]
 		min := bd.GetMin().GetComponent(axis)
 
-		for _, v := range vals {
-			tLow, tHigh := state.GetDimension(v, axis)
+		for i, v := range vals {
+			tLow, tHigh := state.getClippedDimension(i, v, axis)
 			bLeft, bRight := int((tLow-min)*s), int((tHigh-min)*s)
 			if bLeft < 0 {
 				bLeft = 0
@@ -215,8 +211,8 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int
 
 	for axis := 0; axis < 3; axis++ {
 		edges := make(container.Vector, 0, len(vals)*2)
-		for _, v := range vals {
-			min, max := state.GetDimension(v, axis)
+		for i, v := range vals {
+			min, max := state.getClippedDimension(i, v, axis)
 			if fmath.Eq(min, max) {
 				edges.Push(boundEdge{min, bothB})
 			} else {
