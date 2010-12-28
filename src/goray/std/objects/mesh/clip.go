@@ -34,7 +34,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []dVector) ([]dVector, *bound.Bound)
 
 		// clip upper bound
 		poly = triClip(axis, bMax[axis], poly, cmpMax)
-		if len(poly) > 9 {
+		if len(poly) > 10 {
 			// fatal error
 			panic("clipped polygon is too complex")
 		}
@@ -44,7 +44,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []dVector) ([]dVector, *bound.Bound)
 		}
 	}
 
-	if len(poly) < 2 {
+	if len(poly) < 3 {
 		panic("clipped polygon degenerated")
 	}
 
@@ -72,9 +72,9 @@ func triPlaneClip(axis int, pos float64, lower bool, poly []dVector) ([]dVector,
 	switch {
 	case len(poly) == 0:
 		return nil, nil
-	case len(poly) < 2:
+	case len(poly) < 3:
 		panic("clipped polygon degenerated")
-	case len(poly) > 9:
+	case len(poly) > 10:
 		panic("clipped polygon is too complex")
 	}
 
@@ -138,6 +138,10 @@ func triClip(axis int, bound float64, poly []dVector, cmp func(a, b float64) boo
 				p1_inside = false
 			}
 		}
+	}
+
+	if len(cpoly) > 0 {
+		cpoly = append(cpoly, poly[0])
 	}
 
 	return
