@@ -73,7 +73,7 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 
 func (l *pointLight) CanIlluminate(pt vector.Vector3D) bool { return true }
 
-func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sample) (ok bool) {
+func (l *pointLight) IlluminateSample(sp surface.Point, wi *ray.Ray, s *light.Sample) (ok bool) {
 	_, ok = l.Illuminate(sp, wi)
 	if ok {
 		s.Flags = l.GetFlags()
@@ -83,7 +83,7 @@ func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sam
 	return
 }
 
-func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, ok bool) {
+func (l *pointLight) Illuminate(sp surface.Point, wi *ray.Ray) (col color.Color, ok bool) {
 	ldir := vector.Sub(l.position, sp.Position)
 	distSqr := ldir.LengthSqr()
 	dist := fmath.Sqrt(distSqr)
