@@ -112,8 +112,10 @@ func checkShadow(params directParams, r ray.Ray) bool {
 
 func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	sp := params.Surf
-	lightRay := ray.New()
-	lightRay.From = sp.Position
+	lightRay := ray.Ray{
+		From: sp.Position,
+		TMax: -1.0,
+	}
 	mat := sp.Material.(material.Material)
 
 	if lcol, ok := l.Illuminate(sp, &lightRay); ok {
@@ -143,7 +145,6 @@ func addMod1(a, b float) (s float) {
 
 func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	ccol = color.Black
-	sp := params.Surf
 
 	n := l.NumSamples()
 	if params.State.RayDivision > 1 {
@@ -160,8 +161,6 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	// Sample from light
 	hals1 := halSeq(n, 3, offset-1)
 	ccol = sample(n, func(i int) color.Color {
-		lightRay := ray.New()
-		lightRay.From = sp.Position
 		lightSamp := light.Sample{
 			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
 			S2: hals1[i],
@@ -193,8 +192,10 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 		lightSamp.S2 = addMod1(lightSamp.S2, params.State.Dc2)
 	}
 
-	lightRay := ray.New() // Illuminate will fill in most of the ray
-	lightRay.From = sp.Position
+	lightRay := ray.Ray{ // Illuminate will fill in most of the ray
+		From: sp.Position,
+		TMax: -1.0,
+	}
 	if l.IlluminateSample(sp, &lightRay, &lightSamp) {
 		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
 			// TODO: if trShad
@@ -224,9 +225,11 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col color.Color) {
 	sp := params.Surf
 	mat := sp.Material.(material.Material)
-	bRay := ray.New()
-	bRay.TMin = raySelfBias
-	bRay.From = sp.Position
+	bRay := ray.Ray{
+		From: sp.Position,
+		TMin: raySelfBias,
+		TMax: -1.0,
+	}
 
 	if params.State.RayDivision > 1 {
 		s1 = addMod1(s1, params.State.Dc1)
@@ -311,10 +314,11 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 			s1 = addMod1(s1, state.Dc1)
 			s2 = addMod1(s2, state.Dc2)
 		}
-		lightRay := ray.New()
-		lightRay.From = sp.Position
-		lightRay.TMin = raySelfBias
-		lightRay.TMax = aoDist
+		lightRay := ray.Ray{
+			From: sp.Position,
+			TMin: raySelfBias,
+			TMax: aoDist,
+		}
 
 		s := material.NewSample(s1, s2)
 		s.Flags = material.BSDFDiffuse | material.BSDFReflect

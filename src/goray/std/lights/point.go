@@ -54,9 +54,10 @@ func (l *pointLight) TotalEnergy() color.Color {
 }
 
 func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float) (col color.Color, r ray.Ray, ipdf float) {
-	r = ray.New()
-	r.From = l.position
-	r.Dir = sampleSphere(s1, s2)
+	r = ray.Ray{
+		From: l.position,
+		Dir:  sampleSphere(s1, s2),
+	}
 	ipdf = 4.0 * math.Pi
 	col = l.color
 	return

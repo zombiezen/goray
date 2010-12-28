@@ -19,8 +19,6 @@ type Ray struct {
 	Time       float
 }
 
-func New() Ray { return Ray{TMax: -1.0} }
-
 func (r Ray) String() string {
 	return fmt.Sprintf("Ray{From: %v, Dir: %v, TMin: %.2f, TMax: %.2f, Time: %.2f}", r.From, r.Dir, r.TMin, r.TMax, r.Time)
 }
@@ -31,10 +29,6 @@ type DifferentialRay struct {
 	Ray
 	FromX, FromY vector.Vector3D
 	DirX, DirY   vector.Vector3D
-}
-
-func NewDifferential() DifferentialRay {
-	return DifferentialRay{Ray: New()}
 }
 
 func (r DifferentialRay) String() string {

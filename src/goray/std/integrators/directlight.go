@@ -87,8 +87,6 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		mat := sp.Material.(material.Material)
 		bsdfs := mat.InitBSDF(state, sp)
 		wo := vector.ScalarMul(r.Dir, -1)
-		lightRay := ray.New()
-		lightRay.From = sp.Position
 
 		// Contribution of light-emitting surfaces
 		if emat, ok := mat.(material.EmitMaterial); ok {
@@ -123,20 +121,28 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 				reflect, refract, dir, rcol := mat.GetSpecular(state, sp, wo)
 				if reflect {
-					refRay := ray.NewDifferential()
-					refRay.From = sp.Position
-					refRay.Dir = dir[0]
-					refRay.TMin = 0.0005
+					refRay := ray.DifferentialRay{
+						Ray: ray.Ray{
+							From: sp.Position,
+							Dir:  dir[0],
+							TMin: 0.0005,
+							TMax: -1.0,
+						},
+					}
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
 					col = color.Add(col, color.Mul(integ, rcol[0]))
 				}
 				if refract {
-					refRay := ray.NewDifferential()
-					refRay.From = sp.Position
-					refRay.Dir = dir[1]
-					refRay.TMin = 0.0005
+					refRay := ray.DifferentialRay{
+						Ray: ray.Ray{
+							From: sp.Position,
+							Dir:  dir[1],
+							TMin: 0.0005,
+							TMax: -1.0,
+						},
+					}
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result

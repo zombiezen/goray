@@ -181,9 +181,11 @@ func (cam *Camera) getLensUV(r1, r2 float) (u, v float) {
 func (cam *Camera) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 	wt = 1.0 // for now, always 1, except 0 for probe when outside sphere
 
-	r = ray.New()
-	r.From = cam.eye
-	r.Dir = vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize()
+	r = ray.Ray{
+		From: cam.eye,
+		Dir:  vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize(),
+		TMax: -1.0,
+	}
 
 	if cam.SampleLens() {
 		u, v = cam.getLensUV(u, v)
