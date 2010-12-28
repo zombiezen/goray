@@ -12,13 +12,13 @@ import (
 
 func TestDepth(t *testing.T) {
 	type depthTestCase struct {
-		Name        string
+		Name      string
 		Intersect Interface
 	}
 
 	r := ray.New()
-	r.SetFrom(vector.New(2, 0, 0))
-	r.SetDir(vector.New(-1, 0, 0))
+	r.From = vector.New(2, 0, 0)
+	r.Dir = vector.New(-1, 0, 0)
 
 	sphereA := sphere.New(vector.New(1, 0, 0), 0.25, nil)
 	sphereB := sphere.New(vector.New(0, 0, 0), 0.25, nil)

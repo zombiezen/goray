@@ -70,14 +70,14 @@ func (dl *directLighting) Preprocess(sc *scene.Scene) {
 	return
 }
 
-func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor {
+func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.DifferentialRay) color.AlphaColor {
 	col, alpha := color.Black, 0.0
 
 	defer func(il bool) {
 		state.IncludeLights = il
 	}(state.IncludeLights)
 
-	if coll := sc.Intersect(r, -1); coll.Hit() {
+	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
 		sp := coll.GetSurface()
 		// Camera ray
 		if state.RayLevel == 0 {
@@ -86,9 +86,9 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 		mat := sp.Material.(material.Material)
 		bsdfs := mat.InitBSDF(state, sp)
-		wo := vector.ScalarMul(r.Dir(), -1)
+		wo := vector.ScalarMul(r.Dir, -1)
 		lightRay := ray.New()
-		lightRay.SetFrom(sp.Position)
+		lightRay.From = sp.Position
 
 		// Contribution of light-emitting surfaces
 		if emat, ok := mat.(material.EmitMaterial); ok {
@@ -124,9 +124,9 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 				reflect, refract, dir, rcol := mat.GetSpecular(state, sp, wo)
 				if reflect {
 					refRay := ray.NewDifferential()
-					refRay.SetFrom(sp.Position)
-					refRay.SetDir(dir[0])
-					refRay.SetTMin(0.0005)
+					refRay.From = sp.Position
+					refRay.Dir = dir[0]
+					refRay.TMin = 0.0005
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
@@ -134,9 +134,9 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 				}
 				if refract {
 					refRay := ray.NewDifferential()
-					refRay.SetFrom(sp.Position)
-					refRay.SetDir(dir[1])
-					refRay.SetTMin(0.0005)
+					refRay.From = sp.Position
+					refRay.Dir = dir[1]
+					refRay.TMin = 0.0005
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
@@ -151,7 +151,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 	} else {
 		// Nothing was hit, use the background.
 		if dl.background != nil {
-			col = color.Add(col, dl.background.GetColor(r, state, false))
+			col = color.Add(col, dl.background.GetColor(r.Ray, state, false))
 		}
 	}
 	return color.NewRGBAFromColor(col, alpha)

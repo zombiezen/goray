@@ -52,27 +52,27 @@ func biasDist(bias BokehBias, r float) float {
 // shirleyDisk maps a square to a disk using P. Shirley's concentric disk algorithm.
 func shirleyDisk(r1, r2 float) (u, v float) {
 	var phi, r float
-	a, b := 2 * r1 - 1, 2 * r2 - 1
-	
+	a, b := 2*r1-1, 2*r2-1
+
 	switch {
 	case a > -b && a > b:
 		r = a
 		phi = math.Pi / 4 * (b / a)
 	case a > -b && a <= b:
 		r = b
-		phi = math.Pi / 4 * (2 - a / b)
+		phi = math.Pi / 4 * (2 - a/b)
 	case a <= -b && a < b:
 		r = -a
-		phi = math.Pi / 4 * (4 + b / a)
+		phi = math.Pi / 4 * (4 + b/a)
 	default:
 		r = -b
 		if b != 0 {
-			phi = math.Pi / 4 * (6 - a / b)
+			phi = math.Pi / 4 * (6 - a/b)
 		} else {
 			phi = 0
 		}
 	}
-	
+
 	return r * fmath.Cos(phi), r * fmath.Sin(phi)
 }
 
@@ -87,11 +87,11 @@ type Camera struct {
 	dofUp, dofRight vector.Vector3D
 	x, y, z         vector.Vector3D
 
-	aperture float
-	aPix                float
-	bokeh               Bokeh
-	bokehBias           BokehBias
-	lens                []float
+	aperture  float
+	aPix      float
+	bokeh     Bokeh
+	bokehBias BokehBias
+	lens      []float
 }
 
 func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float, bokeh Bokeh, bias BokehBias, bokehRot float) (cam *Camera) {
@@ -127,11 +127,11 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 	cam.up = vector.ScalarDiv(cam.up, float(resy))
 	cam.right = vector.ScalarDiv(cam.right, float(resx))
 	cam.aPix = cam.aspectRatio / (cam.focalDistance * cam.focalDistance)
-	
+
 	// Set up bokeh
 	cam.bokeh = bokeh
 	cam.bokehBias = bias
-	
+
 	if cam.bokeh >= TriangleBokeh && cam.bokeh <= HexagonBokeh {
 		w := bokehRot * math.Pi / 180
 		wi := 2.0 * math.Pi / float(cam.bokeh)
@@ -154,9 +154,9 @@ func (cam *Camera) sampleTSD(r1, r2 float) (u, v float) {
 	b1 := r1 * r2
 	b0 := r1 - b1
 	idx <<= 1 // multiply by two
-	
-	u = cam.lens[idx] * b0 + cam.lens[idx + 2] * b1
-	v = cam.lens[idx + 1] * b0 + cam.lens[idx + 3] * b1
+
+	u = cam.lens[idx]*b0 + cam.lens[idx+2]*b1
+	v = cam.lens[idx+1]*b0 + cam.lens[idx+3]*b1
 	return
 }
 
@@ -171,25 +171,25 @@ func (cam *Camera) getLensUV(r1, r2 float) (u, v float) {
 		} else {
 			r1 = biasDist(cam.bokehBias, r1)
 		}
-		u, v = r1 * fmath.Cos(w), r2 * fmath.Sin(w)
+		u, v = r1*fmath.Cos(w), r2*fmath.Sin(w)
 		return
 	}
-	
+
 	return shirleyDisk(r1, r2)
 }
 
 func (cam *Camera) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 	wt = 1.0 // for now, always 1, except 0 for probe when outside sphere
-	
+
 	r = ray.New()
-	r.SetFrom(cam.eye)
-	r.SetDir(vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize())
-	
+	r.From = cam.eye
+	r.Dir = vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize()
+
 	if cam.SampleLens() {
 		u, v = cam.getLensUV(u, v)
 		li := vector.Add(vector.ScalarMul(cam.dofRight, u), vector.ScalarMul(cam.dofUp, v))
-		r.SetFrom(vector.Add(r.From(), li))
-		r.SetDir(vector.Sub(vector.ScalarMul(r.Dir(), cam.dofDistance), li).Normalize())
+		r.From = vector.Add(r.From, li)
+		r.Dir = vector.Sub(vector.ScalarMul(r.Dir, cam.dofDistance), li).Normalize()
 	}
 	return
 }
@@ -203,7 +203,7 @@ func (cam *Camera) SampleLens() bool { return cam.aperture != 0 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	m = m.Copy()
-	
+
 	if !m.HasKeys("position", "look", "up", "width", "height") {
 		err = os.NewError("Missing required camera key")
 		return
@@ -214,7 +214,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	up := m["up"].(vector.Vector3D)
 	width, _ := yamldata.AsInt(m["width"])
 	height, _ := yamldata.AsInt(m["height"])
-	
+
 	aspect, _ := yamldata.AsFloat(m.SetDefault("aspect", 1.0))
 	focalDistance, _ := yamldata.AsFloat(m.SetDefault("focalDistance", 1.0))
 	dofDistance, _ := yamldata.AsFloat(m.SetDefault("dofDistance", 0.0))
@@ -222,7 +222,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	btype := m.SetDefault("bokehType", "disk1").(string)
 	bbias, _ := m.SetDefault("bokehBias", "uniform").(string)
 	bokehRot, _ := yamldata.AsFloat(m.SetDefault("bokehRotation", 1.0))
-	
+
 	bokehType := Disk1Bokeh
 	switch btype {
 	case "disk2":
@@ -238,7 +238,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	case "ring":
 		bokehType = RingBokeh
 	}
-	
+
 	bokehBias := NoBias
 	switch bbias {
 	case "center":
@@ -246,7 +246,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	case "edge":
 		bokehBias = EdgeBias
 	}
-	
+
 	cam := New(pos, look, up, int(width), int(height), float(aspect), float(focalDistance), float(aperture), bokehType, bokehBias, float(bokehRot))
 	cam.dofDistance = float(dofDistance)
 	return cam, nil

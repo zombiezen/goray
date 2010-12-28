@@ -53,8 +53,8 @@ func (c *orthoCam) ResolutionY() int { return c.resy }
 func (c *orthoCam) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 	wt = 1
 	r = ray.New()
-	r.SetFrom(vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y)))
-	r.SetDir(c.vlook)
+	r.From = vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y))
+	r.Dir = c.vlook
 	return
 }
 

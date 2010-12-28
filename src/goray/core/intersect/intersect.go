@@ -58,7 +58,7 @@ func (s *simple) GetBound() *bound.Bound { return s.bound }
 func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	for _, p := range s.prims {
 		if newColl := p.Intersect(r); newColl.Hit() {
-			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin() && (!coll.Hit() || newColl.RayDepth < coll.RayDepth) {
+			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin && (!coll.Hit() || newColl.RayDepth < coll.RayDepth) {
 				coll = newColl
 			}
 		}
@@ -78,14 +78,14 @@ func (s *simple) IsShadowed(r ray.Ray, dist float) bool {
 func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
 	depth := 0
 	for _, p := range s.prims {
-		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin() {
+		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin {
 			mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
 			if !trans {
 				return true
 			}
 			if depth < maxDepth {
 				sp := coll.Primitive.GetSurface(coll)
-				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
+				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
@@ -135,24 +135,24 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 	var a, b, t float
 	var hit bool
 
-	if a, b, hit = kd.GetBound().Cross(r.From(), r.Dir(), maxDist); !hit {
+	if a, b, hit = kd.GetBound().Cross(r.From, r.Dir, maxDist); !hit {
 		return
 	}
 
-	invDir := r.Dir().Inverse()
+	invDir := r.Dir.Inverse()
 	enterStack := stack.New()
 	{
 		frame := followFrame{t: a}
 		if a >= 0.0 {
-			frame.point = vector.Add(r.From(), vector.ScalarMul(r.Dir(), a))
+			frame.point = vector.Add(r.From, vector.ScalarMul(r.Dir, a))
 		} else {
-			frame.point = r.From()
+			frame.point = r.From
 		}
 		enterStack.Push(frame)
 	}
 
 	exitStack := enterStack.Copy()
-	exitStack.Push(followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))})
+	exitStack.Push(followFrame{nil, b, vector.Add(r.From, vector.ScalarMul(r.Dir, b))})
 
 	enter := func() followFrame {
 		frame := enterStack.Top()
@@ -189,14 +189,14 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 				farChild = currInter.GetLeft()
 			}
 
-			t = (pivot - r.From().GetComponent(axis)) * invDir.GetComponent(axis)
+			t = (pivot - r.From.GetComponent(axis)) * invDir.GetComponent(axis)
 
 			// Set up the new exit point
 			var pt [3]float
 			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
 			pt[axis] = pivot
-			pt[nextAxis] = r.From().GetComponent(nextAxis) + t*r.Dir().GetComponent(nextAxis)
-			pt[prevAxis] = r.From().GetComponent(prevAxis) + t*r.Dir().GetComponent(prevAxis)
+			pt[nextAxis] = r.From.GetComponent(nextAxis) + t*r.Dir.GetComponent(nextAxis)
+			pt[prevAxis] = r.From.GetComponent(prevAxis) + t*r.Dir.GetComponent(prevAxis)
 			frame := followFrame{farChild, t, vector.New(pt[0], pt[1], pt[2])}
 			exitStack.Push(frame)
 		}
@@ -219,7 +219,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin(), dist, ch)
+	go kd.followRay(r, r.TMin, dist, ch)
 	for newColl := range ch {
 		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
 			coll = newColl
@@ -230,7 +230,7 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float) bool {
 	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin(), dist, ch)
+	go kd.followRay(r, r.TMin, dist, ch)
 	coll := <-ch
 	return coll.Hit()
 }
@@ -238,7 +238,7 @@ func (kd *kdPartition) IsShadowed(r ray.Ray, dist float) bool {
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
 	ch := make(chan primitive.Collision)
 
-	go kd.followRay(r, r.TMin(), dist, ch)
+	go kd.followRay(r, r.TMin, dist, ch)
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
 	for coll := range ch {
@@ -252,7 +252,7 @@ func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxD
 				return false
 			}
 			sp := coll.Primitive.GetSurface(coll)
-			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir()))
+			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
 			depth++
 		}
 	}

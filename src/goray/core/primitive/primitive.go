@@ -30,7 +30,7 @@ func (c Collision) Hit() bool { return c.Primitive != nil }
 
 // GetPoint returns the point in world coordinates where the ray intersected.
 func (c Collision) GetPoint() vector.Vector3D {
-	return vector.Add(c.Ray.From(), vector.ScalarMul(c.Ray.Dir(), c.RayDepth))
+	return vector.Add(c.Ray.From, vector.ScalarMul(c.Ray.Dir, c.RayDepth))
 }
 
 // GetSurface returns the surface point where the ray intersected.
