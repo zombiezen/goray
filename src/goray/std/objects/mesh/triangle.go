@@ -218,10 +218,17 @@ func (tri *Triangle) GetSurfaceArea() float {
 }
 
 func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+	if axis >= 0 {
+		return tri.clipPlane(bound, axis, oldData)
+	}
+	return tri.clipBox(bound)
+}
+
+func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			clipped, newData = nil, nil
-			logging.Warning(logging.MainLog, "ClipToBound panic: %v", err)
+			logging.Debug(logging.MainLog, "ClipToBound plane fault: %v", err)
+			clipped, newData = tri.clipBox(bound)
 		}
 	}()
 
@@ -233,22 +240,30 @@ func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface
 		poly = oldData.([]dVector)
 	}
 
-	if axis >= 0 {
-		lower := (axis &^ 3) != 0
-		axis = axis & 3
+	lower := (axis &^ 3) != 0
+	axis = axis & 3
 
-		var split float64
-		if lower {
-			split = float64(bound.GetMin().GetComponent(axis))
-		} else {
-			split = float64(bound.GetMax().GetComponent(axis))
-		}
-
-		newData, clipped = triPlaneClip(axis, split, lower, poly)
-		return
+	var split float64
+	if lower {
+		split = float64(bound.GetMin().GetComponent(axis))
+	} else {
+		split = float64(bound.GetMax().GetComponent(axis))
 	}
 
-	// Full clip
+	newData, clipped = triPlaneClip(axis, split, lower, poly)
+	return
+}
+
+func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			clipped, newData = nil, nil
+			logging.Warning(logging.MainLog, "ClipToBound panic: %v", err)
+		}
+	}()
+
+	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
+	poly := []dVector{vec2dvec(a), vec2dvec(b), vec2dvec(c), vec2dvec(a)}
 	bMin := [3]float64(vec2dvec(bound.GetMin()))
 	bMax := [3]float64(vec2dvec(bound.GetMax()))
 	newData, clipped = triBoxClip(bMin, bMax, poly)
