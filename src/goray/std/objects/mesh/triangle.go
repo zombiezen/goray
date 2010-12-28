@@ -193,8 +193,6 @@ func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
 	return triBoxOverlap([3]float{ctr.X, ctr.Y, ctr.Z}, bd.GetHalfSize(), points)
 }
 
-//func (tri *Triangle) ClipToBound(bound [2][3]float, axis int) (clipped *bound.Bound, ok bool) { return }
-
 func (tri *Triangle) GetMaterial() material.Material { return tri.material }
 
 // The rest of these are non-interface triangle-specific methods.
