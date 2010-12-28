@@ -21,7 +21,7 @@ import (
 // An Integrator renders rays.
 type Integrator interface {
 	Preprocess(scene *scene.Scene)
-	Integrate(scene *scene.Scene, state *render.State, r ray.Ray) color.AlphaColor
+	Integrate(scene *scene.Scene, state *render.State, r ray.DifferentialRay) color.AlphaColor
 }
 
 // A SurfaceIntegrator renders rays by casting onto solid objects.
@@ -62,8 +62,16 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	state.Time = 0.0
 	// Shoot ray
 	r, _ := cam.ShootRay(float(x), float(y), 0, 0)
+	// Set up differentials
+	cRay := ray.DifferentialRay{Ray: r}
+	r, _ = cam.ShootRay(float(x+1), float(y), 0, 0)
+	cRay.FromX = r.From
+	cRay.DirX = r.Dir
+	r, _ = cam.ShootRay(float(x), float(y+1), 0, 0)
+	cRay.FromY = r.From
+	cRay.DirY = r.Dir
 	// Integrate
-	color := i.Integrate(s, state, r)
+	color := i.Integrate(s, state, cRay)
 	return render.Fragment{X: x, Y: y, Color: color}
 }
 
