@@ -157,29 +157,44 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	// Tomas Möller and Ben Trumbore ray intersection scheme
 	// Ross adds: This is based on an ACM white paper which I don't have access to.
 	// I'm just going to smile, nod, and copy the code.  Code monkey very diligent.
+	//
+	// Much of the vector code has been inlined for a 3x speed boost.
 	coll.Ray = r
-	a, b, c := tri.getVertices()
+	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 
-	edge1, edge2 := vector.Sub(b, a), vector.Sub(c, a)
-	pvec := vector.Cross(r.Dir(), edge2)
-	det := vector.Dot(edge1, pvec)
-	if fmath.Eq(det, 0.0) {
+	// Ray info
+	rdir := r.Dir()
+	rfrom := r.From()
+
+	edge1 := vector.Vector3D{b.X - a.X, b.Y - a.Y, b.Z - a.Z}
+	edge2 := vector.Vector3D{c.X - a.X, c.Y - a.Y, c.Z - a.Z}
+	pvec := vector.Vector3D{
+		rdir.Y*edge2.Z - rdir.Z*edge2.Y,
+		rdir.Z*edge2.X - rdir.X*edge2.Z,
+		rdir.X*edge2.Y - rdir.Y*edge2.X,
+	}
+	det := edge1.X*pvec.X + edge1.Y*pvec.Y + edge1.Z*pvec.Z
+	if det == 0.0 {
 		return
 	}
 	invDet := 1.0 / det
-	tvec := vector.Sub(r.From(), a)
-	u := vector.Dot(tvec, pvec) * invDet
+	tvec := vector.Vector3D{rfrom.X - a.X, rfrom.Y - a.Y, rfrom.Z - a.Z}
+	u := (pvec.X*tvec.X + pvec.Y*tvec.Y + pvec.Z*tvec.Z) * invDet
 	if u < 0.0 || u > 1.0 {
 		return
 	}
-	qvec := vector.Cross(tvec, edge1)
-	v := vector.Dot(r.Dir(), qvec) * invDet
+	qvec := vector.Vector3D{
+		tvec.Y*edge1.Z - tvec.Z*edge1.Y,
+		tvec.Z*edge1.X - tvec.X*edge1.Z,
+		tvec.X*edge1.Y - tvec.Y*edge1.X,
+	}
+	v := (rdir.X*qvec.X + rdir.Y*qvec.Y + rdir.Z*qvec.Z) * invDet
 	if v < 0.0 || u+v > 1.0 {
 		return
 	}
 
 	coll.Primitive = tri
-	coll.RayDepth = vector.Dot(edge2, qvec) * invDet
+	coll.RayDepth = (edge2.X*qvec.X + edge2.Y*qvec.Y + edge2.Z*qvec.Z) * invDet
 	coll.UserData = interface{}([2]float{u, v})
 	return
 }
