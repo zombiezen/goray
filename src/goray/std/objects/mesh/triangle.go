@@ -228,7 +228,7 @@ func (tri *Triangle) GetSurfaceArea() float {
 	return vector.Cross(edge1, edge2).Length() * 0.5
 }
 
-func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) Clip(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	if axis >= 0 {
 		return tri.clipPlane(bound, axis, oldData)
 	}
@@ -238,7 +238,7 @@ func (tri *Triangle) ClipToBound(bound *bound.Bound, axis int, oldData interface
 func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			logging.Debug(logging.MainLog, "ClipToBound plane fault: %v", err)
+			logging.Debug(logging.MainLog, "Clip plane fault: %v", err)
 			clipped, newData = tri.clipBox(bound)
 		}
 	}()
@@ -269,7 +269,7 @@ func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData 
 	defer func() {
 		if err := recover(); err != nil {
 			clipped, newData = nil, nil
-			logging.Warning(logging.MainLog, "ClipToBound panic: %v", err)
+			logging.Warning(logging.MainLog, "Clip panic: %v", err)
 		}
 	}()
 

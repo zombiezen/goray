@@ -261,7 +261,7 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 			if info.Bound == nil {
 				info.Bound = state.getBound(v)
 			}
-			newBound, newData := clipv.ClipToBound(bd, state.ClipAxis, info.InternalData)
+			newBound, newData := clipv.Clip(bd, state.ClipAxis, info.InternalData)
 			if newBound != nil {
 				// Polygon clipped and still with us.
 				info.Bound, info.InternalData = newBound, newData
