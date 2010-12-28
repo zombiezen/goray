@@ -13,7 +13,6 @@ package intersect
 
 import (
 	"goray/logging"
-	"goray/stack"
 	"goray/core/bound"
 	"goray/core/color"
 	"goray/core/kdtree"
@@ -140,7 +139,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 	}
 
 	invDir := r.Dir().Inverse()
-	enterStack := stack.New()
+	enterStack := make([]followFrame, 0)
 	{
 		frame := followFrame{t: a}
 		if a >= 0.0 {
@@ -148,25 +147,17 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 		} else {
 			frame.point = r.From()
 		}
-		enterStack.Push(frame)
+		enterStack = append(enterStack, frame)
 	}
 
-	exitStack := enterStack.Copy()
-	exitStack.Push(followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))})
-
-	enter := func() followFrame {
-		frame := enterStack.Top()
-		return frame.(followFrame)
-	}
-	exit := func() followFrame {
-		frame := exitStack.Top()
-		return frame.(followFrame)
-	}
+	exitStack := make([]followFrame, len(enterStack)+1)
+	copy(exitStack, enterStack)
+	exitStack[len(exitStack)-1] = followFrame{nil, b, vector.Add(r.From(), vector.ScalarMul(r.Dir(), b))}
 
 	for currNode := kd.GetRoot(); currNode != nil; {
 		var farChild kdtree.Node
 		// Stop looping if we've passed the maximum distance
-		if enter().t > maxDist {
+		if enterStack[len(enterStack)-1].t > maxDist {
 			break
 		}
 		// Traverse to the leaves
@@ -175,15 +166,15 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 			axis := currInter.GetAxis()
 			pivot := currInter.GetPivot()
 
-			if enter().point.GetComponent(axis) <= pivot {
+			if enterStack[len(enterStack)-1].point.GetComponent(axis) <= pivot {
 				currNode = currInter.GetLeft()
-				if exit().point.GetComponent(axis) <= pivot {
+				if exitStack[len(exitStack)-1].point.GetComponent(axis) <= pivot {
 					continue
 				}
 				farChild = currInter.GetRight()
 			} else {
 				currNode = currInter.GetRight()
-				if exit().point.GetComponent(axis) > pivot {
+				if exitStack[len(exitStack)-1].point.GetComponent(axis) > pivot {
 					continue
 				}
 				farChild = currInter.GetLeft()
@@ -198,7 +189,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 			pt[nextAxis] = r.From().GetComponent(nextAxis) + t*r.Dir().GetComponent(nextAxis)
 			pt[prevAxis] = r.From().GetComponent(prevAxis) + t*r.Dir().GetComponent(prevAxis)
 			frame := followFrame{farChild, t, vector.New(pt[0], pt[1], pt[2])}
-			exitStack.Push(frame)
+			exitStack = append(exitStack, frame)
 		}
 
 		// Okay, we've reached a leaf.
@@ -211,9 +202,15 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 		}
 
 		// Update stack
-		enterStack = exitStack.Copy()
-		topExit := exitStack.Pop()
-		currNode = topExit.(followFrame).node
+		if cap(enterStack) < len(exitStack) {
+			enterStack = make([]followFrame, len(exitStack))
+		} else {
+			enterStack = enterStack[:len(exitStack)]
+		}
+		copy(enterStack, exitStack)
+
+		currNode = exitStack[len(exitStack)-1].node
+		exitStack = exitStack[:len(exitStack)-1]
 	}
 }
 
