@@ -160,7 +160,7 @@ func (tree *Tree) String() string {
 func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	// Clip any primitives
 	if uint(len(vals)) <= state.ClipThreshold {
-		vals, state.Clips, bd = clip(vals, bd, state)
+		vals, state.Clips, _ = clip(vals, bd, state)
 	}
 	// If we're within acceptable bounds (or we're just sick of building the tree),
 	// then make a leaf.
