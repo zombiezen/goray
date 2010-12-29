@@ -2,10 +2,6 @@ package kdtree
 
 import "testing"
 
-import (
-	"goray/fmath"
-)
-
 func TestLeaf(t *testing.T) {
 	myLeaf := newLeaf([]Value{1, 2, 3})
 	if !myLeaf.IsLeaf() {
@@ -31,7 +27,7 @@ func TestInterior(t *testing.T) {
 	if myInt.GetAxis() != 2 {
 		t.Error("Interior node stores wrong axis")
 	}
-	if !fmath.Eq(myInt.GetPivot(), 3.14) {
+	if myInt.GetPivot() != 3.14 {
 		t.Error("Interior node stores wrong pivot")
 	}
 	if child, _ := myInt.GetLeft().(*Leaf); child != leafA {

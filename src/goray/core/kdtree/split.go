@@ -31,7 +31,7 @@ func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, piv
 	data := make([]float, 0, len(vals)*2)
 	for i, v := range vals {
 		min, max := state.getClippedDimension(i, v, axis)
-		if fmath.Eq(min, max) {
+		if min == max {
 			data = append(data, min)
 		} else {
 			data = append(data, min, max)
@@ -56,7 +56,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int,
 	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
-	if !fmath.Eq(totalSA, 0.0) {
+	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}
 
@@ -188,7 +188,7 @@ func (e boundEdge) Less(other interface{}) bool {
 	if !ok {
 		return false
 	}
-	if fmath.Eq(e.position, f.position) {
+	if e.position == f.position {
 		return e.boundEnd > f.boundEnd
 	}
 	return e.position < f.position
@@ -205,7 +205,7 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int
 	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
-	if !fmath.Eq(totalSA, 0.0) {
+	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}
 
@@ -213,7 +213,7 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int
 		edges := make(container.Vector, 0, len(vals)*2)
 		for i, v := range vals {
 			min, max := state.getClippedDimension(i, v, axis)
-			if fmath.Eq(min, max) {
+			if min ==  max {
 				edges.Push(boundEdge{min, bothB})
 			} else {
 				edges.Push(boundEdge{min, lowerB})

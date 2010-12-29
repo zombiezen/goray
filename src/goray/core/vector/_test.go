@@ -1,19 +1,18 @@
 package vector
 
 import "testing"
-import "goray/fmath"
 
 func TestNew(t *testing.T) {
 	comps := []float{1.5, -5.7, 4.0}
 	v := New(comps[0], comps[1], comps[2])
 
-	if !fmath.Eq(v.X, comps[0]) {
+	if v.X != comps[0] {
 		t.Error("X component does not match")
 	}
-	if !fmath.Eq(v.Y, comps[1]) {
+	if v.Y != comps[1] {
 		t.Error("Y component does not match")
 	}
-	if !fmath.Eq(v.Z, comps[2]) {
+	if v.Z != comps[2] {
 		t.Error("Z component does not match")
 	}
 }
@@ -61,10 +60,10 @@ func TestLength(t *testing.T) {
 
 	for _, ltest := range tests {
 		v := New(ltest.Comps[0], ltest.Comps[1], ltest.Comps[2])
-		if lensqr := ltest.Length * ltest.Length; !fmath.Eq(v.LengthSqr(), lensqr) {
+		if lensqr := ltest.Length * ltest.Length; v.LengthSqr() != lensqr {
 			t.Error("LengthSqr failed for %v (wanted %.2f, got %.2f)", v, lensqr, v.LengthSqr())
 		}
-		if !fmath.Eq(v.Length(), ltest.Length) {
+		if v.Length() != ltest.Length {
 			t.Error("Length failed for %v (wanted %.2f, got %.2f)", v, ltest.Length, v.Length())
 		}
 	}

@@ -148,7 +148,7 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 		dv1, dv2 := uvA.V-uvC.V, uvB.V-uvC.V
 		det := du1*dv2 - dv1*du2
 
-		if !fmath.Eq(det, 0.0) {
+		if det != 0.0 {
 			invdet := 1.0 / det
 			dp1, dp2 := vector.Sub(a, c), vector.Sub(b, c)
 			sp.WorldU = vector.Sub(vector.ScalarMul(dp1, dv2*invdet), vector.ScalarMul(dp2, dv1*invdet))

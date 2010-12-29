@@ -42,27 +42,6 @@ func abs64(f float64) float64 {
 	return -f
 }
 
-// Eq returns whether two floating point values are roughly equivalent.
-func Eq(a, b float) bool {
-	const epsilon = 0.000001
-	return nearlyEqual(float64(a), float64(b), epsilon)
-}
-
-// nearlyEqual checks whether two numbers are equivalent.
-//
-// The basic algorithm for this is described at http://floating-point-gui.de/comparision/
-func nearlyEqual(a, b, epsilon float64) bool {
-	absA, absB := abs64(a), abs64(b)
-	diff := abs64(a - b)
-
-	if a*b == 0 {
-		// A or B is zero; relative error is not meaningful
-		return diff < epsilon*epsilon
-	}
-	// Use relative error
-	return diff/(absA+absB) < epsilon
-}
-
 // IsInf returns whether its argument is one of the infinities.
 func IsInf(n float) bool {
 	return math.IsInf(float64(n), 0)

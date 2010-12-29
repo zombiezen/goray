@@ -40,13 +40,13 @@ func (v Vector3D) Abs() Vector3D { return Vector3D{fmath.Abs(v.X), fmath.Abs(v.Y
 
 // Inverse returns a new vector that is the result of 1.0 / v.GetComponent(i) for all i.  Any zero value is left as zero.
 func (v Vector3D) Inverse() (r Vector3D) {
-	if !fmath.Eq(v.X, 0.0) {
+	if v.X != 0.0 {
 		r.X = 1.0 / v.X
 	}
-	if !fmath.Eq(v.Y, 0.0) {
+	if v.Y != 0.0 {
 		r.Y = 1.0 / v.Y
 	}
-	if !fmath.Eq(v.Z, 0.0) {
+	if v.Z != 0.0 {
 		r.Z = 1.0 / v.Z
 	}
 	return
