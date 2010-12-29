@@ -172,7 +172,7 @@ func (s *Scene) GetDoDepth() bool { return s.doDepth }
 func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
 	// Determine distance to check
 	if dist < 0 {
-		dist = r.TMax()
+		dist = r.TMax
 		if dist < 0 {
 			dist = fmath.Inf
 		}
@@ -191,10 +191,9 @@ func (s *Scene) IsShadowed(r ray.Ray, dist float) bool {
 		s.log.Warning("IsShadowed called without an Update")
 		return false
 	}
-	r = ray.Copy(r)
-	r.SetFrom(vector.Add(r.From(), vector.ScalarMul(r.Dir(), r.TMin())))
-	if r.TMax() >= 0 {
-		dist = r.TMax() - 2*r.TMin()
+	r.From = vector.Add(r.From, vector.ScalarMul(r.Dir, r.TMin))
+	if r.TMax >= 0 {
+		dist = r.TMax - 2*r.TMin
 	}
 	return s.intersect.IsShadowed(r, dist)
 }

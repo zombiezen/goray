@@ -79,23 +79,19 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	coll.Ray = r
 	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 
-	// Ray info
-	rdir := r.Dir()
-	rfrom := r.From()
-
 	edge1 := vector.Vector3D{b.X - a.X, b.Y - a.Y, b.Z - a.Z}
 	edge2 := vector.Vector3D{c.X - a.X, c.Y - a.Y, c.Z - a.Z}
 	pvec := vector.Vector3D{
-		rdir.Y*edge2.Z - rdir.Z*edge2.Y,
-		rdir.Z*edge2.X - rdir.X*edge2.Z,
-		rdir.X*edge2.Y - rdir.Y*edge2.X,
+		r.Dir.Y*edge2.Z - r.Dir.Z*edge2.Y,
+		r.Dir.Z*edge2.X - r.Dir.X*edge2.Z,
+		r.Dir.X*edge2.Y - r.Dir.Y*edge2.X,
 	}
 	det := edge1.X*pvec.X + edge1.Y*pvec.Y + edge1.Z*pvec.Z
 	if det == 0.0 {
 		return
 	}
 	invDet := 1.0 / det
-	tvec := vector.Vector3D{rfrom.X - a.X, rfrom.Y - a.Y, rfrom.Z - a.Z}
+	tvec := vector.Vector3D{r.From.X - a.X, r.From.Y - a.Y, r.From.Z - a.Z}
 	u := (pvec.X*tvec.X + pvec.Y*tvec.Y + pvec.Z*tvec.Z) * invDet
 	if u < 0.0 || u > 1.0 {
 		return
@@ -105,7 +101,7 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 		tvec.Z*edge1.X - tvec.X*edge1.Z,
 		tvec.X*edge1.Y - tvec.Y*edge1.X,
 	}
-	v := (rdir.X*qvec.X + rdir.Y*qvec.Y + rdir.Z*qvec.Z) * invDet
+	v := (r.Dir.X*qvec.X + r.Dir.Y*qvec.Y + r.Dir.Z*qvec.Z) * invDet
 	if v < 0.0 || u+v > 1.0 {
 		return
 	}

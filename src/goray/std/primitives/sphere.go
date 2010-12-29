@@ -41,9 +41,9 @@ func (s *sphere) GetMaterial() material.Material      { return s.material }
 func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	coll.Ray = r
 
-	vf := vector.Sub(r.From(), s.center)
-	ea := r.Dir().LengthSqr()
-	eb := vector.Dot(vf, r.Dir()) * 2.0
+	vf := vector.Sub(r.From, s.center)
+	ea := r.Dir.LengthSqr()
+	eb := vector.Dot(vf, r.Dir) * 2.0
 	ec := vf.LengthSqr() - s.radius*s.radius
 	osc := eb*eb - 4.0*ea*ec
 	if osc < 0 {
@@ -54,9 +54,9 @@ func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	sol1 := (-eb - osc) / (ea * 2.0)
 	sol2 := (-eb + osc) / (ea * 2.0)
 	coll.RayDepth = sol1
-	if coll.RayDepth < r.TMin() {
+	if coll.RayDepth < r.TMin {
 		coll.RayDepth = sol2
-		if coll.RayDepth < r.TMin() {
+		if coll.RayDepth < r.TMin {
 			return
 		}
 	}

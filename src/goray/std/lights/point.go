@@ -54,9 +54,10 @@ func (l *pointLight) TotalEnergy() color.Color {
 }
 
 func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float) (col color.Color, r ray.Ray, ipdf float) {
-	r = ray.New()
-	r.SetFrom(l.position)
-	r.SetDir(sampleSphere(s1, s2))
+	r = ray.Ray{
+		From: l.position,
+		Dir:  sampleSphere(s1, s2),
+	}
 	ipdf = 4.0 * math.Pi
 	col = l.color
 	return
@@ -73,8 +74,8 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 
 func (l *pointLight) CanIlluminate(pt vector.Vector3D) bool { return true }
 
-func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sample) (ok bool) {
-	_, ok = l.Illuminate(sp, wi)
+func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sample) (wo ray.Ray, ok bool) {
+	_, wo, ok = l.Illuminate(sp, wi)
 	if ok {
 		s.Flags = l.GetFlags()
 		s.Color = l.color
@@ -83,7 +84,7 @@ func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sam
 	return
 }
 
-func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, ok bool) {
+func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, wo ray.Ray, ok bool) {
 	ldir := vector.Sub(l.position, sp.Position)
 	distSqr := ldir.LengthSqr()
 	dist := fmath.Sqrt(distSqr)
@@ -95,8 +96,9 @@ func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, 
 	idistSqr := 1.0 / distSqr
 	ldir = vector.ScalarMul(ldir, 1.0/dist)
 
-	wi.SetTMax(dist)
-	wi.SetDir(ldir)
+	wo = wi
+	wo.TMax = dist
+	wo.Dir = ldir
 
 	col = color.ScalarMul(l.color, idistSqr)
 	return

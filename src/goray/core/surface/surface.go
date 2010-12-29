@@ -62,10 +62,10 @@ func (d Differentials) ReflectRay(in, out *ray.DifferentialRay) {
 	out.FromX = vector.Add(d.Point.Position, d.X)
 	out.FromY = vector.Add(d.Point.Position, d.Y)
 	// Compute differential reflected directions
-	incidenceX, incidenceY := vector.Sub(in.Dir(), in.DirX), vector.Sub(in.Dir(), in.DirY)
+	incidenceX, incidenceY := vector.Sub(in.Dir, in.DirX), vector.Sub(in.Dir, in.DirY)
 	normDx, normDy := vector.Dot(incidenceX, d.Point.Normal), vector.Dot(incidenceY, d.Point.Normal)
-	out.DirX = vector.Add(out.Dir(), vector.ScalarMul(incidenceX, -1), vector.ScalarMul(d.Point.Normal, 2*normDx))
-	out.DirY = vector.Add(out.Dir(), vector.ScalarMul(incidenceY, -1), vector.ScalarMul(d.Point.Normal, 2*normDy))
+	out.DirX = vector.Add(out.Dir, vector.ScalarMul(incidenceX, -1), vector.ScalarMul(d.Point.Normal, 2*normDx))
+	out.DirY = vector.Add(out.Dir, vector.ScalarMul(incidenceY, -1), vector.ScalarMul(d.Point.Normal, 2*normDy))
 }
 
 // RefractRay computes differentials for a scattered ray.
@@ -74,15 +74,15 @@ func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float) {
 	out.FromX = vector.Add(d.Point.Position, d.X)
 	out.FromY = vector.Add(d.Point.Position, d.Y)
 
-	incidenceX, incidenceY := vector.Sub(in.Dir(), in.DirX), vector.Sub(in.Dir(), in.DirY)
+	incidenceX, incidenceY := vector.Sub(in.Dir, in.DirX), vector.Sub(in.Dir, in.DirY)
 	normDx, normDy := vector.Dot(incidenceX, d.Point.Normal), vector.Dot(incidenceY, d.Point.Normal)
 
-	muDeriv := ior - (ior*ior*vector.Dot(in.Dir(), d.Point.Normal))/vector.Dot(out.Dir(), d.Point.Normal)
+	muDeriv := ior - (ior*ior*vector.Dot(in.Dir, d.Point.Normal))/vector.Dot(out.Dir, d.Point.Normal)
 	muDx := muDeriv * normDx
 	muDy := muDeriv * normDy
 
-	out.DirX = vector.Add(out.Dir(), vector.ScalarMul(incidenceX, ior), vector.ScalarMul(d.Point.Normal, -muDx))
-	out.DirY = vector.Add(out.Dir(), vector.ScalarMul(incidenceY, ior), vector.ScalarMul(d.Point.Normal, -muDy))
+	out.DirX = vector.Add(out.Dir, vector.ScalarMul(incidenceX, ior), vector.ScalarMul(d.Point.Normal, -muDx))
+	out.DirY = vector.Add(out.Dir, vector.ScalarMul(incidenceY, ior), vector.ScalarMul(d.Point.Normal, -muDy))
 }
 
 func (d Differentials) ProjectedPixelArea() float {

@@ -103,7 +103,7 @@ type directParams struct {
 }
 
 func checkShadow(params directParams, r ray.Ray) bool {
-	r.SetTMin(raySelfBias)
+	r.TMin = raySelfBias
 	if params.TrShad {
 		// TODO
 	}
@@ -112,20 +112,23 @@ func checkShadow(params directParams, r ray.Ray) bool {
 
 func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	sp := params.Surf
-	lightRay := ray.New()
-	lightRay.SetFrom(sp.Position)
+	lightRay := ray.Ray{
+		From: sp.Position,
+		TMax: -1.0,
+	}
 	mat := sp.Material.(material.Material)
 
-	if lcol, ok := l.Illuminate(sp, lightRay); ok {
+	lcol, lightRay, ok := l.Illuminate(sp, lightRay)
+	if ok {
 		if shadowed := checkShadow(params, lightRay); !shadowed {
 			if params.TrShad {
 				//lcol = color.Mul(lcol, scol)
 			}
-			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir(), material.BSDFAll)
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
 			//TODO: transmitCol
 			return color.ScalarMul(
 				color.Mul(surfCol, lcol),
-				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())),
+				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
 			)
 		}
 	}
@@ -143,7 +146,6 @@ func addMod1(a, b float) (s float) {
 
 func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	ccol = color.Black
-	sp := params.Surf
 
 	n := l.NumSamples()
 	if params.State.RayDivision > 1 {
@@ -160,8 +162,6 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	// Sample from light
 	hals1 := halSeq(n, 3, offset-1)
 	ccol = sample(n, func(i int) color.Color {
-		lightRay := ray.New()
-		lightRay.SetFrom(sp.Position)
 		lightSamp := light.Sample{
 			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
 			S2: hals1[i],
@@ -193,20 +193,23 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 		lightSamp.S2 = addMod1(lightSamp.S2, params.State.Dc2)
 	}
 
-	lightRay := ray.New() // Illuminate will fill in most of the ray
-	lightRay.SetFrom(sp.Position)
-	if l.IlluminateSample(sp, lightRay, &lightSamp) {
+	lightRay := ray.Ray{ // Illuminate will fill in most of the ray
+		From: sp.Position,
+		TMax: -1.0,
+	}
+	lightRay, ok := l.IlluminateSample(sp, lightRay, &lightSamp)
+	if ok {
 		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
 			// TODO: if trShad
 			// TODO: transmitCol
-			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir(), material.BSDFAll)
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
 			col = color.ScalarMul(
 				color.Mul(surfCol, lightSamp.Color),
-				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir())),
+				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
 			)
 			if canIntersect {
 				mPdf := mat.Pdf(
-					params.State, sp, params.Wo, lightRay.Dir(),
+					params.State, sp, params.Wo, lightRay.Dir,
 					material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive|material.BSDFReflect|material.BSDFTransmit,
 				)
 				l2 := lightSamp.Pdf * lightSamp.Pdf
@@ -224,9 +227,11 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col color.Color) {
 	sp := params.Surf
 	mat := sp.Material.(material.Material)
-	bRay := ray.New()
-	bRay.SetTMin(raySelfBias)
-	bRay.SetFrom(sp.Position)
+	bRay := ray.Ray{
+		From: sp.Position,
+		TMin: raySelfBias,
+		TMax: -1.0,
+	}
 
 	if params.State.RayDivision > 1 {
 		s1 = addMod1(s1, params.State.Dc1)
@@ -236,10 +241,10 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col col
 	s.Flags = material.BSDFGlossy | material.BSDFDiffuse | material.BSDFDispersive | material.BSDFReflect | material.BSDFTransmit
 
 	surfCol, wi := mat.Sample(params.State, sp, params.Wo, &s)
-	bRay.SetDir(wi)
+	bRay.Dir = wi
 
 	if dist, lcol, lightPdf, ok := l.Intersect(bRay); s.Pdf > pdfCutoff && ok {
-		bRay.SetTMax(dist)
+		bRay.TMax = dist
 		if !checkShadow(params, bRay) {
 			// TODO: if trShad
 			// TODO: transmitCol
@@ -247,7 +252,7 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col col
 			l2 := lPdf * lPdf
 			m2 := s.Pdf * s.Pdf
 			w := m2 / (l2 + m2)
-			cos2 := fmath.Abs(vector.Dot(sp.Normal, bRay.Dir()))
+			cos2 := fmath.Abs(vector.Dot(sp.Normal, bRay.Dir))
 			if s.Pdf > pdfCutoff {
 				col = color.ScalarMul(
 					color.Mul(surfCol, lcol),
@@ -311,20 +316,21 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 			s1 = addMod1(s1, state.Dc1)
 			s2 = addMod1(s2, state.Dc2)
 		}
-		lightRay := ray.New()
-		lightRay.SetFrom(sp.Position)
-		lightRay.SetTMin(raySelfBias)
-		lightRay.SetTMax(aoDist)
+		lightRay := ray.Ray{
+			From: sp.Position,
+			TMin: raySelfBias,
+			TMax: aoDist,
+		}
 
 		s := material.NewSample(s1, s2)
 		s.Flags = material.BSDFDiffuse | material.BSDFReflect
 		surfCol, dir := mat.Sample(state, sp, wo, &s)
-		lightRay.SetDir(dir)
+		lightRay.Dir = dir
 
 		if s.Pdf <= pdfCutoff || sc.IsShadowed(lightRay, fmath.Inf) {
 			return color.Black
 		}
-		cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir()))
+		cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir))
 		return color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf)
 	})
 }
