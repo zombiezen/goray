@@ -13,12 +13,40 @@ import (
 	"math"
 )
 
+type Axis int
+
 // Axes
 const (
-	X = iota
+	X Axis = iota
 	Y
 	Z
 )
+
+const NumAxes = 3
+
+func (a Axis) String() string {
+	switch a {
+	case X:
+		return "X"
+	case Y:
+		return "Y"
+	case Z:
+		return "Z"
+	}
+	return fmt.Sprintf("vector.Axis(%d)", int(a))
+}
+
+func (a Axis) GoString() string {
+	switch a {
+	case X:
+		return "vector.X"
+	case Y:
+		return "vector.Y"
+	case Z:
+		return "vector.Z"
+	}
+	return fmt.Sprintf("vector.Axis(%d)", int(a))
+}
 
 // Vector3D represents a three-dimensional vector. The default value is a zero vector.
 // The old Yafaray engine had a distinct type for a point and a normal, but we just represent everything as vectors.
@@ -57,6 +85,10 @@ func (v Vector3D) IsZero() bool { return v[X] == 0 && v[Y] == 0 && v[Z] == 0 }
 
 func (v Vector3D) String() string {
 	return fmt.Sprintf("<%.2f, %.2f, %.2f>", v[X], v[Y], v[Z])
+}
+
+func (v Vector3D) GoString() string {
+	return fmt.Sprintf("vector.Vector3D{%.3f, %.3f, %.3f}", v[X], v[Y], v[Z])
 }
 
 // Add computes the sum of two or more vectors.
