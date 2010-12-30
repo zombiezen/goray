@@ -8,7 +8,7 @@
 package color
 
 import (
-	"goray/fmath"
+	"math"
 )
 
 // IsBlack determines whether a color is absolute black.
@@ -34,7 +34,7 @@ func Invert(c Color) Color {
 
 // Abs ensures that a color is positive.
 func Abs(c Color) Color {
-	return NewRGB(fmath.Abs(c.GetR()), fmath.Abs(c.GetG()), fmath.Abs(c.GetB()))
+	return NewRGB(float(math.Fabs(float64(c.GetR()))), float(math.Fabs(float64(c.GetG()))), float(math.Fabs(float64(c.GetB()))))
 }
 
 // Add creates a new color that is equivalent to the sum of the colors given to it, disregarding alpha information.

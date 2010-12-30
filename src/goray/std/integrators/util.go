@@ -9,7 +9,6 @@ package util
 
 import (
 	"math"
-	"goray/fmath"
 	"goray/montecarlo"
 	"goray/core/color"
 	"goray/core/light"
@@ -290,8 +289,8 @@ func kernel(phot, gather float64) float64 {
 	return 3.0 / (gather * math.Pi) * s * s
 }
 
-func ckernel(phot, gather float) float {
-	p, g := fmath.Sqrt(phot), fmath.Sqrt(gather)
+func ckernel(phot, gather float64) float64 {
+	p, g := math.Sqrt(phot), math.Sqrt(gather)
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 

@@ -8,8 +8,8 @@
 package kdtree
 
 import (
+	"math"
 	"sort"
-	"goray/fmath"
 	"goray/logging"
 	"goray/core/bound"
 	"goray/core/vector"
@@ -59,7 +59,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float64{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost = fmath.Inf
+	bestCost = float(math.Inf(1))
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := float64(0.0)
 	if totalSA != 0.0 {
@@ -207,7 +207,7 @@ const (
 
 func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float) {
 	d := bd.GetSize()
-	bestCost = fmath.Inf
+	bestCost = float(math.Inf(1))
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := float64(0.0)
 	if totalSA != 0.0 {

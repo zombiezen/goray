@@ -67,7 +67,7 @@ func (b *Bound) SetMaxZ(z float64) { b.g[vector.Z] = z }
 // Cross checks whether a given ray crosses the bound.
 // from specifies a point where the ray starts.
 // ray specifies the direction the ray is in.
-// dist is the maximum distance that this method will check.  Pass in fmath.Inf to remove the check.
+// dist is the maximum distance that this method will check.  Pass in math.Inf(1) to remove the check.
 func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (enter, leave float64, crosses bool) {
 	a0, a1 := b.a, b.g
 	p := vector.Sub(from, a0)
