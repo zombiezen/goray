@@ -17,13 +17,13 @@ type Camera interface {
 	// ShootRay calculates the initial ray used for computing a fragment of the
 	// output.  U and V are sample coordinates that are only calculated if
 	// SampleLens returns true.
-	ShootRay(x, y, u, v float) (ray.Ray, float)
+	ShootRay(x, y, u, v float64) (ray.Ray, float64)
 	// ResolutionX returns the number of fragments wide that the camera is.
 	ResolutionX() int
 	// ResolutionY returns the number of fragments high that the camera is.
 	ResolutionY() int
 	// Project calculates the projection of a ray onto the fragment plane.
-	Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool)
+	Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bool)
 	// SampleLens returns whether the lens needs to be sampled using the u and v
 	// parameters of ShootRay.  This is useful for DOF-like effects.  When this
 	// returns false, no lens samples need to be computed.

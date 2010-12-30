@@ -8,14 +8,15 @@
 package mesh
 
 import (
-	"goray/fmath"
+	"math"
+	"goray/core/vector"
 )
 
 // Triangle bound intersection methods
 // Note that a lot of functionality gets inlined for efficiency reasons.
 
-func planeBoxOverlap(normal, vert, maxbox [3]float) bool {
-	var vmin, vmax [3]float
+func planeBoxOverlap(normal, vert, maxbox [3]float64) bool {
+	var vmin, vmax [3]float64
 
 	for q := 0; q < 3; q++ {
 		v := vert[q]
@@ -38,27 +39,24 @@ func planeBoxOverlap(normal, vert, maxbox [3]float) bool {
 	return false
 }
 
-func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
-	const X = 0
-	const Y = 1
-	const Z = 2
-	var normal, f [3]float
-	var v, e [3][3]float
-	var min, max float
+func triBoxOverlap(boxcenter, boxhalfsize [3]float64, verts [3][3]float64) bool {
+	var normal, f [3]float64
+	var v, e [3][3]float64
+	var min, max float64
 
-	axisTest := func(axis, i, j, edgeNum int) bool {
-		var axis1, axis2 int
-		var a, b, fa, fb float
-		var p1, p2, rad, min, max float
-		var v1, v2 []float
+	axisTest := func(axis vector.Axis, i, j, edgeNum int) bool {
+		var axis1, axis2 vector.Axis
+		var a, b, fa, fb float64
+		var p1, p2, rad, min, max float64
+		var v1, v2 []float64
 
 		switch axis {
-		case X:
-			axis1, axis2 = Y, Z
-		case Y:
-			axis1, axis2 = X, Z
-		case Z:
-			axis1, axis2 = X, Y
+		case vector.X:
+			axis1, axis2 = vector.Y, vector.Z
+		case vector.Y:
+			axis1, axis2 = vector.X, vector.Z
+		case vector.Z:
+			axis1, axis2 = vector.X, vector.Y
 		}
 
 		v1, v2 = v[i][:], v[j][:]
@@ -77,122 +75,110 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 	}
 
 	// Move everything so that the boxcenter is in (0, 0, 0)
-	v[0][X] = verts[0][X] - boxcenter[X]
-	v[0][Y] = verts[0][Y] - boxcenter[Y]
-	v[0][Z] = verts[0][Z] - boxcenter[Z]
-
-	v[1][X] = verts[1][X] - boxcenter[X]
-	v[1][Y] = verts[1][Y] - boxcenter[Y]
-	v[1][Z] = verts[1][Z] - boxcenter[Z]
-
-	v[2][X] = verts[2][X] - boxcenter[X]
-	v[2][Y] = verts[2][Y] - boxcenter[Y]
-	v[2][Z] = verts[2][Z] - boxcenter[Z]
+	for i := 0; i < 3; i++ {
+		for axis := vector.X; axis <= vector.Z; axis++ {
+			v[i][axis] = verts[i][axis] - boxcenter[axis]
+		}
+	}
 
 	// Compute triangle edges
-	e[0][X] = v[1][X] - v[0][X]
-	e[0][Y] = v[1][Y] - v[0][Y]
-	e[0][Z] = v[1][Z] - v[0][Z]
-
-	e[1][X] = v[2][X] - v[1][X]
-	e[1][Y] = v[2][Y] - v[1][Y]
-	e[1][Z] = v[2][Z] - v[1][Z]
-
-	e[2][X] = v[0][X] - v[2][X]
-	e[2][Y] = v[0][Y] - v[2][Y]
-	e[2][Z] = v[0][Z] - v[2][Z]
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		e[0][axis] = v[1][axis] - v[0][axis]
+		e[1][axis] = v[2][axis] - v[1][axis]
+		e[2][axis] = v[0][axis] - v[2][axis]
+	}
 
 	// Run the nine tests
-	f = [3]float{fmath.Abs(e[0][X]), fmath.Abs(e[0][Y]), fmath.Abs(e[0][Z])}
-	if !axisTest(X, 0, 1, 0) {
+	f = [3]float64{math.Fabs(e[0][vector.X]), math.Fabs(e[0][vector.Y]), math.Fabs(e[0][vector.Z])}
+	if !axisTest(vector.X, 0, 1, 0) {
 		return false
 	}
-	if !axisTest(Y, 0, 2, 0) {
+	if !axisTest(vector.Y, 0, 2, 0) {
 		return false
 	}
-	if !axisTest(Z, 1, 2, 0) {
-		return false
-	}
-
-	f = [3]float{fmath.Abs(e[1][X]), fmath.Abs(e[1][Y]), fmath.Abs(e[1][Z])}
-	if !axisTest(X, 0, 1, 1) {
-		return false
-	}
-	if !axisTest(Y, 0, 2, 1) {
-		return false
-	}
-	if !axisTest(Z, 0, 1, 1) {
+	if !axisTest(vector.Z, 1, 2, 0) {
 		return false
 	}
 
-	f = [3]float{fmath.Abs(e[2][X]), fmath.Abs(e[2][Y]), fmath.Abs(e[2][Z])}
-	if !axisTest(X, 0, 2, 2) {
+	f = [3]float64{math.Fabs(e[1][vector.X]), math.Fabs(e[1][vector.Y]), math.Fabs(e[1][vector.Z])}
+	if !axisTest(vector.X, 0, 1, 1) {
 		return false
 	}
-	if !axisTest(Y, 0, 1, 2) {
+	if !axisTest(vector.Y, 0, 2, 1) {
 		return false
 	}
-	if !axisTest(Z, 1, 2, 2) {
+	if !axisTest(vector.Z, 0, 1, 1) {
+		return false
+	}
+
+	f = [3]float64{math.Fabs(e[2][vector.X]), math.Fabs(e[2][vector.Y]), math.Fabs(e[2][vector.Z])}
+	if !axisTest(vector.X, 0, 2, 2) {
+		return false
+	}
+	if !axisTest(vector.Y, 0, 1, 2) {
+		return false
+	}
+	if !axisTest(vector.Z, 1, 2, 2) {
 		return false
 	}
 
 	// First test overlap in the x,y,z directions
 	// This is equivalent to testing a minimal AABB
-	min, max = v[0][X], v[0][X]
-	if v[1][X] < min {
-		min = v[1][X]
+	min, max = v[0][vector.X], v[0][vector.X]
+	if v[1][vector.X] < min {
+		min = v[1][vector.X]
 	}
-	if v[1][X] > max {
-		max = v[1][X]
+	if v[1][vector.X] > max {
+		max = v[1][vector.X]
 	}
-	if v[2][X] < min {
-		min = v[2][X]
+	if v[2][vector.X] < min {
+		min = v[2][vector.X]
 	}
-	if v[2][X] > max {
-		max = v[2][X]
+	if v[2][vector.X] > max {
+		max = v[2][vector.X]
 	}
-	if min > boxhalfsize[X] || max < -boxhalfsize[X] {
+	if min > boxhalfsize[vector.X] || max < -boxhalfsize[vector.X] {
 		return false
 	}
 
-	min, max = v[0][Y], v[0][Y]
-	if v[1][Y] < min {
-		min = v[1][Y]
+	min, max = v[0][vector.Y], v[0][vector.Y]
+	if v[1][vector.Y] < min {
+		min = v[1][vector.Y]
 	}
-	if v[1][Y] > max {
-		max = v[1][Y]
+	if v[1][vector.Y] > max {
+		max = v[1][vector.Y]
 	}
-	if v[2][Y] < min {
-		min = v[2][Y]
+	if v[2][vector.Y] < min {
+		min = v[2][vector.Y]
 	}
-	if v[2][Y] > max {
-		max = v[2][Y]
+	if v[2][vector.Y] > max {
+		max = v[2][vector.Y]
 	}
-	if min > boxhalfsize[Y] || max < -boxhalfsize[Y] {
+	if min > boxhalfsize[vector.Y] || max < -boxhalfsize[vector.Y] {
 		return false
 	}
 
-	min, max = v[0][Z], v[0][Z]
-	if v[1][Z] < min {
-		min = v[1][Z]
+	min, max = v[0][vector.Z], v[0][vector.Z]
+	if v[1][vector.Z] < min {
+		min = v[1][vector.Z]
 	}
-	if v[1][Z] > max {
-		max = v[1][Z]
+	if v[1][vector.Z] > max {
+		max = v[1][vector.Z]
 	}
-	if v[2][Z] < min {
-		min = v[2][Z]
+	if v[2][vector.Z] < min {
+		min = v[2][vector.Z]
 	}
-	if v[2][Z] > max {
-		max = v[2][Z]
+	if v[2][vector.Z] > max {
+		max = v[2][vector.Z]
 	}
-	if min > boxhalfsize[Z] || max < -boxhalfsize[Z] {
+	if min > boxhalfsize[vector.Z] || max < -boxhalfsize[vector.Z] {
 		return false
 	}
 
 	// Test if the box intersects the plane of the triangle
 	// Plane equation of triangle: normal * x + d = 0
-	normal[0] = e[0][1]*e[1][2] - e[0][2]*e[1][1]
-	normal[1] = e[0][2]*e[1][0] - e[0][0]*e[1][2]
-	normal[2] = e[0][0]*e[1][1] - e[0][1]*e[1][0]
+	normal[vector.X] = e[0][1]*e[1][2] - e[0][2]*e[1][1]
+	normal[vector.Y] = e[0][2]*e[1][0] - e[0][0]*e[1][2]
+	normal[vector.Z] = e[0][0]*e[1][1] - e[0][1]*e[1][0]
 	return planeBoxOverlap(normal, v[0], boxhalfsize)
 }

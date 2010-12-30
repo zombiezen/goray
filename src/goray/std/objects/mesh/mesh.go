@@ -23,9 +23,7 @@ import (
 )
 
 // UV holds a set of texture coordinates.
-type UV struct {
-	U, V float
-}
+type UV [2]float64
 
 // A Mesh is a collection of triangles.
 type Mesh struct {
@@ -122,7 +120,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		x, _ := yamldata.AsFloat(vseq[0])
 		y, _ := yamldata.AsFloat(vseq[1])
 		z, _ := yamldata.AsFloat(vseq[2])
-		vertexData[i] = vector.New(float(x), float(y), float(z))
+		vertexData[i] = vector.Vector3D{x, y, z}
 	}
 	mesh.SetData(vertexData, nil, nil)
 

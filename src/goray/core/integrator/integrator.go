@@ -58,16 +58,16 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	state := new(render.State)
 	state.Init()
 	state.PixelNumber = y*w + x
-	state.ScreenPos = vector.New(2.0*float(x)/float(w)-1.0, -2.0*float(y)/float(h)+1.0, 0.0)
+	state.ScreenPos = vector.Vector3D{2.0*float64(x)/float64(w)-1.0, -2.0*float64(y)/float64(h)+1.0, 0.0}
 	state.Time = 0.0
 	// Shoot ray
-	r, _ := cam.ShootRay(float(x), float(y), 0, 0)
+	r, _ := cam.ShootRay(float64(x), float64(y), 0, 0)
 	// Set up differentials
 	cRay := ray.DifferentialRay{Ray: r}
-	r, _ = cam.ShootRay(float(x+1), float(y), 0, 0)
+	r, _ = cam.ShootRay(float64(x+1), float64(y), 0, 0)
 	cRay.FromX = r.From
 	cRay.DirX = r.Dir
-	r, _ = cam.ShootRay(float(x), float(y+1), 0, 0)
+	r, _ = cam.ShootRay(float64(x), float64(y+1), 0, 0)
 	cRay.FromY = r.From
 	cRay.DirY = r.Dir
 	// Integrate

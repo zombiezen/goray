@@ -15,8 +15,8 @@ import "goray/core/vector"
 type Ray struct {
 	From       vector.Vector3D
 	Dir        vector.Vector3D
-	TMin, TMax float
-	Time       float
+	TMin, TMax float64
+	Time       float64
 }
 
 func (r Ray) String() string {

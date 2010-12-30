@@ -10,7 +10,6 @@ package point
 import (
 	"math"
 	"os"
-	"goray/fmath"
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/ray"
@@ -25,15 +24,15 @@ type pointLight struct {
 	intensity float
 }
 
-func sampleSphere(s1, s2 float) (dir vector.Vector3D) {
-	dir.Z = 1.0 - 2.0*s1
-	r := 1.0 - dir.Z*dir.Z
+func sampleSphere(s1, s2 float64) (dir vector.Vector3D) {
+	dir[vector.Z] = 1.0 - 2.0*s1
+	r := 1.0 - dir[vector.Z]*dir[vector.Z]
 	if r > 0.0 {
-		r = fmath.Sqrt(r)
+		r = math.Sqrt(r)
 		a := 2 * math.Pi * s2
-		dir.X, dir.Y = fmath.Cos(a)*r, fmath.Sin(a)*r
+		dir[vector.X], dir[vector.Y] = math.Cos(a)*r, math.Sin(a)*r
 	} else {
-		dir.X, dir.Y = 0.0, 0.0
+		dir[vector.X], dir[vector.Y] = 0.0, 0.0
 	}
 	return
 }
@@ -56,7 +55,7 @@ func (l *pointLight) TotalEnergy() color.Color {
 func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float) (col color.Color, r ray.Ray, ipdf float) {
 	r = ray.Ray{
 		From: l.position,
-		Dir:  sampleSphere(s1, s2),
+		Dir:  sampleSphere(float64(s1), float64(s2)),
 	}
 	ipdf = 4.0 * math.Pi
 	col = l.color
@@ -67,7 +66,7 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 	s.Point.Position = l.position
 	s.Flags = l.GetFlags()
 	s.DirPdf, s.AreaPdf = 0.25, 1.0
-	wo = sampleSphere(s.S1, s.S2)
+	wo = sampleSphere(float64(s.S1), float64(s.S2))
 	col = l.color
 	return
 }
@@ -79,7 +78,7 @@ func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sam
 	if ok {
 		s.Flags = l.GetFlags()
 		s.Color = l.color
-		s.Pdf = vector.Sub(l.position, sp.Position).LengthSqr()
+		s.Pdf = float(vector.Sub(l.position, sp.Position).LengthSqr())
 	}
 	return
 }
@@ -87,7 +86,7 @@ func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sam
 func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, wo ray.Ray, ok bool) {
 	ldir := vector.Sub(l.position, sp.Position)
 	distSqr := ldir.LengthSqr()
-	dist := fmath.Sqrt(distSqr)
+	dist := math.Sqrt(distSqr)
 	if dist == 0.0 {
 		return
 	}
@@ -100,7 +99,7 @@ func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, 
 	wo.TMax = dist
 	wo.Dir = ldir
 
-	col = color.ScalarMul(l.color, idistSqr)
+	col = color.ScalarMul(l.color, float(idistSqr))
 	return
 }
 

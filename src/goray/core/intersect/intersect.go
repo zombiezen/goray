@@ -28,11 +28,11 @@ import (
 // For most cases, this will involve an algorithm that partitions the scene to make these operations faster.
 type Interface interface {
 	// Intersect determines the primitive that a ray collides with.
-	Intersect(r ray.Ray, dist float) primitive.Collision
+	Intersect(r ray.Ray, dist float64) primitive.Collision
 	// IsShadowed checks whether a ray collides with any primitives (for shadow-detection).
-	IsShadowed(r ray.Ray, dist float) bool
+	IsShadowed(r ray.Ray, dist float64) bool
 	// DoTransparentShadows computes the color of a transparent shadow after bouncing around.
-	DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool
+	DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool
 	// GetBound returns a bounding box that contains all of the primitives that the intersecter knows about.
 	GetBound() *bound.Bound
 }
@@ -54,7 +54,7 @@ func NewSimple(prims []primitive.Primitive) Interface {
 
 func (s *simple) GetBound() *bound.Bound { return s.bound }
 
-func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
+func (s *simple) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	for _, p := range s.prims {
 		if newColl := p.Intersect(r); newColl.Hit() {
 			if newColl.RayDepth < dist && newColl.RayDepth > r.TMin && (!coll.Hit() || newColl.RayDepth < coll.RayDepth) {
@@ -65,7 +65,7 @@ func (s *simple) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
 	return
 }
 
-func (s *simple) IsShadowed(r ray.Ray, dist float) bool {
+func (s *simple) IsShadowed(r ray.Ray, dist float64) bool {
 	for _, p := range s.prims {
 		if newColl := p.Intersect(r); newColl.Hit() {
 			return true
@@ -74,7 +74,7 @@ func (s *simple) IsShadowed(r ray.Ray, dist float) bool {
 	return false
 }
 
-func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
+func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
 	depth := 0
 	for _, p := range s.prims {
 		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin {
@@ -99,17 +99,9 @@ type kdPartition struct {
 	*kdtree.Tree
 }
 
-func primGetDim(v kdtree.Value, axis int) (min, max float) {
+func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
 	bd := v.(primitive.Primitive).GetBound()
-	switch axis {
-	case 0:
-		min, max = bd.GetMinX(), bd.GetMaxX()
-	case 1:
-		min, max = bd.GetMinY(), bd.GetMaxY()
-	case 2:
-		min, max = bd.GetMinZ(), bd.GetMaxZ()
-	}
-	return
+	return bd.GetMin()[axis], bd.GetMax()[axis]
 }
 
 func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
@@ -124,14 +116,14 @@ func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
 
 type followFrame struct {
 	node  kdtree.Node
-	t     float
+	t     float64
 	point vector.Vector3D
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- primitive.Collision) {
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
 	defer close(ch)
 
-	var a, b, t float
+	var a, b, t float64
 	var hit bool
 
 	if a, b, hit = kd.GetBound().Cross(r.From, r.Dir, maxDist); !hit {
@@ -166,29 +158,29 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 			axis := currInter.GetAxis()
 			pivot := currInter.GetPivot()
 
-			if enterStack[len(enterStack)-1].point.GetComponent(axis) <= pivot {
+			if enterStack[len(enterStack)-1].point[axis] <= pivot {
 				currNode = currInter.GetLeft()
-				if exitStack[len(exitStack)-1].point.GetComponent(axis) <= pivot {
+				if exitStack[len(exitStack)-1].point[axis] <= pivot {
 					continue
 				}
 				farChild = currInter.GetRight()
 			} else {
 				currNode = currInter.GetRight()
-				if exitStack[len(exitStack)-1].point.GetComponent(axis) > pivot {
+				if exitStack[len(exitStack)-1].point[axis] > pivot {
 					continue
 				}
 				farChild = currInter.GetLeft()
 			}
 
-			t = (pivot - r.From.GetComponent(axis)) * invDir.GetComponent(axis)
+			t = (pivot - r.From[axis]) * invDir[axis]
 
 			// Set up the new exit point
-			var pt [3]float
+			var pt vector.Vector3D
 			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
 			pt[axis] = pivot
-			pt[nextAxis] = r.From.GetComponent(nextAxis) + t*r.Dir.GetComponent(nextAxis)
-			pt[prevAxis] = r.From.GetComponent(prevAxis) + t*r.Dir.GetComponent(prevAxis)
-			frame := followFrame{farChild, t, vector.New(pt[0], pt[1], pt[2])}
+			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
+			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
+			frame := followFrame{farChild, t, pt}
 			exitStack = append(exitStack, frame)
 		}
 
@@ -214,7 +206,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float, ch chan<- pr
 	}
 }
 
-func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collision) {
+func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	ch := make(chan primitive.Collision)
 	go kd.followRay(r, r.TMin, dist, ch)
 	for newColl := range ch {
@@ -225,14 +217,14 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float) (coll primitive.Collisio
 	return
 }
 
-func (kd *kdPartition) IsShadowed(r ray.Ray, dist float) bool {
+func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
 	ch := make(chan primitive.Collision)
 	go kd.followRay(r, r.TMin, dist, ch)
 	coll := <-ch
 	return coll.Hit()
 }
 
-func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float, filt *color.Color) bool {
+func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
 	ch := make(chan primitive.Collision)
 
 	go kd.followRay(r, r.TMin, dist, ch)

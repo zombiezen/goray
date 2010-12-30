@@ -15,7 +15,7 @@ import (
 
 type boxClipTest struct {
 	Min, Max        [3]float64
-	PolyIn, PolyOut []dVector
+	PolyIn, PolyOut []vector.Vector3D
 	Region          *bound.Bound
 }
 
@@ -23,16 +23,16 @@ var boxTests = []boxClipTest{
 	{
 		Min:     [3]float64{-1, -1, -1},
 		Max:     [3]float64{0, 0, 0},
-		PolyIn:  []dVector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
+		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
 		PolyOut: nil,
 		Region:  nil,
 	},
 	{
 		Min:     [3]float64{0, 0, 0},
 		Max:     [3]float64{1, 1, 1},
-		PolyIn:  []dVector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
-		PolyOut: []dVector{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
-		Region:  bound.New(vector.New(0.1, 0.1, 0.1), vector.New(0.9, 0.9, 0.9)),
+		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
+		PolyOut: []vector.Vector3D{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
+		Region:  bound.New(vector.Vector3D{0.1, 0.1, 0.1}, vector.Vector3D{0.9, 0.9, 0.9}),
 	},
 }
 
@@ -58,7 +58,7 @@ func (test boxClipTest) Run(t *testing.T) {
 		for i, _ := range resultPoly {
 			pa, pb := test.PolyOut[i], resultPoly[i]
 			if pa[0] != pb[0] || pa[1] != pb[1] || pa[2] != pb[2] {
-				t.Errorf("Vertex %d: (%.2f, %.2f, %.2f) != (%.2f, %.2f, %.2f) (Result)", i, pa[0], pa[1], pa[2], pb[0], pb[1], pb[2])
+				t.Errorf("Vertex %d: expected %v, got %v", i, pa, pb)
 			}
 		}
 	}
@@ -73,10 +73,15 @@ func (test boxClipTest) Run(t *testing.T) {
 	default:
 		amin, amax := test.Region.Get()
 		bmin, bmax := resultBound.Get()
-		if !(amin.X == bmin.X && amin.Y == bmin.Y && amin.Z == bmin.Z && amax.X == bmax.X && amax.Y == bmax.Y && amax.Z == bmax.Z) {
+		boundEq := true
+		for axis := vector.X; boundEq && axis <= vector.Z; axis++ {
+			if amin[axis] != bmin[axis] || amax[axis] != bmax[axis] {
+				boundEq = false
+			}
+		}
+		if !boundEq {
 			t.Errorf("Bound: %v, wanted %v", resultBound, test.Region)
 		}
-
 	}
 }
 

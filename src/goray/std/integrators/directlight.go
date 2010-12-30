@@ -34,7 +34,7 @@ type directLighting struct {
 
 	doAO      bool
 	aoSamples int
-	aoDist    float
+	aoDist    float64
 	aoColor   color.Color
 
 	lights []light.Light

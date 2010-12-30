@@ -7,6 +7,10 @@
 
 package kdtree
 
+import (
+	"goray/core/vector"
+)
+
 // Value is a type for the individual elements stored in the leaves of the tree.
 type Value interface{}
 
@@ -27,16 +31,16 @@ func (leaf *Leaf) GetValues() []Value { return leaf.values }
 // Interior is represents a planar split.
 type Interior struct {
 	axis        int8
-	pivot       float
+	pivot       float64
 	left, right Node
 }
 
-func newInterior(axis int, pivot float, left, right Node) *Interior {
+func newInterior(axis vector.Axis, pivot float64, left, right Node) *Interior {
 	return &Interior{int8(axis), pivot, left, right}
 }
 
-func (i *Interior) IsLeaf() bool    { return false }
-func (i *Interior) GetAxis() int    { return int(i.axis) }
-func (i *Interior) GetPivot() float { return i.pivot }
-func (i *Interior) GetLeft() Node   { return i.left }
-func (i *Interior) GetRight() Node  { return i.right }
+func (i *Interior) IsLeaf() bool         { return false }
+func (i *Interior) GetAxis() vector.Axis { return vector.Axis(i.axis) }
+func (i *Interior) GetPivot() float64    { return i.pivot }
+func (i *Interior) GetLeft() Node        { return i.left }
+func (i *Interior) GetRight() Node       { return i.right }

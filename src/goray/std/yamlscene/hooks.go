@@ -47,20 +47,29 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
 }
 
-func floatSequence(n parser.Node) (data []float, ok bool) {
+func float64Sequence(n parser.Node) (data []float64, ok bool) {
 	seq, ok := n.(*parser.Sequence)
 	if !ok {
 		return
 	}
 
-	data = make([]float, seq.Len())
+	data = make([]float64, seq.Len())
 	for i := 0; i < seq.Len(); i++ {
-		var f float64
-		f, ok = yamldata.AsFloat(seq.At(i).Data())
+		data[i], ok = yamldata.AsFloat(seq.At(i).Data())
 		if !ok {
 			return
 		}
-		data[i] = float(f)
+	}
+	return
+}
+
+func floatSequence(n parser.Node) (data []float, ok bool) {
+	f64Data, ok := float64Sequence(n)
+	if ok {
+		data = make([]float, len(f64Data))
+		for i, f := range f64Data {
+			data[i] = float(f)
+		}
 	}
 	return
 }
@@ -84,10 +93,10 @@ func constructRGBA(n parser.Node) (data interface{}, err os.Error) {
 }
 
 func constructVector(n parser.Node) (data interface{}, err os.Error) {
-	comps, ok := floatSequence(n)
+	comps, ok := float64Sequence(n)
 	if !ok || len(comps) != 3 {
 		err = os.NewError("Vector must be a sequence of 3 floats")
 		return
 	}
-	return vector.New(comps[0], comps[1], comps[2]), nil
+	return vector.Vector3D{comps[0], comps[1], comps[2]}, nil
 }
