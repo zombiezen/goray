@@ -89,7 +89,7 @@ type Sequence struct {
 func (seq *Sequence) At(i int) Node { return seq.Nodes[i] }
 
 // Len returns the number of nodes in the sequence.
-func (seq *Sequence) Len() int      { return len(seq.Nodes) }
+func (seq *Sequence) Len() int { return len(seq.Nodes) }
 
 // Slice returns the content of the sequence as a native Go slice.
 func (seq *Sequence) Slice() (s []interface{}) {

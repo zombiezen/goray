@@ -58,7 +58,7 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	state := new(render.State)
 	state.Init()
 	state.PixelNumber = y*w + x
-	state.ScreenPos = vector.Vector3D{2.0*float64(x)/float64(w)-1.0, -2.0*float64(y)/float64(h)+1.0, 0.0}
+	state.ScreenPos = vector.Vector3D{2.0*float64(x)/float64(w) - 1.0, -2.0*float64(y)/float64(h) + 1.0, 0.0}
 	state.Time = 0.0
 	// Shoot ray
 	r, _ := cam.ShootRay(float64(x), float64(y), 0, 0)

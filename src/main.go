@@ -120,7 +120,7 @@ func main() {
 		return
 	}
 	defer outFile.Close()
-	
+
 	// Set up scene
 	sc := scene.New()
 
@@ -131,7 +131,7 @@ func main() {
 			return "  SCENE: " + rec.String()
 		},
 	))
-	
+
 	// Parse input file
 	integ, err := yamlscene.Load(inFile, sc)
 	if err != nil {

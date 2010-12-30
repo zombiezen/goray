@@ -66,7 +66,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Color must be an RGB")
 		return
 	}
-	
+
 	data = New(col)
 	return
 }

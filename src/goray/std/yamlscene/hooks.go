@@ -12,12 +12,12 @@ import (
 	"goray/core/color"
 	"goray/core/vector"
 
-	orthocam "goray/std/cameras/ortho"
+	orthocam       "goray/std/cameras/ortho"
 	perspectivecam "goray/std/cameras/perspective"
-	directlight "goray/std/integrators/directlight"
-	pointlight "goray/std/lights/point"
-	debugmaterial "goray/std/materials/debug"
-	mesh "goray/std/objects/mesh"
+	directlight    "goray/std/integrators/directlight"
+	pointlight     "goray/std/lights/point"
+	debugmaterial  "goray/std/materials/debug"
+	mesh           "goray/std/objects/mesh"
 
 	yamldata "yaml/data"
 	"yaml/parser"
