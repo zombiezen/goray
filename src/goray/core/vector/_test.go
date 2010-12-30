@@ -1,11 +1,10 @@
 package vector
 
 import "testing"
-import "goray/fmath"
 
 func TestNormalize(t *testing.T) {
 	comps := []float64{1.0, 2.0, -2.0}
-	length := 3.0
+	length := float64(3.0)
 	v := Vector3D{comps[0], comps[1], comps[2]}
 	vn := v.Normalize()
 	if vn.Length() != 1.0 {
