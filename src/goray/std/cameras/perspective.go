@@ -10,7 +10,6 @@ package perspective
 import (
 	"math"
 	"os"
-	"goray/fmath"
 	"goray/core/ray"
 	"goray/core/vector"
 	yamldata "yaml/data"
@@ -39,19 +38,19 @@ const (
 	EdgeBias
 )
 
-func biasDist(bias BokehBias, r float) float {
+func biasDist(bias BokehBias, r float64) float64 {
 	switch bias {
 	case CenterBias:
-		return fmath.Sqrt(fmath.Sqrt(r) * r)
+		return math.Sqrt(math.Sqrt(r) * r)
 	case EdgeBias:
-		return fmath.Sqrt(1 - r*r)
+		return math.Sqrt(1 - r*r)
 	}
-	return fmath.Sqrt(r)
+	return math.Sqrt(r)
 }
 
 // shirleyDisk maps a square to a disk using P. Shirley's concentric disk algorithm.
-func shirleyDisk(r1, r2 float) (u, v float) {
-	var phi, r float
+func shirleyDisk(r1, r2 float64) (u, v float64) {
+	var phi, r float64
 	a, b := 2*r1-1, 2*r2-1
 
 	switch {
@@ -73,28 +72,28 @@ func shirleyDisk(r1, r2 float) (u, v float) {
 		}
 	}
 
-	return r * fmath.Cos(phi), r * fmath.Sin(phi)
+	return r * math.Cos(phi), r * math.Sin(phi)
 }
 
 type Camera struct {
 	resx, resy    int
 	eye           vector.Vector3D // eye is the camera position
-	focalDistance float
-	dofDistance   float
-	aspectRatio   float // aspectRatio is the aspect of the camera (not the image)
+	focalDistance float64
+	dofDistance   float64
+	aspectRatio   float64 // aspectRatio is the aspect of the camera (not the image)
 
 	look, up, right vector.Vector3D
 	dofUp, dofRight vector.Vector3D
 	x, y, z         vector.Vector3D
 
-	aperture  float
-	aPix      float
+	aperture  float64
+	aPix      float64
 	bokeh     Bokeh
 	bokehBias BokehBias
-	lens      []float
+	lens      []float64
 }
 
-func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float, bokeh Bokeh, bias BokehBias, bokehRot float) (cam *Camera) {
+func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float64, bokeh Bokeh, bias BokehBias, bokehRot float64) (cam *Camera) {
 	cam = new(Camera)
 	cam.eye = pos
 	cam.aperture = aperture
@@ -119,13 +118,13 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 	cam.dofRight = vector.ScalarMul(cam.right, cam.aperture)
 	cam.dofUp = vector.ScalarMul(cam.up, cam.aperture)
 
-	cam.aspectRatio = aspect * float(resy) / float(resx)
+	cam.aspectRatio = aspect * float64(resy) / float64(resx)
 	cam.up = vector.ScalarMul(cam.up, cam.aspectRatio)
 
 	cam.focalDistance = focalDist
 	cam.look = vector.Sub(vector.ScalarMul(cam.look, cam.focalDistance), vector.ScalarMul(vector.Add(cam.up, cam.right), 0.5))
-	cam.up = vector.ScalarDiv(cam.up, float(resy))
-	cam.right = vector.ScalarDiv(cam.right, float(resx))
+	cam.up = vector.ScalarDiv(cam.up, float64(resy))
+	cam.right = vector.ScalarDiv(cam.right, float64(resx))
 	cam.aPix = cam.aspectRatio / (cam.focalDistance * cam.focalDistance)
 
 	// Set up bokeh
@@ -134,11 +133,11 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 
 	if cam.bokeh >= TriangleBokeh && cam.bokeh <= HexagonBokeh {
 		w := bokehRot * math.Pi / 180
-		wi := 2.0 * math.Pi / float(cam.bokeh)
-		cam.lens = make([]float, (cam.bokeh+2)*2)
+		wi := 2.0 * math.Pi / float64(cam.bokeh)
+		cam.lens = make([]float64, (cam.bokeh+2)*2)
 		for i := 0; i < len(cam.lens); i += 2 {
-			cam.lens[i] = fmath.Cos(w)
-			cam.lens[i+1] = fmath.Sin(w)
+			cam.lens[i] = math.Cos(w)
+			cam.lens[i+1] = math.Sin(w)
 			w += wi
 		}
 	}
@@ -148,9 +147,9 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 func (cam *Camera) ResolutionX() int { return cam.resx }
 func (cam *Camera) ResolutionY() int { return cam.resy }
 
-func (cam *Camera) sampleTSD(r1, r2 float) (u, v float) {
-	idx := int(r1 * float(cam.bokeh))
-	r1 = biasDist(cam.bokehBias, (r1-float(idx)/float(cam.bokeh))*float(cam.bokeh))
+func (cam *Camera) sampleTSD(r1, r2 float64) (u, v float64) {
+	idx := int(r1 * float64(cam.bokeh))
+	r1 = biasDist(cam.bokehBias, (r1-float64(idx)/float64(cam.bokeh))*float64(cam.bokeh))
 	b1 := r1 * r2
 	b0 := r1 - b1
 	idx <<= 1 // multiply by two
@@ -160,7 +159,7 @@ func (cam *Camera) sampleTSD(r1, r2 float) (u, v float) {
 	return
 }
 
-func (cam *Camera) getLensUV(r1, r2 float) (u, v float) {
+func (cam *Camera) getLensUV(r1, r2 float64) (u, v float64) {
 	switch cam.bokeh {
 	case TriangleBokeh, SquareBokeh, PentagonBokeh, HexagonBokeh:
 		return cam.sampleTSD(r1, r2)
@@ -171,14 +170,14 @@ func (cam *Camera) getLensUV(r1, r2 float) (u, v float) {
 		} else {
 			r1 = biasDist(cam.bokehBias, r1)
 		}
-		u, v = r1*fmath.Cos(w), r2*fmath.Sin(w)
+		u, v = r1*math.Cos(w), r2*math.Sin(w)
 		return
 	}
 
 	return shirleyDisk(r1, r2)
 }
 
-func (cam *Camera) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
+func (cam *Camera) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
 	wt = 1.0 // for now, always 1, except 0 for probe when outside sphere
 
 	r = ray.Ray{
@@ -196,7 +195,7 @@ func (cam *Camera) ShootRay(x, y, u, v float) (r ray.Ray, wt float) {
 	return
 }
 
-func (cam *Camera) Project(wo ray.Ray, lu, lv *float) (pdf float, changed bool) {
+func (cam *Camera) Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	// TODO
 	return
 }
@@ -249,7 +248,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		bokehBias = EdgeBias
 	}
 
-	cam := New(pos, look, up, int(width), int(height), float(aspect), float(focalDistance), float(aperture), bokehType, bokehBias, float(bokehRot))
-	cam.dofDistance = float(dofDistance)
+	cam := New(pos, look, up, int(width), int(height), aspect, focalDistance, aperture, bokehType, bokehBias, bokehRot)
+	cam.dofDistance = dofDistance
 	return cam, nil
 }

@@ -10,9 +10,9 @@ package scene
 
 import (
 	container "container/vector"
+	"math"
 	"os"
 
-	"goray/fmath"
 	"goray/logging"
 
 	"goray/core/background"
@@ -169,12 +169,12 @@ func (s *Scene) GetBound() *bound.Bound { return s.sceneBound }
 func (s *Scene) GetDoDepth() bool { return s.doDepth }
 
 // Intersect returns the surface point that intersects with the given ray.
-func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
+func (s *Scene) Intersect(r ray.Ray, dist float64) primitive.Collision {
 	// Determine distance to check
 	if dist < 0 {
 		dist = r.TMax
 		if dist < 0 {
-			dist = fmath.Inf
+			dist = math.Inf(1)
 		}
 	}
 	// Perform low-level intersection
@@ -186,7 +186,7 @@ func (s *Scene) Intersect(r ray.Ray, dist float) primitive.Collision {
 }
 
 // IsShadowed returns whether a ray will cast a shadow.
-func (s *Scene) IsShadowed(r ray.Ray, dist float) bool {
+func (s *Scene) IsShadowed(r ray.Ray, dist float64) bool {
 	if s.intersect == nil {
 		s.log.Warning("IsShadowed called without an Update")
 		return false

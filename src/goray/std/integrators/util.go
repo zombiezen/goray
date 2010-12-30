@@ -107,7 +107,7 @@ func checkShadow(params directParams, r ray.Ray) bool {
 	if params.TrShad {
 		// TODO
 	}
-	return params.Scene.IsShadowed(r, fmath.Inf)
+	return params.Scene.IsShadowed(r, math.Inf(1))
 }
 
 func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
@@ -128,7 +128,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 			//TODO: transmitCol
 			return color.ScalarMul(
 				color.Mul(surfCol, lcol),
-				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
+				float(math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))),
 			)
 		}
 	}
@@ -205,7 +205,7 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
 			col = color.ScalarMul(
 				color.Mul(surfCol, lightSamp.Color),
-				fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
+				float(math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))),
 			)
 			if canIntersect {
 				mPdf := mat.Pdf(
@@ -252,11 +252,11 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col col
 			l2 := lPdf * lPdf
 			m2 := s.Pdf * s.Pdf
 			w := m2 / (l2 + m2)
-			cos2 := fmath.Abs(vector.Dot(sp.Normal, bRay.Dir))
+			cos2 := math.Fabs(vector.Dot(sp.Normal, bRay.Dir))
 			if s.Pdf > pdfCutoff {
 				col = color.ScalarMul(
 					color.Mul(surfCol, lcol),
-					cos2*w/s.Pdf,
+					float(cos2*float64(w/s.Pdf)),
 				)
 			}
 		}
@@ -265,7 +265,7 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col col
 	return
 }
 
-func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo vector.Vector3D, nSearch int, radius float) (sum color.Color) {
+func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
 	sum = color.Black
 	if !m.Ready() {
 		return
@@ -278,14 +278,14 @@ func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo ve
 			phot := gResult.Photon
 			surfCol := mat.Eval(state, sp, wo, phot.GetDirection(), material.BSDFAll)
 			k := kernel(gResult.Distance, radius)
-			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.GetColor(), k)))
+			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.GetColor(), float(k))))
 		}
 		sum = color.ScalarMul(sum, 1.0/float(m.GetNumPaths()))
 	}
 	return
 }
 
-func kernel(phot, gather float) float {
+func kernel(phot, gather float64) float64 {
 	s := 1 - phot/gather
 	return 3.0 / (gather * math.Pi) * s * s
 }
@@ -295,7 +295,7 @@ func ckernel(phot, gather float) float {
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 
-func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float, aoColor color.Color) color.Color {
+func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
 	mat := sp.Material.(material.Material)
 
 	n := aoSamples
@@ -327,10 +327,10 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 		surfCol, dir := mat.Sample(state, sp, wo, &s)
 		lightRay.Dir = dir
 
-		if s.Pdf <= pdfCutoff || sc.IsShadowed(lightRay, fmath.Inf) {
+		if s.Pdf <= pdfCutoff || sc.IsShadowed(lightRay, math.Inf(1)) {
 			return color.Black
 		}
-		cos := fmath.Abs(vector.Dot(sp.Normal, lightRay.Dir))
-		return color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf)
+		cos := math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))
+		return color.ScalarMul(color.Mul(aoColor, surfCol), float(cos/float64(s.Pdf)))
 	})
 }

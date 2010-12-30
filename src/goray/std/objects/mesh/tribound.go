@@ -8,14 +8,14 @@
 package mesh
 
 import (
-	"goray/fmath"
+	"math"
 )
 
 // Triangle bound intersection methods
 // Note that a lot of functionality gets inlined for efficiency reasons.
 
-func planeBoxOverlap(normal, vert, maxbox [3]float) bool {
-	var vmin, vmax [3]float
+func planeBoxOverlap(normal, vert, maxbox [3]float64) bool {
+	var vmin, vmax [3]float64
 
 	for q := 0; q < 3; q++ {
 		v := vert[q]
@@ -38,19 +38,21 @@ func planeBoxOverlap(normal, vert, maxbox [3]float) bool {
 	return false
 }
 
-func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
-	const X = 0
-	const Y = 1
-	const Z = 2
-	var normal, f [3]float
-	var v, e [3][3]float
-	var min, max float
+func triBoxOverlap(boxcenter, boxhalfsize [3]float64, verts [3][3]float64) bool {
+	const (
+		X = iota
+		Y
+		Z
+	)
+	var normal, f [3]float64
+	var v, e [3][3]float64
+	var min, max float64
 
 	axisTest := func(axis, i, j, edgeNum int) bool {
 		var axis1, axis2 int
-		var a, b, fa, fb float
-		var p1, p2, rad, min, max float
-		var v1, v2 []float
+		var a, b, fa, fb float64
+		var p1, p2, rad, min, max float64
+		var v1, v2 []float64
 
 		switch axis {
 		case X:
@@ -103,7 +105,7 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 	e[2][Z] = v[0][Z] - v[2][Z]
 
 	// Run the nine tests
-	f = [3]float{fmath.Abs(e[0][X]), fmath.Abs(e[0][Y]), fmath.Abs(e[0][Z])}
+	f = [3]float64{math.Fabs(e[0][X]), math.Fabs(e[0][Y]), math.Fabs(e[0][Z])}
 	if !axisTest(X, 0, 1, 0) {
 		return false
 	}
@@ -114,7 +116,7 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 		return false
 	}
 
-	f = [3]float{fmath.Abs(e[1][X]), fmath.Abs(e[1][Y]), fmath.Abs(e[1][Z])}
+	f = [3]float64{math.Fabs(e[1][X]), math.Fabs(e[1][Y]), math.Fabs(e[1][Z])}
 	if !axisTest(X, 0, 1, 1) {
 		return false
 	}
@@ -125,7 +127,7 @@ func triBoxOverlap(boxcenter, boxhalfsize [3]float, verts [3][3]float) bool {
 		return false
 	}
 
-	f = [3]float{fmath.Abs(e[2][X]), fmath.Abs(e[2][Y]), fmath.Abs(e[2][Z])}
+	f = [3]float64{math.Fabs(e[2][X]), math.Fabs(e[2][Y]), math.Fabs(e[2][Z])}
 	if !axisTest(X, 0, 2, 2) {
 		return false
 	}

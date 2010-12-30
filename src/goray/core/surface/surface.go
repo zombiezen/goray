@@ -27,11 +27,11 @@ type Point struct {
 	HasUV, HasOrco, Available bool
 	PrimitiveNumber           int
 
-	U, V               float           // The texture coordinates
+	U, V               float64         // The texture coordinates
 	NormalU, NormalV   vector.Vector3D // Vectors building orthogonal shading space with normal
 	WorldU, WorldV     vector.Vector3D // U and V axes in world space
 	ShadingU, ShadingV vector.Vector3D // U and V axes in shading space
-	SurfaceU, SurfaceV float           // Raw surface parametric coordinates; required to evaluate Vmaps
+	SurfaceU, SurfaceV float64         // Raw surface parametric coordinates; required to evaluate Vmaps
 }
 
 // Differentials computes and stores data for surface intersections for differential rays.
@@ -70,7 +70,7 @@ func (d Differentials) ReflectRay(in, out *ray.DifferentialRay) {
 
 // RefractRay computes differentials for a scattered ray.
 // For an explanation, see: http://en.wikipedia.org/wiki/Snell's_law#Vector_form
-func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float) {
+func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float64) {
 	out.FromX = vector.Add(d.Point.Position, d.X)
 	out.FromY = vector.Add(d.Point.Position, d.Y)
 
@@ -85,6 +85,6 @@ func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float) {
 	out.DirY = vector.Add(out.Dir, vector.ScalarMul(incidenceY, ior), vector.ScalarMul(d.Point.Normal, -muDy))
 }
 
-func (d Differentials) ProjectedPixelArea() float {
+func (d Differentials) ProjectedPixelArea() float64 {
 	return vector.Cross(d.X, d.Y).Length()
 }

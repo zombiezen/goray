@@ -238,10 +238,11 @@ func Mul(m1, m2 *Matrix) (result *Matrix) {
 }
 
 // VecMul transforms a vector by a transformation matrix.
-func VecMul(m *Matrix, v vector.Vector3D) vector.Vector3D {
-	return vector.Vector3D{
-		m.m[0][0]*v.X + m.m[0][1]*v.Y + m.m[0][2]*v.Z,
-		m.m[1][0]*v.X + m.m[1][1]*v.Y + m.m[1][2]*v.Z,
-		m.m[2][0]*v.X + m.m[2][1]*v.Y + m.m[2][2]*v.Z,
+func VecMul(m *Matrix, u vector.Vector3D) (v vector.Vector3D) {
+	for i := vector.X; i <= vector.Z; i++ {
+		for j := vector.X; j <= vector.Z; j++ {
+			v[i] += float64(m.m[i][j]) * u[j]
+		}
 	}
+	return
 }

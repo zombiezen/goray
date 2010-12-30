@@ -20,7 +20,7 @@ import (
 type Collision struct {
 	Primitive Primitive
 	Ray       ray.Ray
-	RayDepth  float
+	RayDepth  float64
 	UserData  interface{}
 }
 

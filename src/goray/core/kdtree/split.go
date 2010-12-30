@@ -8,16 +8,15 @@
 package kdtree
 
 import (
-	container "container/vector"
 	"sort"
 	"goray/fmath"
 	"goray/logging"
 	"goray/core/bound"
 )
 
-type SplitFunc func([]Value, *bound.Bound, BuildState) (axis int, pivot float, cost float)
+type SplitFunc func([]Value, *bound.Bound, BuildState) (axis int, pivot float64, cost float)
 
-func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float, cost float) {
+func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float64, cost float) {
 	const pigeonThreshold = 128
 
 	if len(vals) > pigeonThreshold {
@@ -26,43 +25,49 @@ func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pi
 	return MinimalSplit(vals, bd, state)
 }
 
-func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float, cost float) {
+type float64array []float64
+
+func (a float64array) Len() int             { return len(a) }
+func (a float64array) Less(i1, i2 int) bool { return a[i1] < a[i2] }
+func (a float64array) Swap(i1, i2 int)      { a[i1], a[i2] = a[i2], a[i1] }
+
+func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis int, pivot float64, cost float) {
 	axis = bd.GetLargestAxis()
-	data := make([]float, 0, len(vals)*2)
+	data := make([]float64, 0, len(vals)*2)
 	for i, v := range vals {
 		min, max := state.getClippedDimension(i, v, axis)
-		if fmath.Eq(min, max) {
+		if min == max {
 			data = append(data, min)
 		} else {
 			data = append(data, min, max)
 		}
 	}
-	sort.SortFloats(data)
+	sort.Sort(float64array(data))
 	pivot = data[len(data)/2]
 	return
 }
 
-func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float, bestCost float) {
+func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float64, bestCost float) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
 		left, right int
 		bleft, both int
-		t           float
+		t           float64
 	}
 
 	var bins [numBins + 1]pigeonBin
-	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	d := [3]float64{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
 	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
-	invTotalSA := 0.0
-	if !fmath.Eq(totalSA, 0.0) {
+	invTotalSA := float64(0.0)
+	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}
 
 	for axis := 0; axis < 3; axis++ {
 		s := numBins / d[axis]
-		min := bd.GetMin().GetComponent(axis)
+		min := bd.GetMin()[axis]
 
 		for i, v := range vals {
 			tLow, tHigh := state.getClippedDimension(i, v, axis)
@@ -123,7 +128,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int,
 				nAbove -= b.right
 				// Cost:
 				edget := b.t
-				if edget > bd.GetMin().GetComponent(axis) && edget < bd.GetMax().GetComponent(axis) {
+				if edget > bd.GetMin()[axis] && edget < bd.GetMax()[axis] {
 					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
 					if cost < bestCost {
 						bestAxis, bestPivot, bestCost = axis, edget, cost
@@ -150,45 +155,44 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int,
 	return
 }
 
-func computeCost(axis int, bd *bound.Bound, capArea, capPerim, invTotalSA float, nBelow, nAbove int, edget float) float {
+func computeCost(axis int, bd *bound.Bound, capArea, capPerim, invTotalSA float64, nBelow, nAbove int, edget float64) float {
 	const emptyBonus = 0.33
 	const costRatio = 0.35
 
-	l1, l2 := edget-bd.GetMin().GetComponent(axis), bd.GetMax().GetComponent(axis)-edget
+	l1, l2 := edget-bd.GetMin()[axis], bd.GetMax()[axis]-edget
 	belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
-	rawCosts := belowSA*float(nBelow) + aboveSA*float(nAbove)
+	rawCosts := belowSA*float64(nBelow) + aboveSA*float64(nAbove)
 
-	d := 0.0
-	switch axis {
-	case 0:
-		d = bd.GetXLength()
-	case 1:
-		d = bd.GetYLength()
-	case 2:
-		d = bd.GetZLength()
-	}
+	d := bd.GetSize()[axis]
 
-	eb := 0.0
+	var eb float64
 	if nAbove == 0 {
 		eb = (0.1 + l2/d) * emptyBonus * rawCosts
 	} else if nBelow == 0 {
 		eb = (0.1 + l1/d) * emptyBonus * rawCosts
 	}
 
-	return costRatio + invTotalSA*(rawCosts-eb)
+	return float(costRatio + invTotalSA*(rawCosts-eb))
 }
 
 type boundEdge struct {
-	position float
+	position float64
 	boundEnd int
 }
 
-func (e boundEdge) Less(other interface{}) bool {
-	f, ok := other.(boundEdge)
-	if !ok {
-		return false
-	}
-	if fmath.Eq(e.position, f.position) {
+type boundEdgeArray []boundEdge
+
+func (a boundEdgeArray) Len() int {
+	return len(a)
+}
+
+func (a boundEdgeArray) Swap(i1, i2 int) {
+	a[i1], a[i2] = a[i2], a[i1]
+}
+
+func (a boundEdgeArray) Less(i1, i2 int) bool {
+	e, f := a[i1], a[i2]
+	if e.position == f.position {
 		return e.boundEnd > f.boundEnd
 	}
 	return e.position < f.position
@@ -200,39 +204,37 @@ const (
 	upperB
 )
 
-func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float, bestCost float) {
-	d := [3]float{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis int, bestPivot float64, bestCost float) {
+	d := bd.GetSize()
 	bestCost = fmath.Inf
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
-	invTotalSA := 0.0
-	if !fmath.Eq(totalSA, 0.0) {
+	var invTotalSA float64
+	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}
 
 	for axis := 0; axis < 3; axis++ {
-		edges := make(container.Vector, 0, len(vals)*2)
+		edges := make(boundEdgeArray, 0, len(vals)*2)
 		for i, v := range vals {
 			min, max := state.getClippedDimension(i, v, axis)
-			if fmath.Eq(min, max) {
-				edges.Push(boundEdge{min, bothB})
+			if min == max {
+				edges = append(edges, boundEdge{min, bothB})
 			} else {
-				edges.Push(boundEdge{min, lowerB})
-				edges.Push(boundEdge{max, upperB})
+				edges = append(edges, boundEdge{min, lowerB}, boundEdge{max, upperB})
 			}
 		}
-		sort.Sort(&edges)
+		sort.Sort(edges)
 
 		capArea := d[(axis+1)%3] * d[(axis+2)%3]
 		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
 
 		nBelow, nAbove := 0, len(vals)
-		for _, tmp := range edges {
-			e := tmp.(boundEdge)
+		for _, e := range edges {
 			if e.boundEnd == upperB {
 				nAbove--
 			}
 
-			if e.position > bd.GetMin().GetComponent(axis) && e.position < bd.GetMax().GetComponent(axis) {
+			if e.position > bd.GetMin()[axis] && e.position < bd.GetMax()[axis] {
 				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
 				if cost < bestCost {
 					bestAxis, bestPivot, bestCost = axis, e.position, cost

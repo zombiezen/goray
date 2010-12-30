@@ -63,7 +63,7 @@ type Light interface {
 
 type Intersecter interface {
 	// Intersect intersects the light source with a ray, giving back the distance, the energy, and 1/PDF.
-	Intersect(r ray.Ray) (dist float, col color.Color, ipdf float, ok bool)
+	Intersect(r ray.Ray) (dist float64, col color.Color, ipdf float, ok bool)
 }
 
 type DiracLight interface {

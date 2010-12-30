@@ -10,7 +10,6 @@ package sphere
 
 import (
 	"math"
-	"goray/fmath"
 	"goray/core/bound"
 	"goray/core/material"
 	"goray/core/primitive"
@@ -21,12 +20,12 @@ import (
 
 type sphere struct {
 	center   vector.Vector3D
-	radius   float
+	radius   float64
 	material material.Material
 }
 
 // New creates a spherical primitive.
-func New(center vector.Vector3D, radius float, material material.Material) primitive.Primitive {
+func New(center vector.Vector3D, radius float64, material material.Material) primitive.Primitive {
 	return &sphere{center, radius, material}
 }
 
@@ -50,7 +49,7 @@ func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 		return
 	}
 
-	osc = fmath.Sqrt(osc)
+	osc = math.Sqrt(osc)
 	sol1 := (-eb - osc) / (ea * 2.0)
 	sol2 := (-eb + osc) / (ea * 2.0)
 	coll.RayDepth = sol1
@@ -76,7 +75,7 @@ func (s *sphere) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.Position = coll.GetPoint()
 	sp.Normal = normal
 	sp.GeometricNormal = normal
-	sp.U = fmath.Atan2(normal.Y, normal.X)*(1.0/math.Pi) + 1
-	sp.V = 1.0 - fmath.Acos(normal.Z)*(1.0/math.Pi)
+	sp.U = math.Atan2(normal[vector.Y], normal[vector.X])*(1.0/math.Pi) + 1
+	sp.V = 1.0 - math.Acos(normal[vector.Z])*(1.0/math.Pi)
 	return
 }

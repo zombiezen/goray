@@ -70,9 +70,9 @@ func (pm *Map) Clear() {
 
 func (pm *Map) Ready() bool { return pm.fresh }
 
-func photonGetDim(v kdtree.Value, axis int) (min, max float) {
+func photonGetDim(v kdtree.Value, axis int) (min, max float64) {
 	photon := v.(*Photon)
-	min = photon.position.GetComponent(axis)
+	min = photon.position[axis]
 	max = min
 	return
 }
@@ -93,7 +93,7 @@ func (pm *Map) Update() {
 
 type GatherResult struct {
 	Photon   *Photon
-	Distance float
+	Distance float64
 }
 
 type gatherHeap []GatherResult
@@ -143,10 +143,10 @@ func (h *gatherHeap) Pop() (val interface{}) {
 	return
 }
 
-func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float) []GatherResult {
+func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherResult {
 	resultHeap := make(gatherHeap, 0, nLookup)
 
-	ch, distCh := make(chan GatherResult), make(chan float)
+	ch, distCh := make(chan GatherResult), make(chan float64)
 	go lookup(p, ch, distCh, pm.tree.GetRoot())
 	distCh <- maxDist
 
@@ -156,8 +156,8 @@ func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float) []GatherRes
 	return resultHeap
 }
 
-func (pm *Map) FindNearest(p, n vector.Vector3D, dist float) (nearest *Photon) {
-	ch, distCh := make(chan GatherResult), make(chan float)
+func (pm *Map) FindNearest(p, n vector.Vector3D, dist float64) (nearest *Photon) {
+	ch, distCh := make(chan GatherResult), make(chan float64)
 	go lookup(p, ch, distCh, pm.tree.GetRoot())
 	distCh <- dist
 
@@ -170,7 +170,7 @@ func (pm *Map) FindNearest(p, n vector.Vector3D, dist float) (nearest *Photon) {
 	return
 }
 
-func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float, root kdtree.Node) {
+func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, root kdtree.Node) {
 	defer close(ch)
 	st := stack.New()
 	st.Push(root)
@@ -197,11 +197,11 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float, root
 
 		currInt := currNode.(*kdtree.Interior)
 		axis := currInt.GetAxis()
-		dist2 := p.GetComponent(axis) - currInt.GetPivot()
+		dist2 := p[axis] - currInt.GetPivot()
 		dist2 *= dist2
 
 		primaryChild, altChild := currInt.GetLeft(), currInt.GetRight()
-		if p.GetComponent(axis) > currInt.GetPivot() {
+		if p[axis] > currInt.GetPivot() {
 			primaryChild, altChild = altChild, primaryChild
 		}
 

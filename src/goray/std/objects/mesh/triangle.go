@@ -9,8 +9,8 @@ package mesh
 
 import (
 	"fmt"
+	"math"
 	"goray/logging"
-	"goray/fmath"
 	"goray/core/bound"
 	"goray/core/material"
 	"goray/core/primitive"
@@ -79,43 +79,43 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	coll.Ray = r
 	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 
-	edge1 := vector.Vector3D{b.X - a.X, b.Y - a.Y, b.Z - a.Z}
-	edge2 := vector.Vector3D{c.X - a.X, c.Y - a.Y, c.Z - a.Z}
+	edge1 := vector.Vector3D{b[vector.X] - a[vector.X], b[vector.Y] - a[vector.Y], b[vector.Z] - a[vector.Z]}
+	edge2 := vector.Vector3D{c[vector.X] - a[vector.X], c[vector.Y] - a[vector.Y], c[vector.Z] - a[vector.Z]}
 	pvec := vector.Vector3D{
-		r.Dir.Y*edge2.Z - r.Dir.Z*edge2.Y,
-		r.Dir.Z*edge2.X - r.Dir.X*edge2.Z,
-		r.Dir.X*edge2.Y - r.Dir.Y*edge2.X,
+		r.Dir[vector.Y]*edge2[vector.Z] - r.Dir[vector.Z]*edge2[vector.Y],
+		r.Dir[vector.Z]*edge2[vector.X] - r.Dir[vector.X]*edge2[vector.Z],
+		r.Dir[vector.X]*edge2[vector.Y] - r.Dir[vector.Y]*edge2[vector.X],
 	}
-	det := edge1.X*pvec.X + edge1.Y*pvec.Y + edge1.Z*pvec.Z
+	det := edge1[vector.X]*pvec[vector.X] + edge1[vector.Y]*pvec[vector.Y] + edge1[vector.Z]*pvec[vector.Z]
 	if det == 0.0 {
 		return
 	}
 	invDet := 1.0 / det
-	tvec := vector.Vector3D{r.From.X - a.X, r.From.Y - a.Y, r.From.Z - a.Z}
-	u := (pvec.X*tvec.X + pvec.Y*tvec.Y + pvec.Z*tvec.Z) * invDet
+	tvec := vector.Vector3D{r.From[vector.X] - a[vector.X], r.From[vector.Y] - a[vector.Y], r.From[vector.Z] - a[vector.Z]}
+	u := (pvec[vector.X]*tvec[vector.X] + pvec[vector.Y]*tvec[vector.Y] + pvec[vector.Z]*tvec[vector.Z]) * invDet
 	if u < 0.0 || u > 1.0 {
 		return
 	}
 	qvec := vector.Vector3D{
-		tvec.Y*edge1.Z - tvec.Z*edge1.Y,
-		tvec.Z*edge1.X - tvec.X*edge1.Z,
-		tvec.X*edge1.Y - tvec.Y*edge1.X,
+		tvec[vector.Y]*edge1[vector.Z] - tvec[vector.Z]*edge1[vector.Y],
+		tvec[vector.Z]*edge1[vector.X] - tvec[vector.X]*edge1[vector.Z],
+		tvec[vector.X]*edge1[vector.Y] - tvec[vector.Y]*edge1[vector.X],
 	}
-	v := (r.Dir.X*qvec.X + r.Dir.Y*qvec.Y + r.Dir.Z*qvec.Z) * invDet
+	v := (r.Dir[vector.X]*qvec[vector.X] + r.Dir[vector.Y]*qvec[vector.Y] + r.Dir[vector.Z]*qvec[vector.Z]) * invDet
 	if v < 0.0 || u+v > 1.0 {
 		return
 	}
 
 	coll.Primitive = tri
-	coll.RayDepth = (edge2.X*qvec.X + edge2.Y*qvec.Y + edge2.Z*qvec.Z) * invDet
-	coll.UserData = interface{}([2]float{u, v})
+	coll.RayDepth = (edge2[vector.X]*qvec[vector.X] + edge2[vector.Y]*qvec[vector.Y] + edge2[vector.Z]*qvec[vector.Z]) * invDet
+	coll.UserData = interface{}([2]float64{u, v})
 	return
 }
 
 func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.GeometricNormal = tri.normal
 	a, b, c := tri.getVertices()
-	dat := coll.UserData.([2]float)
+	dat := coll.UserData.([2]float64)
 	// The u and v in intersection code are actually v and w
 	v, w := dat[0], dat[1]
 	u := 1.0 - v - w
@@ -140,21 +140,21 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	if tri.mesh.uvs != nil {
 		// u, v, and w are actually the barycentric coords, not some UVs.
 		uvA, uvB, uvC := tri.getUVs()
-		sp.U = u*uvA.U + v*uvB.U + w*uvC.U
-		sp.V = u*uvA.V + v*uvB.V + w*uvC.V
+		sp.U = u*uvA[0] + v*uvB[0] + w*uvC[0]
+		sp.V = u*uvA[1] + v*uvB[1] + w*uvC[1]
 
 		// Calculate world vectors
-		du1, du2 := uvA.U-uvC.U, uvB.U-uvC.U
-		dv1, dv2 := uvA.V-uvC.V, uvB.V-uvC.V
+		du1, du2 := uvA[0]-uvC[0], uvB[0]-uvC[0]
+		dv1, dv2 := uvA[1]-uvC[1], uvB[1]-uvC[1]
 		det := du1*dv2 - dv1*du2
 
-		if !fmath.Eq(det, 0.0) {
+		if det != 0 {
 			invdet := 1.0 / det
 			dp1, dp2 := vector.Sub(a, c), vector.Sub(b, c)
 			sp.WorldU = vector.Sub(vector.ScalarMul(dp1, dv2*invdet), vector.ScalarMul(dp2, dv1*invdet))
 			sp.WorldV = vector.Sub(vector.ScalarMul(dp2, du1*invdet), vector.ScalarMul(dp1, du2*invdet))
 		} else {
-			sp.WorldU, sp.WorldV = vector.New(0, 0, 0), vector.New(0, 0, 0)
+			sp.WorldU, sp.WorldV = vector.Vector3D{}, vector.Vector3D{}
 		}
 	} else {
 		a, b, c := tri.getVertices()
@@ -172,57 +172,40 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.Position = coll.GetPoint()
 
 	sp.NormalU, sp.NormalV = vector.CreateCS(sp.Normal)
-	sp.ShadingU.X = vector.Dot(sp.NormalU, sp.WorldU)
-	sp.ShadingU.Y = vector.Dot(sp.NormalV, sp.WorldU)
-	sp.ShadingU.Z = vector.Dot(sp.Normal, sp.WorldU)
-	sp.ShadingV.X = vector.Dot(sp.NormalU, sp.WorldV)
-	sp.ShadingV.Y = vector.Dot(sp.NormalV, sp.WorldV)
-	sp.ShadingV.Z = vector.Dot(sp.Normal, sp.WorldV)
+	sp.ShadingU[vector.X] = vector.Dot(sp.NormalU, sp.WorldU)
+	sp.ShadingU[vector.Y] = vector.Dot(sp.NormalV, sp.WorldU)
+	sp.ShadingU[vector.Z] = vector.Dot(sp.Normal, sp.WorldU)
+	sp.ShadingV[vector.X] = vector.Dot(sp.NormalU, sp.WorldV)
+	sp.ShadingV[vector.Y] = vector.Dot(sp.NormalV, sp.WorldV)
+	sp.ShadingV[vector.Z] = vector.Dot(sp.Normal, sp.WorldV)
 
 	return
 }
 
 func (tri *Triangle) GetBound() *bound.Bound {
+	var minPt, maxPt vector.Vector3D
 	a, b, c := tri.getVertices()
-	minPt := vector.New(fmath.Min(a.X, b.X, c.X), fmath.Min(a.Y, b.Y, c.Y), fmath.Min(a.Z, b.Z, c.Z))
-	maxPt := vector.New(fmath.Max(a.X, b.X, c.X), fmath.Max(a.Y, b.Y, c.Y), fmath.Max(a.Z, b.Z, c.Z))
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		minPt[axis] = math.Fmin(math.Fmin(a[axis], b[axis]), c[axis])
+		maxPt[axis] = math.Fmax(math.Fmax(a[axis], b[axis]), c[axis])
+	}
 	return bound.New(minPt, maxPt)
 }
 
 func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
-	var points [3][3]float
+	var points [3][3]float64
 	a, b, c := tri.getVertices()
 
-	for i := 0; i < 3; i++ {
-		points[0][i] = a.GetComponent(i)
-		points[1][i] = b.GetComponent(i)
-		points[2][i] = c.GetComponent(i)
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		points[0][axis] = a[axis]
+		points[1][axis] = b[axis]
+		points[2][axis] = c[axis]
 	}
 	ctr := bd.GetCenter()
-	return triBoxOverlap([3]float{ctr.X, ctr.Y, ctr.Z}, bd.GetHalfSize(), points)
+	return triBoxOverlap([3]float64(ctr), bd.GetHalfSize(), points)
 }
 
 func (tri *Triangle) GetMaterial() material.Material { return tri.material }
-
-// The rest of these are non-interface triangle-specific methods.
-
-func (tri *Triangle) SetMaterial(mat material.Material) { tri.material = mat }
-func (tri *Triangle) SetNormals(a, b, c int)            { tri.na, tri.nb, tri.nc = a, b, c }
-func (tri *Triangle) ClearNormals()                     { tri.na, tri.nb, tri.nc = -1, -1, -1 }
-func (tri *Triangle) SetUVs(a, b, c int)                { tri.uva, tri.uvb, tri.uvc = a, b, c }
-func (tri *Triangle) ClearUVs()                         { tri.uva, tri.uvb, tri.uvc = -1, -1, -1 }
-func (tri *Triangle) GetNormal() vector.Vector3D        { return tri.normal }
-
-func (tri *Triangle) CalculateNormal() {
-	a, b, c := tri.getVertices()
-	tri.normal = vector.Cross(vector.Sub(b, a), vector.Sub(c, a)).Normalize()
-}
-
-func (tri *Triangle) GetSurfaceArea() float {
-	a, b, c := tri.getVertices()
-	edge1, edge2 := vector.Sub(b, a), vector.Sub(c, a)
-	return vector.Cross(edge1, edge2).Length() * 0.5
-}
 
 func (tri *Triangle) Clip(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	if axis >= 0 {
@@ -239,12 +222,12 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}
 		}
 	}()
 
-	var poly []dVector
+	var poly []vector.Vector3D
 	if oldData == nil {
 		a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
-		poly = []dVector{vec2dvec(a), vec2dvec(b), vec2dvec(c), vec2dvec(a)}
+		poly = []vector.Vector3D{a, b, c, a}
 	} else {
-		poly = oldData.([]dVector)
+		poly = oldData.([]vector.Vector3D)
 	}
 
 	lower := (axis &^ 3) != 0
@@ -252,9 +235,9 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}
 
 	var split float64
 	if lower {
-		split = float64(bound.GetMin().GetComponent(axis))
+		split = float64(bound.GetMin()[axis])
 	} else {
-		split = float64(bound.GetMax().GetComponent(axis))
+		split = float64(bound.GetMax()[axis])
 	}
 
 	newData, clipped = triPlaneClip(axis, split, lower, poly)
@@ -262,17 +245,35 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}
 }
 
 func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			clipped, newData = nil, nil
-			logging.Warning(logging.MainLog, "Clip panic: %v", err)
-		}
-	}()
+	//defer func() {
+	//	if err := recover(); err != nil {
+	//		clipped, newData = nil, nil
+	//		logging.Warning(logging.MainLog, "Clip panic: %v", err)
+	//	}
+	//}()
 
 	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
-	poly := []dVector{vec2dvec(a), vec2dvec(b), vec2dvec(c), vec2dvec(a)}
-	bMin := [3]float64(vec2dvec(bound.GetMin()))
-	bMax := [3]float64(vec2dvec(bound.GetMax()))
-	newData, clipped = triBoxClip(bMin, bMax, poly)
+	poly := []vector.Vector3D{a, b, c, a}
+	newData, clipped = triBoxClip([3]float64(bound.GetMin()), [3]float64(bound.GetMax()), poly)
 	return
+}
+
+// The rest of these are non-interface triangle-specific methods.
+
+func (tri *Triangle) SetMaterial(mat material.Material) { tri.material = mat }
+func (tri *Triangle) SetNormals(a, b, c int)            { tri.na, tri.nb, tri.nc = a, b, c }
+func (tri *Triangle) ClearNormals()                     { tri.na, tri.nb, tri.nc = -1, -1, -1 }
+func (tri *Triangle) SetUVs(a, b, c int)                { tri.uva, tri.uvb, tri.uvc = a, b, c }
+func (tri *Triangle) ClearUVs()                         { tri.uva, tri.uvb, tri.uvc = -1, -1, -1 }
+func (tri *Triangle) GetNormal() vector.Vector3D        { return tri.normal }
+
+func (tri *Triangle) CalculateNormal() {
+	a, b, c := tri.getVertices()
+	tri.normal = vector.Cross(vector.Sub(b, a), vector.Sub(c, a)).Normalize()
+}
+
+func (tri *Triangle) GetSurfaceArea() float64 {
+	a, b, c := tri.getVertices()
+	edge1, edge2 := vector.Sub(b, a), vector.Sub(c, a)
+	return vector.Cross(edge1, edge2).Length() * 0.5
 }
