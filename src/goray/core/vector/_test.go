@@ -19,32 +19,33 @@ func TestNormalize(t *testing.T) {
 
 func TestLength(t *testing.T) {
 	type lengthTest struct {
-		Vec    Vector3D
-		Length float64
+		Vec       Vector3D
+		Length    float64
+		LengthSqr float64
 	}
 
 	tests := []lengthTest{
-		lengthTest{[3]float64{0.0, 0.0, 0.0}, 0.0},
+		lengthTest{[3]float64{0.0, 0.0, 0.0}, 0.0, 0.0},
 
-		lengthTest{[3]float64{1.0, 0.0, 0.0}, 1.0},
-		lengthTest{[3]float64{0.0, 1.0, 0.0}, 1.0},
-		lengthTest{[3]float64{0.0, 0.0, 1.0}, 1.0},
+		lengthTest{[3]float64{1.0, 0.0, 0.0}, 1.0, 1.0},
+		lengthTest{[3]float64{0.0, 1.0, 0.0}, 1.0, 1.0},
+		lengthTest{[3]float64{0.0, 0.0, 1.0}, 1.0, 1.0},
 
-		lengthTest{[3]float64{-1.0, 0.0, 0.0}, 1.0},
-		lengthTest{[3]float64{0.0, -1.0, 0.0}, 1.0},
-		lengthTest{[3]float64{0.0, 0.0, -1.0}, 1.0},
+		lengthTest{[3]float64{-1.0, 0.0, 0.0}, 1.0, 1.0},
+		lengthTest{[3]float64{0.0, -1.0, 0.0}, 1.0, 1.0},
+		lengthTest{[3]float64{0.0, 0.0, -1.0}, 1.0, 1.0},
 
-		lengthTest{[3]float64{3.0, -4.0, 0.0}, 5.0},
-		lengthTest{[3]float64{1.0, 2.0, -2.0}, 3.0},
-		lengthTest{[3]float64{3.14, 20.7, 0.5}, 20.942769635365803},
+		lengthTest{[3]float64{3.0, -4.0, 0.0}, 5.0, 25.0},
+		lengthTest{[3]float64{1.0, 2.0, -2.0}, 3.0, 9.0},
+		lengthTest{[3]float64{3.14, 20.7, 0.5}, 20.942769635365803, 438.59959999999995},
 	}
 
 	for _, ltest := range tests {
-		if lensqr := ltest.Length * ltest.Length; ltest.Vec.LengthSqr() != lensqr {
-			t.Error("LengthSqr failed for %v (wanted %.2f, got %.2f)", ltest.Vec, lensqr, ltest.Vec.LengthSqr())
+		if ltest.Vec.LengthSqr() != ltest.LengthSqr {
+			t.Errorf("LengthSqr failed for %v (wanted %.2f, got %.2f)", ltest.Vec, ltest.LengthSqr, ltest.Vec.LengthSqr())
 		}
 		if ltest.Vec.Length() != ltest.Length {
-			t.Error("Length failed for %v (wanted %.2f, got %.2f)", ltest.Vec, ltest.Length, ltest.Vec.Length())
+			t.Errorf("Length failed for %v (wanted %.2f, got %.2f)", ltest.Vec, ltest.Length, ltest.Vec.Length())
 		}
 	}
 }

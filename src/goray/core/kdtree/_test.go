@@ -7,13 +7,13 @@ import (
 	"goray/core/vector"
 )
 
-func dim(v Value, axis int) (min, max float) {
+func dim(v Value, axis int) (min, max float64) {
 	switch val := v.(type) {
 	case vector.Vector3D:
-		comp := val.GetComponent(axis)
+		comp := val[axis]
 		return comp, comp
 	case *bound.Bound:
-		return val.GetMin().GetComponent(axis), val.GetMax().GetComponent(axis)
+		return val.GetMin()[axis], val.GetMax()[axis]
 	}
 	return
 }
@@ -37,30 +37,38 @@ func newBoxTree(boxes []*bound.Bound, opts Options) *Tree {
 func TestLeafTree(t *testing.T) {
 	opts := MakeOptions(dim, nil)
 	opts.LeafSize = 2
-	tree := newPointTree([]vector.Vector3D{vector.New(-1, 0, 0), vector.New(1, 0, 0)}, opts)
+	tree := newPointTree([]vector.Vector3D{{-1, 0, 0}, {1, 0, 0}}, opts)
 	if tree.Depth() != 0 {
 		t.Error("Simple leaf tree creation fails")
 	}
 }
 
 func TestBound(t *testing.T) {
-	ptA, ptB := vector.New(1, 2, 3), vector.New(4, 5, 6)
+	ptA, ptB := vector.Vector3D{1, 2, 3}, vector.Vector3D{4, 5, 6}
 
 	opts := MakeOptions(dim, nil)
 	b := newBoxTree([]*bound.Bound{bound.New(ptA, ptB)}, opts).GetBound()
-	if b.GetMinX() != ptA.X || b.GetMinY() != ptA.Y || b.GetMinZ() != ptA.Z {
-		t.Error("Box tree minimum wrong")
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		if b.GetMin()[axis] != ptA[axis] {
+			t.Errorf("Box tree %v minimum expects %.2f, got %.2f", b.GetMin()[axis], ptA[axis])
+		}
 	}
-	if b.GetMaxX() != ptB.X || b.GetMaxY() != ptB.Y || b.GetMaxZ() != ptB.Z {
-		t.Error("Box tree maximum wrong")
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		if b.GetMin()[axis] != ptA[axis] {
+			t.Errorf("Box tree %v maximum expects %.2f, got %.2f", b.GetMax()[axis], ptB[axis])
+		}
 	}
 
 	b = newPointTree([]vector.Vector3D{ptA, ptB}, opts).GetBound()
-	if b.GetMinX() != ptA.X || b.GetMinY() != ptA.Y || b.GetMinZ() != ptA.Z {
-		t.Error("Point tree minimum wrong")
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		if b.GetMin()[axis] != ptA[axis] {
+			t.Errorf("Point tree %v minimum expects %.2f, got %.2f", b.GetMin()[axis], ptA[axis])
+		}
 	}
-	if b.GetMaxX() != ptB.X || b.GetMaxY() != ptB.Y || b.GetMaxZ() != ptB.Z {
-		t.Error("Point tree maximum wrong")
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		if b.GetMin()[axis] != ptA[axis] {
+			t.Errorf("Point tree %v maximum expects %.2f, got %.2f", b.GetMax()[axis], ptB[axis])
+		}
 	}
 }
 
@@ -69,10 +77,10 @@ func TestSimpleTree(t *testing.T) {
 	opts.SplitFunc = SimpleSplit
 	tree := newPointTree(
 		[]vector.Vector3D{
-			vector.New(-1, 0, 0),
-			vector.New(1, 0, 0),
-			vector.New(-2, 0, 0),
-			vector.New(2, 0, 0),
+			{-1, 0, 0},
+			{1, 0, 0},
+			{-2, 0, 0},
+			{2, 0, 0},
 		},
 		opts,
 	)
