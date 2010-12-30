@@ -245,12 +245,12 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}
 }
 
 func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData interface{}) {
-	//defer func() {
-	//	if err := recover(); err != nil {
-	//		clipped, newData = nil, nil
-	//		logging.Warning(logging.MainLog, "Clip panic: %v", err)
-	//	}
-	//}()
+	defer func() {
+		if err := recover(); err != nil {
+			clipped, newData = nil, nil
+			logging.Warning(logging.MainLog, "Clip panic: %v", err)
+		}
+	}()
 
 	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
 	poly := []vector.Vector3D{a, b, c, a}
