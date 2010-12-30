@@ -7,7 +7,7 @@ import (
 	"goray/core/vector"
 )
 
-func dim(v Value, axis int) (min, max float64) {
+func dim(v Value, axis vector.Axis) (min, max float64) {
 	switch val := v.(type) {
 	case vector.Vector3D:
 		comp := val[axis]

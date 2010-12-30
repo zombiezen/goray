@@ -23,7 +23,7 @@ type Tree struct {
 }
 
 // A DimensionFunc calculates the range of a value in a particular axis.
-type DimensionFunc func(v Value, axis int) (min, max float64)
+type DimensionFunc func(v Value, axis vector.Axis) (min, max float64)
 
 func getBound(v Value, getDim DimensionFunc) *bound.Bound {
 	minX, maxX := getDim(v, 0)
@@ -75,14 +75,15 @@ type BuildState struct {
 	OldCost    float
 	BadRefines uint
 	Clips      []ClipInfo
-	ClipAxis   int
+	ClipAxis   vector.Axis
+	ClipLower  bool
 }
 
 func (state BuildState) getBound(v Value) *bound.Bound {
 	return getBound(v, state.GetDimension)
 }
 
-func (state BuildState) getClippedDimension(i int, v Value, axis int) (min, max float64) {
+func (state BuildState) getClippedDimension(i int, v Value, axis vector.Axis) (min, max float64) {
 	if info := state.getClipInfo(i); info.Bound != nil {
 		return info.Bound.GetMin()[axis], info.Bound.GetMax()[axis]
 	}
@@ -218,13 +219,13 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	state.MaxDepth--
 	go func() {
 		leftState := state
-		leftState.ClipAxis = axis
+		leftState.ClipAxis, leftState.ClipLower = axis, false
 		leftState.Clips = leftClip
 		leftChan <- build(left, leftBound, leftState)
 	}()
 	go func() {
 		rightState := state
-		rightState.ClipAxis = axis | 1<<2
+		rightState.ClipAxis, rightState.ClipLower = axis, true
 		rightState.Clips = rightClip
 		rightChan <- build(right, rightBound, rightState)
 	}()
@@ -261,7 +262,7 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 			if info.Bound == nil {
 				info.Bound = state.getBound(v)
 			}
-			newBound, newData := clipv.Clip(bd, state.ClipAxis, info.InternalData)
+			newBound, newData := clipv.Clip(bd, state.ClipAxis, state.ClipLower, info.InternalData)
 			if newBound != nil {
 				// Polygon clipped and still with us.
 				info.Bound, info.InternalData = newBound, newData

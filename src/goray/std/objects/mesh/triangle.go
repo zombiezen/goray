@@ -207,14 +207,14 @@ func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
 
 func (tri *Triangle) GetMaterial() material.Material { return tri.material }
 
-func (tri *Triangle) Clip(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) Clip(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	if axis >= 0 {
-		return tri.clipPlane(bound, axis, oldData)
+		return tri.clipPlane(bound, axis, lower, oldData)
 	}
 	return tri.clipBox(bound)
 }
 
-func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) clipPlane(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			logging.Debug(logging.MainLog, "Clip plane fault: %v", err)
@@ -229,9 +229,6 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis int, oldData interface{}
 	} else {
 		poly = oldData.([]vector.Vector3D)
 	}
-
-	lower := (axis &^ 3) != 0
-	axis = axis & 3
 
 	var split float64
 	if lower {

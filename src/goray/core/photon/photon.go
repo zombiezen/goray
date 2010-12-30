@@ -70,7 +70,7 @@ func (pm *Map) Clear() {
 
 func (pm *Map) Ready() bool { return pm.fresh }
 
-func photonGetDim(v kdtree.Value, axis int) (min, max float64) {
+func photonGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
 	photon := v.(*Photon)
 	min = photon.position[axis]
 	max = min

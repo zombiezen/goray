@@ -99,7 +99,7 @@ type kdPartition struct {
 	*kdtree.Tree
 }
 
-func primGetDim(v kdtree.Value, axis int) (min, max float64) {
+func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
 	bd := v.(primitive.Primitive).GetBound()
 	return bd.GetMin()[axis], bd.GetMax()[axis]
 }

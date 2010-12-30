@@ -108,15 +108,15 @@ func (b *Bound) GetXLength() float64 { return b.g[vector.X] - b.a[vector.X] }
 func (b *Bound) GetYLength() float64 { return b.g[vector.Y] - b.a[vector.Y] }
 func (b *Bound) GetZLength() float64 { return b.g[vector.Z] - b.a[vector.Z] }
 
-func (b *Bound) GetLargestAxis() int {
+func (b *Bound) GetLargestAxis() vector.Axis {
 	x, y, z := b.GetXLength(), b.GetYLength(), b.GetZLength()
 	switch {
 	case z > y && z > x:
-		return 2
+		return vector.Z
 	case y > z && y > x:
-		return 1
+		return vector.Y
 	}
-	return 0
+	return vector.X
 }
 
 func (b *Bound) GetHalfSize() [3]float64 {

@@ -25,7 +25,7 @@ func calcBound(poly []vector.Vector3D) *bound.Bound {
 }
 
 func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3D, *bound.Bound) {
-	for axis := 0; axis < 3; axis++ { // for each axis
+	for axis := vector.X; axis <= vector.Z; axis++ { // for each axis
 		// clip lower bound
 		poly = triClip(axis, bMin[axis], poly, cmpMin)
 		if len(poly) > 9 {
@@ -56,7 +56,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 	return poly, calcBound(poly)
 }
 
-func triPlaneClip(axis int, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, *bound.Bound) {
+func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, *bound.Bound) {
 	if lower {
 		poly = triClip(axis, pos, poly, cmpMin)
 	} else {
@@ -76,7 +76,7 @@ func triPlaneClip(axis int, pos float64, lower bool, poly []vector.Vector3D) ([]
 }
 
 // triClip is the internal clipping function. It's not very user-friendly; use triBoxClip or triPlaneClip.
-func triClip(axis int, bound float64, poly []vector.Vector3D, cmp func(a, b float64) bool) (cpoly []vector.Vector3D) {
+func triClip(axis vector.Axis, bound float64, poly []vector.Vector3D, cmp func(a, b float64) bool) (cpoly []vector.Vector3D) {
 	nextAxis, prevAxis := (axis+1)%3, (axis+2)%3
 
 	cpoly = make([]vector.Vector3D, 0, 11)
