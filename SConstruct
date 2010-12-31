@@ -5,19 +5,41 @@ import subprocess
 
 # Set up environment
 variables = Variables()
-variables.Add(BoolVariable('testing', "Set to build the unit tests", False))
+variables.AddVariables(
+    PathVariable(
+        'BUILD_DIR',
+        "Build directory",
+        'build',
+        PathVariable.PathIsDirCreate,
+    ),
+    PathVariable(
+        'TEST_BUILD_DIR',
+        "Build directory for unit tests",
+        'build/tests',
+        PathVariable.PathIsDirCreate,
+    ),
+    PathVariable(
+        'BIN_DIR',
+        "Directory to place programs",
+        'bin',
+        PathVariable.PathIsDirCreate,
+    ),
+)
 env = Environment(
     TOOLS=['default', 'go'],
-    GOLOCALHELPER='build/scons-go-helper',
     variables=variables,
 )
-env['GOSTRIPTESTS'] = not env['testing']
-if env['testing']:
-    var_dir = 'build/tests'
-else:
-    var_dir = 'build'
-env.Append(GOLIBPATH=[var_dir])
-env.VariantDir(var_dir, 'src')
+
+test_env = env.Clone()
+test_env['GOSTRIPTESTS'] = False
+test_env['BUILD_DIR'] = test_env['TEST_BUILD_DIR']
+
+def setup_paths(e):
+    e.Append(GOLIBPATH=[e['BUILD_DIR']])
+    e.VariantDir(e['BUILD_DIR'], 'src')
+
+setup_paths(env)
+setup_paths(test_env)
 
 # Version info
 def get_bzr_path():
@@ -54,21 +76,37 @@ const CleanWC = {clean}
     finally:
         f.close()
 
-version_file = File('build/buildversion.go')
+version_file = File(env.subst('$BUILD_DIR/buildversion.go'))
 Command(version_file, [], generate_buildversion)
 AlwaysBuild(version_file)
 
 env.Go(version_file)
 
-# Main build
-lib_objects = SConscript('src/goray/SConscript', exports='env', variant_dir=var_dir + '/goray')
-yaml_objects = SConscript('src/yaml/SConscript', exports='env', variant_dir=var_dir + '/yaml')
-lib = Alias('lib', lib_objects)
-yaml = Alias('yaml', yaml_objects)
-program = env.GoProgram('bin/goray', 'build/main.go')
+def get_objs(e):
+    lib_objects = SConscript(
+        'src/goray/SConscript',
+        exports={'env': e},
+        variant_dir=e.subst('$BUILD_DIR/goray'),
+    )
+    yaml_objects = SConscript(
+        'src/yaml/SConscript',
+        exports={'env': e},
+        variant_dir=e.subst('$BUILD_DIR/yaml'),
+    )
+    return lib_objects, yaml_objects
 
-if env['testing']:
-    test_suite = env.GoProgram('bin/runtests', env.GoTest('build/tests/tests.go', [lib_objects, yaml_objects]))
-    Default(test_suite)
-else:
-    Default(lib, program)
+# Main build
+l, y = get_objs(env)
+Alias('lib', l)
+Alias('yaml', y)
+program = env.GoProgram(env.subst('$BIN_DIR/goray'), env.subst('$BUILD_DIR/main.go'))
+
+Default(program)
+
+# Test build
+test_suite = test_env.GoProgram(
+    test_env.subst('$BIN_DIR/tests'),
+    test_env.GoTest(test_env.subst('$BUILD_DIR/tests.go'), get_objs(test_env))
+)
+
+Alias('tests', test_suite)
