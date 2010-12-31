@@ -22,7 +22,6 @@
 package logging
 
 import (
-	"container/vector"
 	"io"
 	"os"
 )
@@ -33,18 +32,18 @@ var MainLog = NewLogger()
 
 // Logger dispatches records to a set of handlers.
 type Logger struct {
-	handlers vector.Vector
+	handlers []Handler
 	ch       chan Record
 }
 
 // NewLogger creates a Logger object without any handlers attached.
 func NewLogger() (log *Logger) {
-	return new(Logger)
+	return &Logger{handlers: make([]Handler, 0)}
 }
 
 // AddHandler adds a new handler to the logger.
 func (log *Logger) AddHandler(handler Handler) {
-	log.handlers.Push(handler)
+	log.handlers = append(log.handlers, handler)
 }
 
 // Log creates a new BasicRecord and sends it to the handlers.
@@ -84,19 +83,19 @@ func (log *Logger) Critical(format string, args ...interface{}) {
 
 // Handle dispatches a record to the logger's handlers.
 func (log *Logger) Handle(rec Record) {
-	log.handlers.Do(func(h interface{}) {
-		h.(Handler).Handle(rec)
-	})
+	for _, h := range log.handlers {
+		h.Handle(rec)
+	}
 }
 
 // Close tells all of the logger's handlers to close.
 func (log *Logger) Close() os.Error {
-	log.handlers.Do(func(h interface{}) {
+	for _, h := range log.handlers {
 		closer, ok := h.(io.Closer)
 		if ok {
 			closer.Close()
 		}
-	})
+	}
 	// TODO: Collect all errors
 	return nil
 }

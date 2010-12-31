@@ -89,9 +89,9 @@ func ScalarDivAlpha(c AlphaColor, f float) AlphaColor {
 
 // Mix creates a new color that is the additive mix of the two colors, disregarding alpha information.
 func Mix(a, b Color, point float) Color {
-	if point < 0 {
+	if point <= 0 {
 		return b
-	} else if point > 1 {
+	} else if point >= 1 {
 		return a
 	}
 	return Add(ScalarMul(a, point), ScalarMul(b, 1-point))
@@ -99,9 +99,9 @@ func Mix(a, b Color, point float) Color {
 
 // MixAlpha creates a new color that is the additive mix of the two colors, using alpha to influence the mixing.
 func MixAlpha(a, b AlphaColor, point float) AlphaColor {
-	if point < 0 {
+	if point <= 0 {
 		return b
-	} else if point > 1 {
+	} else if point >= 1 {
 		return a
 	}
 	return AddAlpha(ScalarMulAlpha(a, point), ScalarMulAlpha(b, 1-point))

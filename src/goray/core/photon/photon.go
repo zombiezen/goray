@@ -9,7 +9,6 @@ package photon
 
 import (
 	"container/heap"
-	"goray/stack"
 	"goray/core/color"
 	"goray/core/kdtree"
 	"goray/core/vector"
@@ -51,18 +50,14 @@ func (pm *Map) GetNumPaths() int   { return pm.paths }
 func (pm *Map) SetNumPaths(np int) { pm.paths = np }
 
 func (pm *Map) AddPhoton(p *Photon) {
-	sliceLen := len(pm.photons)
-	if cap(pm.photons) < sliceLen+1 {
-		newPhotons := make([]*Photon, sliceLen, (sliceLen+1)*2)
-		copy(newPhotons, pm.photons)
-		pm.photons = newPhotons
-	}
-	pm.photons = pm.photons[0 : sliceLen+1]
-	pm.photons[sliceLen] = p
+	pm.photons = append(pm.photons, p)
 	pm.fresh = false
 }
 
 func (pm *Map) Clear() {
+	for i, _ := range pm.photons {
+		pm.photons[i] = nil
+	}
 	pm.photons = pm.photons[0:0]
 	pm.tree = nil
 	pm.fresh = false
@@ -103,14 +98,14 @@ func (h gatherHeap) Cap() int { return cap(h) }
 
 func (h gatherHeap) Less(i, j int) bool {
 	// This is a max heap.
-	data := []GatherResult(h)
-	return data[i].Distance >= data[j].Distance
+	return h[i].Distance >= h[j].Distance
 }
 
-func (h *gatherHeap) Swap(i, j int) {
-	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
+func (h gatherHeap) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
 }
 
+// Add inserts a result onto the heap. If the heap is full, then the smallest distance photon is removed to make room.
 func (h *gatherHeap) Add(val GatherResult) {
 	if len(*h) < cap(*h) {
 		h.Push(val)
@@ -124,22 +119,13 @@ func (h *gatherHeap) Add(val GatherResult) {
 }
 
 func (h *gatherHeap) Push(val interface{}) {
-	data := []GatherResult(*h)
-	oldSize := len(data)
-	if oldSize+1 > cap(data) {
-		temp := make([]GatherResult, oldSize, (oldSize+1)*2)
-		copy(temp, data)
-		data = temp
-	}
-	data = data[0 : oldSize+1]
-	data[oldSize] = val.(GatherResult)
-	*h = data
+	*h = append(*h, val.(GatherResult))
 }
 
 func (h *gatherHeap) Pop() (val interface{}) {
-	data := []GatherResult(*h)
-	val = data[len(data)-1]
-	*h = data[0 : len(data)-1]
+	val = (*h)[len(*h)-1]
+	(*h)[len(*h)-1].Photon = nil
+	*h = (*h)[:len(*h)-1]
 	return
 }
 
@@ -172,14 +158,17 @@ func (pm *Map) FindNearest(p, n vector.Vector3D, dist float64) (nearest *Photon)
 
 func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, root kdtree.Node) {
 	defer close(ch)
-	st := stack.New()
-	st.Push(root)
+	st := []kdtree.Node{root}
 	maxDistSqr := <-distCh
 
-	next := func() (kdtree.Node, bool) {
-		empty := st.Empty()
-		top := st.Pop()
-		return top.(kdtree.Node), empty
+	next := func() (n kdtree.Node, empty bool) {
+		empty = (len(st) == 0)
+		if empty {
+			return
+		}
+		n = st[len(st)-1]
+		st = st[:len(st)-1]
+		return
 	}
 
 	for currNode, empty := next(); !empty; currNode, empty = next() {
@@ -206,8 +195,8 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ro
 		}
 
 		if dist2 < maxDistSqr {
-			st.Push(altChild)
+			st = append(st, altChild)
 		}
-		st.Push(primaryChild)
+		st = append(st, primaryChild)
 	}
 }

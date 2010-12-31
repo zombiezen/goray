@@ -17,22 +17,22 @@ import (
 // State stores information concerning the current rendering state.
 type State struct {
 	RayLevel       int
-	Depth          float
-	Contribution   float
+	Depth          float64
+	Contribution   float64
 	SkipElement    interface{}
 	CurrentPass    int
 	PixelSample    int
 	RayDivision    int
 	RayOffset      int
-	Dc1, Dc2       float
-	Traveled       float
+	Dc1, Dc2       float64
+	Traveled       float64
 	PixelNumber    int
 	SamplingOffset uint
 	ScreenPos      vector.Vector3D
 	Chromatic      bool
 	IncludeLights  bool
 	WaveLength     bool
-	Time           float
+	Time           float64
 }
 
 // Init initializes the state.
@@ -74,7 +74,7 @@ func NewImage(width, height int) (img *Image) {
 	// Allocate image memory
 	dataBlock := make([]color.RGBA, width*height)
 	img.data = make([][]color.RGBA, height)
-	for i := 0; i < height; i++ {
+	for i, _ := range img.data {
 		img.data[i] = dataBlock[i*width : (i+1)*width]
 	}
 	return
@@ -93,8 +93,8 @@ func (i *Image) Bounds() image.Rectangle {
 
 // Clear sets all of the pixels in the image to a given color.
 func (i *Image) Clear(clearColor color.AlphaColor) {
-	for y := 0; y < i.height; y++ {
-		for x := 0; x < i.width; x++ {
+	for y, _ := range i.data {
+		for x, _ := range i.data[y] {
 			i.data[y][x].Copy(clearColor)
 		}
 	}

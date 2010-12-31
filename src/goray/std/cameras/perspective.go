@@ -134,10 +134,9 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 	if cam.bokeh >= TriangleBokeh && cam.bokeh <= HexagonBokeh {
 		w := bokehRot * math.Pi / 180
 		wi := 2.0 * math.Pi / float64(cam.bokeh)
-		cam.lens = make([]float64, (cam.bokeh+2)*2)
-		for i := 0; i < len(cam.lens); i += 2 {
-			cam.lens[i] = math.Cos(w)
-			cam.lens[i+1] = math.Sin(w)
+		cam.lens = make([]float64, 0, (int(cam.bokeh)+2)*2)
+		for i := 0; i < int(cam.bokeh)+2; i++ {
+			cam.lens = append(cam.lens, math.Cos(w), math.Sin(w))
 			w += wi
 		}
 	}
