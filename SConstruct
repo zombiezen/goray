@@ -24,11 +24,17 @@ variables.AddVariables(
         'bin',
         PathVariable.PathIsDirCreate,
     ),
+    BoolVariable(
+        'debug',
+        "Whether this is a debug build",
+        False,
+    ),
 )
 env = Environment(
     TOOLS=['default', 'go'],
     variables=variables,
 )
+Help(variables.GenerateHelpText(env))
 
 test_env = env.Clone()
 test_env['GOSTRIPTESTS'] = False
@@ -40,6 +46,11 @@ def setup_paths(e):
 
 setup_paths(env)
 setup_paths(test_env)
+
+if env['debug']:
+    env.Append(GO_LDFLAGS=['-e'])
+else:
+    env.Append(GO_LDFLAGS=['-s'])
 
 # Version info
 def get_bzr_path():
