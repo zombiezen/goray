@@ -88,17 +88,11 @@ def get_objs(e):
         exports={'env': e},
         variant_dir=e.subst('$BUILD_DIR/goray'),
     )
-    yaml_objects = SConscript(
-        'src/yaml/SConscript',
-        exports={'env': e},
-        variant_dir=e.subst('$BUILD_DIR/yaml'),
-    )
-    return lib_objects, yaml_objects
+    return lib_objects
 
 # Main build
-l, y = get_objs(env)
+l = get_objs(env)
 Alias('lib', l)
-Alias('yaml', y)
 program = env.GoProgram(env.subst('$BIN_DIR/goray'), env.subst('$BUILD_DIR/main.go'))
 
 Default(program)

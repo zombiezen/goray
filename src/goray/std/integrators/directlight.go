@@ -19,7 +19,7 @@ import (
 	"goray/core/scene"
 	"goray/core/vector"
 	"goray/std/integrators/util"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type directLighting struct {

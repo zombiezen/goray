@@ -14,7 +14,7 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type debugMaterial struct {

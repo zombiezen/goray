@@ -19,7 +19,7 @@ import (
 	"goray/core/matrix"
 	"goray/core/primitive"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 // UV holds a set of texture coordinates.

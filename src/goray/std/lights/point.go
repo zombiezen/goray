@@ -15,7 +15,7 @@ import (
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type pointLight struct {
