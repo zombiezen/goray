@@ -61,6 +61,17 @@ func printVersion() {
 	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
 }
 
+func garbage() {
+	before := runtime.MemStats.Alloc
+	runtime.GC()
+	after := runtime.MemStats.Alloc
+	logging.MainLog.VerboseDebug("  [GC] %d KiB", int64(before-after)/1024)
+}
+
+func logMemInfo() {
+	logging.MainLog.Debug("  [MEM] %d KiB/%d KiB", runtime.MemStats.Alloc/1024, runtime.MemStats.Sys/1024)
+}
+
 func main() {
 	var err os.Error
 
@@ -137,12 +148,18 @@ func main() {
 		return
 	}
 
+	logMemInfo()
+	garbage()
+
 	// Update scene (build tree structures and whatnot)
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
 		sc.Update()
 	})
 	logging.MainLog.Info("Finalized in %v", finalizeTime)
+
+	logMemInfo()
+	garbage()
 
 	logging.MainLog.Info("Rendering...")
 
@@ -165,6 +182,9 @@ func main() {
 	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
+
+	logMemInfo()
+	garbage()
 
 	outFile.Truncate(0)
 	switch *format {
