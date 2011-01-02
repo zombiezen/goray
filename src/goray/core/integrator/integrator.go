@@ -9,6 +9,7 @@
 package integrator
 
 import (
+	"runtime"
 	"goray/logging"
 	"goray/core/color"
 	"goray/core/ray"
@@ -133,7 +134,7 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 
 // WorkerIntegrate integrates an image using a set number of jobs.
 func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
-	const numWorkers = 2
+	numWorkers := runtime.GOMAXPROCS(0)
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
 	if h < numWorkers {
@@ -150,15 +151,18 @@ func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 		}
 		// Start workers
 		rowsPerWorker := h / numWorkers
-		for i := 0; i < numWorkers; i++ {
+		if h % numWorkers != 0 {
+			signals = append(signals, make(chan bool))
+		}
+		for i, sig := range signals {
 			go func(baseY int, finish chan<- bool) {
-				for y := baseY; y < baseY+rowsPerWorker; y++ {
+				for y := baseY; y < baseY+rowsPerWorker && y < h; y++ {
 					for x := 0; x < w; x++ {
 						ch <- RenderPixel(s, in, x, y)
 					}
 				}
 				finish <- true
-			}(i*rowsPerWorker, signals[i])
+			}(i*rowsPerWorker, sig)
 		}
 		// Join goroutines
 		for _, sig := range signals {
