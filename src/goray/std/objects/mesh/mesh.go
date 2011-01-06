@@ -19,7 +19,7 @@ import (
 	"goray/core/matrix"
 	"goray/core/primitive"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 // UV holds a set of texture coordinates.
@@ -83,14 +83,8 @@ func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D, uvs []UV) {
 
 // AddTriangle adds a face to the mesh.
 func (mesh *Mesh) AddTriangle(t *Triangle) {
-	if len(mesh.triangles)+1 > cap(mesh.triangles) {
-		newTris := make([]*Triangle, len(mesh.triangles), cap(mesh.triangles)*2)
-		copy(newTris, mesh.triangles)
-		mesh.triangles = newTris
-	}
 	t.index = len(mesh.triangles)
-	mesh.triangles = mesh.triangles[0 : len(mesh.triangles)+1]
-	mesh.triangles[t.index] = t
+	mesh.triangles = append(mesh.triangles, t)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

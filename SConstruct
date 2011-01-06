@@ -24,11 +24,17 @@ variables.AddVariables(
         'bin',
         PathVariable.PathIsDirCreate,
     ),
+    BoolVariable(
+        'debug',
+        "Whether this is a debug build",
+        False,
+    ),
 )
 env = Environment(
     TOOLS=['default', 'go'],
     variables=variables,
 )
+Help(variables.GenerateHelpText(env))
 
 test_env = env.Clone()
 test_env['GOSTRIPTESTS'] = False
@@ -40,6 +46,11 @@ def setup_paths(e):
 
 setup_paths(env)
 setup_paths(test_env)
+
+if env['debug']:
+    env.Append(GO_LDFLAGS=['-e'])
+else:
+    env.Append(GO_LDFLAGS=['-s'])
 
 # Version info
 def get_bzr_path():
@@ -88,17 +99,11 @@ def get_objs(e):
         exports={'env': e},
         variant_dir=e.subst('$BUILD_DIR/goray'),
     )
-    yaml_objects = SConscript(
-        'src/yaml/SConscript',
-        exports={'env': e},
-        variant_dir=e.subst('$BUILD_DIR/yaml'),
-    )
-    return lib_objects, yaml_objects
+    return lib_objects
 
 # Main build
-l, y = get_objs(env)
+l = get_objs(env)
 Alias('lib', l)
-Alias('yaml', y)
 program = env.GoProgram(env.subst('$BIN_DIR/goray'), env.subst('$BUILD_DIR/main.go'))
 
 Default(program)

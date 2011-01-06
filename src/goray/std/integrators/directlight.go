@@ -19,7 +19,7 @@ import (
 	"goray/core/scene"
 	"goray/core/vector"
 	"goray/std/integrators/util"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type directLighting struct {
@@ -63,8 +63,7 @@ func (dl *directLighting) Preprocess(sc *scene.Scene) {
 	dl.background = sc.GetBackground()
 	if dl.background != nil {
 		if bgLight := dl.background.GetLight(); bgLight != nil {
-			dl.lights = dl.lights[0 : len(dl.lights)+1]
-			dl.lights[len(dl.lights)-1] = bgLight
+			dl.lights = append(dl.lights, bgLight)
 		}
 	}
 	return
@@ -153,7 +152,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		state.RayLevel--
 
 		matAlpha := mat.GetAlpha(state, sp, wo)
-		alpha = matAlpha + (1-matAlpha)*alpha
+		alpha = float(matAlpha) + float(1-matAlpha)*alpha
 	} else {
 		// Nothing was hit, use the background.
 		if dl.background != nil {

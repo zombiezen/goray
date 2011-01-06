@@ -27,14 +27,14 @@ type Region interface {
 	SigmaT(p, v vector.Vector3D) color.Color
 
 	// Attenuation returns how much the volumetric effect dissipates over distance.
-	Attenuation(p vector.Vector3D, l light.Light) float
+	Attenuation(p vector.Vector3D, l light.Light) float64
 
-	P(l, s vector.Vector3D) float
+	P(l, s vector.Vector3D) float64
 
-	Tau(r ray.Ray, step, offset float) color.Color
+	Tau(r ray.Ray, step, offset float64) color.Color
 
 	// Intersect returns whether a ray intersects the volume.
-	Intersect(r ray.Ray) (t0, t1 float, ok bool)
+	Intersect(r ray.Ray) (t0, t1 float64, ok bool)
 
 	// GetBound returns the bounding box of the volume.
 	GetBound() *bound.Bound

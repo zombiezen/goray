@@ -9,7 +9,6 @@
 package scene
 
 import (
-	container "container/vector"
 	"math"
 	"os"
 
@@ -55,8 +54,8 @@ type Scene struct {
 
 	objects    map[ObjectID]object.Object3D
 	materials  map[string]material.Material
-	volumes    container.Vector
-	lights     container.Vector
+	volumes    []volume.Region
+	lights     []light.Light
 	intersect  intersect.Interface
 	camera     camera.Camera
 	background background.Background
@@ -69,21 +68,23 @@ type Scene struct {
 }
 
 // New creates a new scene.
-func New() *Scene {
-	s := new(Scene)
-	s.log = logging.NewLogger()
+func New() (s *Scene) {
+	s = &Scene{
+		log: logging.NewLogger(),
 
-	s.aaSamples = 1
-	s.aaPasses = 1
-	s.aaThreshold = 0.05
+		aaSamples:   1,
+		aaPasses:    1,
+		aaThreshold: 0.05,
 
-	s.objects = make(map[ObjectID]object.Object3D)
-	s.materials = make(map[string]material.Material)
-	s.volumes = make(container.Vector, 0)
-	s.lights = make(container.Vector, 0)
+		objects:   make(map[ObjectID]object.Object3D),
+		materials: make(map[string]material.Material),
+		volumes:   make([]volume.Region, 0),
+		lights:    make([]light.Light, 0),
+
+		nextFreeID: 1,
+	}
 
 	s.changes.SetAll()
-	s.nextFreeID = 1
 	return s
 }
 
@@ -94,19 +95,13 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	if l == nil {
 		return os.NewError("Attempted to insert nil light")
 	}
-	s.lights.Push(l)
+	s.lights = append(s.lights, l)
 	s.changes.Mark(lightsChanged)
 	return
 }
 
 // GetLights returns all of the lights added to the scene.
-func (s *Scene) GetLights() []light.Light {
-	temp := make([]light.Light, s.lights.Len())
-	for i, val := range s.lights {
-		temp[i] = val.(light.Light)
-	}
-	return temp
-}
+func (s *Scene) GetLights() []light.Light { return s.lights }
 
 // AddMaterial adds a material to the scene.
 func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
@@ -134,7 +129,7 @@ func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
 }
 
 // AddVolumeRegion adds a volumetric effect to the scene.
-func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes.Push(vr) }
+func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes = append(s.volumes, vr) }
 
 // GetCamera returns the scene's current camera.
 func (s *Scene) GetCamera() camera.Camera { return s.camera }
@@ -211,24 +206,9 @@ func (s *Scene) Update() (err os.Error) {
 		// We've changed the scene's geometry.  We need to rebuild the intersection scheme.
 		s.intersect = nil
 		// Collect primitives
-		var prims []primitive.Primitive
-		{
-			nPrims := 0
-			primLists := make([][]primitive.Primitive, len(s.objects))
-
-			i := 0
-			for _, obj := range s.objects {
-				primLists[i] = obj.GetPrimitives()
-				nPrims += len(primLists[i])
-				i++
-			}
-
-			prims = make([]primitive.Primitive, nPrims)
-			pos := 0
-			for _, pl := range primLists {
-				copy(prims[pos:], pl)
-				pos += len(pl)
-			}
+		prims := make([]primitive.Primitive, 0)
+		for _, obj := range s.objects {
+			prims = append(prims, obj.GetPrimitives()...)
 		}
 		s.log.Debug("Geometry collected, %d primitives", len(prims))
 		// Do partition building
@@ -240,10 +220,9 @@ func (s *Scene) Update() (err os.Error) {
 		}
 	}
 
-	s.lights.Do(func(obj interface{}) {
-		li := obj.(light.Light)
+	for _, li := range s.lights {
 		li.SetScene(s)
-	})
+	}
 
 	if s.background != nil {
 		bgLight := s.background.GetLight()

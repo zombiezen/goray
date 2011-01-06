@@ -19,8 +19,8 @@ import (
 	debugmaterial  "goray/std/materials/debug"
 	mesh           "goray/std/objects/mesh"
 
-	yamldata "yaml/data"
-	"yaml/parser"
+	yamldata "goyaml.googlecode.com/hg/data"
+	"goyaml.googlecode.com/hg/parser"
 )
 
 type MapConstruct func(yamldata.Map) (interface{}, os.Error)

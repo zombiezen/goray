@@ -15,8 +15,8 @@ import (
 	"goray/core/light"
 	"goray/core/object"
 	"goray/core/scene"
-	yamldata "yaml/data"
-	"yaml/parser"
+	yamldata "goyaml.googlecode.com/hg/data"
+	"goyaml.googlecode.com/hg/parser"
 )
 
 const (

@@ -15,7 +15,7 @@ import (
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type pointLight struct {
@@ -52,10 +52,10 @@ func (l *pointLight) TotalEnergy() color.Color {
 	return color.ScalarMul(l.color, 4*math.Pi)
 }
 
-func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float) (col color.Color, r ray.Ray, ipdf float) {
+func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r ray.Ray, ipdf float64) {
 	r = ray.Ray{
 		From: l.position,
-		Dir:  sampleSphere(float64(s1), float64(s2)),
+		Dir:  sampleSphere(s1, s2),
 	}
 	ipdf = 4.0 * math.Pi
 	col = l.color
@@ -66,7 +66,7 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 	s.Point.Position = l.position
 	s.Flags = l.GetFlags()
 	s.DirPdf, s.AreaPdf = 0.25, 1.0
-	wo = sampleSphere(float64(s.S1), float64(s.S2))
+	wo = sampleSphere(s.S1, s.S2)
 	col = l.color
 	return
 }
@@ -78,7 +78,7 @@ func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sam
 	if ok {
 		s.Flags = l.GetFlags()
 		s.Color = l.color
-		s.Pdf = float(vector.Sub(l.position, sp.Position).LengthSqr())
+		s.Pdf = vector.Sub(l.position, sp.Position).LengthSqr()
 	}
 	return
 }
@@ -103,9 +103,9 @@ func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, 
 	return
 }
 
-func (l *pointLight) IlluminatePdf(sp, spLight surface.Point) float { return 0.0 }
+func (l *pointLight) IlluminatePdf(sp, spLight surface.Point) float64 { return 0.0 }
 
-func (l *pointLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float) {
+func (l *pointLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
 	return 1.0, 0.25, 1.0
 }
 

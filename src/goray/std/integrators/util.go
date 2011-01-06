@@ -64,12 +64,12 @@ func sample(n int, f colorFunc) color.Color {
 	return color.ScalarDiv(colorSum(n, true, f), float(n))
 }
 
-func halSeq(n int, base, start uint) (seq []float) {
-	seq = make([]float, n)
+func halSeq(n int, base, start uint) (seq []float64) {
+	seq = make([]float64, n)
 	hal := montecarlo.NewHalton(base)
 	hal.SetStart(start)
 	for i, _ := range seq {
-		seq[i] = hal.Float()
+		seq[i] = hal.Float64()
 	}
 	return
 }
@@ -135,7 +135,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	return color.Black
 }
 
-func addMod1(a, b float) (s float) {
+func addMod1(a, b float64) (s float64) {
 	s = a + b
 	if s > 1 {
 		s -= 1
@@ -214,16 +214,16 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 				l2 := lightSamp.Pdf * lightSamp.Pdf
 				m2 := mPdf * mPdf
 				w := l2 / (l2 + m2)
-				col = color.ScalarMul(col, w/lightSamp.Pdf)
+				col = color.ScalarMul(col, float(w/lightSamp.Pdf))
 			} else {
-				col = color.ScalarDiv(col, lightSamp.Pdf)
+				col = color.ScalarDiv(col, float(lightSamp.Pdf))
 			}
 		}
 	}
 	return
 }
 
-func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float) (col color.Color) {
+func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col color.Color) {
 	sp := params.Surf
 	mat := sp.Material.(material.Material)
 	bRay := ray.Ray{

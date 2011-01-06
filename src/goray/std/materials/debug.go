@@ -14,7 +14,7 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type debugMaterial struct {
@@ -36,7 +36,7 @@ func (mat *debugMaterial) Sample(state *render.State, sp surface.Point, wo vecto
 	return mat.Color, vector.Reflect(wo, sp.Normal)
 }
 
-func (mat *debugMaterial) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float {
+func (mat *debugMaterial) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float64 {
 	return 0.0
 }
 
@@ -48,7 +48,7 @@ func (mat *debugMaterial) GetReflectivity(state *render.State, sp surface.Point,
 	return nil
 }
 
-func (mat *debugMaterial) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float {
+func (mat *debugMaterial) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	return 1.0
 }
 

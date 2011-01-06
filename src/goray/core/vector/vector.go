@@ -13,41 +13,6 @@ import (
 	"math"
 )
 
-type Axis int
-
-// Axes
-const (
-	X Axis = iota
-	Y
-	Z
-)
-
-const NumAxes = 3
-
-func (a Axis) String() string {
-	switch a {
-	case X:
-		return "X"
-	case Y:
-		return "Y"
-	case Z:
-		return "Z"
-	}
-	return fmt.Sprintf("vector.Axis(%d)", int(a))
-}
-
-func (a Axis) GoString() string {
-	switch a {
-	case X:
-		return "vector.X"
-	case Y:
-		return "vector.Y"
-	case Z:
-		return "vector.Z"
-	}
-	return fmt.Sprintf("vector.Axis(%d)", int(a))
-}
-
 // Vector3D represents a three-dimensional vector. The default value is a zero vector.
 // The old Yafaray engine had a distinct type for a point and a normal, but we just represent everything as vectors.
 type Vector3D [3]float64

@@ -37,12 +37,10 @@ func printVersion() {
 	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
 	// Copyright notice
 	fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
-	fmt.Println("Copyright © 2006 Kirill Simonov")
 	fmt.Println("Copyright © 2010 Ross Light")
 	fmt.Println()
 	fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
 	fmt.Println("Alfredo de Greef.")
-	fmt.Println("Parts of the YAML parser are ported from libyaml (written by Kirill Simonov).")
 	fmt.Println("Go rewrite by Ross Light in 2010.")
 	fmt.Println()
 	fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
@@ -61,6 +59,17 @@ func printVersion() {
 	}
 	fmt.Printf("Go runtime: %s\n", runtime.Version())
 	fmt.Printf("Built for %s (%s)\n", syscall.OS, syscall.ARCH)
+}
+
+func garbage() {
+	before := runtime.MemStats.Alloc
+	runtime.GC()
+	after := runtime.MemStats.Alloc
+	logging.MainLog.VerboseDebug("  [GC] %d KiB", int64(before-after)/1024)
+}
+
+func logMemInfo() {
+	logging.MainLog.Debug("  [MEM] %d KiB/%d KiB", runtime.MemStats.Alloc/1024, runtime.MemStats.Sys/1024)
 }
 
 func main() {
@@ -139,12 +148,18 @@ func main() {
 		return
 	}
 
+	logMemInfo()
+	garbage()
+
 	// Update scene (build tree structures and whatnot)
 	logging.MainLog.Info("Finalizing scene...")
 	finalizeTime := time.Stopwatch(func() {
 		sc.Update()
 	})
 	logging.MainLog.Info("Finalized in %v", finalizeTime)
+
+	logMemInfo()
+	garbage()
 
 	logging.MainLog.Info("Rendering...")
 
@@ -167,6 +182,9 @@ func main() {
 	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
 
 	logging.MainLog.Info("Writing and finishing...")
+
+	logMemInfo()
+	garbage()
 
 	outFile.Truncate(0)
 	switch *format {

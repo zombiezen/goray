@@ -13,7 +13,7 @@ import (
 	"goray/core/camera"
 	"goray/core/ray"
 	"goray/core/vector"
-	yamldata "yaml/data"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 // orthoCam is a simple orthographic camera.

@@ -118,8 +118,8 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 			}
 		}
 
-		capArea := d[(axis+1)%3] * d[(axis+2)%3]
-		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
+		capArea := d[axis.Next()] * d[axis.Prev()]
+		capPerim := d[axis.Next()] + d[axis.Prev()]
 
 		nBelow, nAbove := 0, len(vals)
 		// Cumulate values and evaluate cost
@@ -226,8 +226,8 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vec
 		}
 		sort.Sort(edges)
 
-		capArea := d[(axis+1)%3] * d[(axis+2)%3]
-		capPerim := d[(axis+1)%3] + d[(axis+2)%3]
+		capArea := d[axis.Next()] * d[axis.Prev()]
+		capPerim := d[axis.Next()] + d[axis.Prev()]
 
 		nBelow, nAbove := 0, len(vals)
 		for _, e := range edges {

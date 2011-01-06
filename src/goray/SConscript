@@ -6,7 +6,6 @@ root_packages = [
     env.Go('logging', Glob('logging/*.go')),
     env.Go('montecarlo.go'),
     env.Go('time', Glob('time/*.go')),
-    env.Go('stack', Glob('stack/*.go')),
     env.Go('version'),
 ]
 
