@@ -151,7 +151,7 @@ func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 		}
 		// Start workers
 		rowsPerWorker := h / numWorkers
-		if h % numWorkers != 0 {
+		if h%numWorkers != 0 {
 			signals = append(signals, make(chan bool))
 		}
 		for i, sig := range signals {
