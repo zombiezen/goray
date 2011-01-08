@@ -76,7 +76,7 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (enter, leave flo
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		if ray[axis] != 0 {
 			tmp1 := -p[axis] / ray[axis]
-			tmp2 := ((a1[axis] - a0[axis]) - p[axis]) / ray[axis]
+			tmp2 := (a1[axis] - a0[axis] - p[axis]) / ray[axis]
 			if tmp1 > tmp2 {
 				tmp1, tmp2 = tmp2, tmp1
 			}

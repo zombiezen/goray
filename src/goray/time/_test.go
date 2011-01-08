@@ -6,10 +6,10 @@ func TestSplit(t *testing.T) {
 	if h, m, s := Time(20.4 * Second).Split(); s != 20.4 || m != 0 || h != 0 {
 		t.Error("Standalone seconds does not work")
 	}
-	if h, m, s := Time(42*Minute + 3.14*Second).Split(); (s > 3.145 || s < 3.135) || m != 42 || h != 0 {
+	if h, m, s := Time(42*Minute + 3.14*Second).Split(); s > 3.145 || s < 3.135 || m != 42 || h != 0 {
 		t.Errorf("Minutes and seconds does not work (got %d, %d, %.3f)", h, m, s)
 	}
-	if h, m, s := Time(12*Hour + 42*Minute + 3.14*Second).Split(); (s > 3.145 || s < 3.135) || m != 42 || h != 12 {
+	if h, m, s := Time(12*Hour + 42*Minute + 3.14*Second).Split(); s > 3.145 || s < 3.135 || m != 42 || h != 12 {
 		t.Errorf("Hours, minutes, and seconds does not work (got %d, %d, %.3f)", h, m, s)
 	}
 }
