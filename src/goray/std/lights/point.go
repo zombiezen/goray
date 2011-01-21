@@ -21,7 +21,7 @@ import (
 type pointLight struct {
 	position  vector.Vector3D
 	color     color.Color
-	intensity float
+	intensity float64
 }
 
 func sampleSphere(s1, s2 float64) (dir vector.Vector3D) {
@@ -37,7 +37,7 @@ func sampleSphere(s1, s2 float64) (dir vector.Vector3D) {
 	return
 }
 
-func New(pos vector.Vector3D, col color.Color, intensity float) light.Light {
+func New(pos vector.Vector3D, col color.Color, intensity float64) light.Light {
 	pl := pointLight{position: pos, color: color.ScalarMul(col, intensity)}
 	pl.intensity = color.GetEnergy(pl.color)
 	return &pl
@@ -99,7 +99,7 @@ func (l *pointLight) Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, 
 	wo.TMax = dist
 	wo.Dir = ldir
 
-	col = color.ScalarMul(l.color, float(idistSqr))
+	col = color.ScalarMul(l.color, idistSqr)
 	return
 }
 
@@ -113,6 +113,6 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	pos := m["position"].(vector.Vector3D)
 	col := m["color"].(color.Color)
 	intensity, _ := yamldata.AsFloat(m["intensity"])
-	data = New(pos, col, float(intensity))
+	data = New(pos, col, intensity)
 	return
 }

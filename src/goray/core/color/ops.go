@@ -17,13 +17,13 @@ func IsBlack(c Color) bool {
 }
 
 // GetEnergy calculates the overall brightness of a color.
-func GetEnergy(c Color) float {
+func GetEnergy(c Color) float64 {
 	return (c.GetR() + c.GetG() + c.GetB()) * 0.33333333333333
 }
 
 // Invert computes the inverse of the color.  However, black will always be black.
 func Invert(c Color) Color {
-	doInvert := func(comp float) float {
+	doInvert := func(comp float64) float64 {
 		if comp == 0.0 {
 			return 0.0
 		}
@@ -34,7 +34,7 @@ func Invert(c Color) Color {
 
 // Abs ensures that a color is positive.
 func Abs(c Color) Color {
-	return NewRGB(float(math.Fabs(float64(c.GetR()))), float(math.Fabs(float64(c.GetG()))), float(math.Fabs(float64(c.GetB()))))
+	return NewRGB(math.Fabs(c.GetR()), math.Fabs(c.GetG()), math.Fabs(c.GetB()))
 }
 
 // Add creates a new color that is equivalent to the sum of the colors given to it, disregarding alpha information.
@@ -68,27 +68,27 @@ func MulAlpha(c1, c2 AlphaColor) AlphaColor {
 }
 
 // ScalarMul creates a new color that is equivalent to the color multiplied by a constant factor, disregarding alpha information.
-func ScalarMul(c Color, f float) Color {
+func ScalarMul(c Color, f float64) Color {
 	return NewRGB(c.GetR()*f, c.GetG()*f, c.GetB()*f)
 }
 
 // ScalarMulAlpha creates a new color that is equivalent to the color multiplied by a constant factor.
-func ScalarMulAlpha(c AlphaColor, f float) AlphaColor {
+func ScalarMulAlpha(c AlphaColor, f float64) AlphaColor {
 	return NewRGBA(c.GetR()*f, c.GetG()*f, c.GetB()*f, c.GetA()*f)
 }
 
 // ScalarDiv creates a new color that is equivalent to the color divided by a constant factor, disregarding alpha information.
-func ScalarDiv(c Color, f float) Color {
+func ScalarDiv(c Color, f float64) Color {
 	return NewRGB(c.GetR()/f, c.GetG()/f, c.GetB()/f)
 }
 
 // ScalarDivAlpha creates a new color that is equivalent to the color divided by a constant factor.
-func ScalarDivAlpha(c AlphaColor, f float) AlphaColor {
+func ScalarDivAlpha(c AlphaColor, f float64) AlphaColor {
 	return NewRGBA(c.GetR()/f, c.GetG()/f, c.GetB()/f, c.GetA()/f)
 }
 
 // Mix creates a new color that is the additive mix of the two colors, disregarding alpha information.
-func Mix(a, b Color, point float) Color {
+func Mix(a, b Color, point float64) Color {
 	if point <= 0 {
 		return b
 	} else if point >= 1 {
@@ -98,7 +98,7 @@ func Mix(a, b Color, point float) Color {
 }
 
 // MixAlpha creates a new color that is the additive mix of the two colors, using alpha to influence the mixing.
-func MixAlpha(a, b AlphaColor, point float) AlphaColor {
+func MixAlpha(a, b AlphaColor, point float64) AlphaColor {
 	if point <= 0 {
 		return b
 	} else if point >= 1 {

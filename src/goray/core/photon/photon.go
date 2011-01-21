@@ -38,7 +38,7 @@ type Map struct {
 	photons      []*Photon
 	paths        int
 	fresh        bool
-	searchRadius float
+	searchRadius float64
 	tree         *kdtree.Tree
 }
 

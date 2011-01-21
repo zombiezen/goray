@@ -63,7 +63,7 @@ type Scene struct {
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
-	aaThreshold         float
+	aaThreshold         float64
 	doDepth             bool
 }
 
@@ -144,7 +144,7 @@ func (s *Scene) GetBackground() background.Background { return s.background }
 func (s *Scene) SetBackground(bg background.Background) { s.background = bg }
 
 // SetAntialiasing changes the parameters for antialiasing.
-func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold float) {
+func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold float64) {
 	if numSamples < 1 {
 		numSamples = 1
 	}

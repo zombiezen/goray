@@ -63,12 +63,12 @@ func float64Sequence(n parser.Node) (data []float64, ok bool) {
 	return
 }
 
-func floatSequence(n parser.Node) (data []float, ok bool) {
+func floatSequence(n parser.Node) (data []float64, ok bool) {
 	f64Data, ok := float64Sequence(n)
 	if ok {
-		data = make([]float, len(f64Data))
+		data = make([]float64, len(f64Data))
 		for i, f := range f64Data {
-			data[i] = float(f)
+			data[i] = float64(f)
 		}
 	}
 	return

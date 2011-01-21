@@ -71,7 +71,7 @@ func (b *Bound) SetMaxZ(z float64) { b.g[vector.Z] = z }
 func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (enter, leave float64, crosses bool) {
 	a0, a1 := b.a, b.g
 	p := vector.Sub(from, a0)
-	lmin, lmax := float64(-1.0), float64(-1.0)
+	lmin, lmax := -1.0, -1.0
 
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		if ray[axis] != 0 {

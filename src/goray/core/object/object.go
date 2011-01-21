@@ -26,7 +26,7 @@ type Samplable interface {
 	// EnableSampling tries to enable sampling (may require additional memory and preprocessing time).
 	EnableSampling() bool
 	// Sample takes a sample of the object's surface.
-	Sample(s1, s2 float) (p, n vector.Vector3D)
+	Sample(s1, s2 float64) (p, n vector.Vector3D)
 }
 
 // SamplableObject3D is the set of three-dimensional objects that can sample their surfaces.

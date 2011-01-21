@@ -232,9 +232,9 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis vector.Axis, lower bool,
 
 	var split float64
 	if lower {
-		split = float64(bound.GetMin()[axis])
+		split = bound.GetMin()[axis]
 	} else {
-		split = float64(bound.GetMax()[axis])
+		split = bound.GetMax()[axis]
 	}
 
 	newData, clipped = triPlaneClip(axis, split, lower, poly)

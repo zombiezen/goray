@@ -48,7 +48,7 @@ func (m1 Matrix) Inverse() (m2 Matrix, ok bool) {
 	}
 
 	for i := 0; i < 4; i++ {
-		max := float64(0.0)
+		max := 0.0
 		ci := 0
 
 		for k := i; k < 4; k++ {

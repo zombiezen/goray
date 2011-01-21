@@ -15,9 +15,9 @@ import (
 	"goray/core/vector"
 )
 
-type SplitFunc func([]Value, *bound.Bound, BuildState) (axis vector.Axis, pivot float64, cost float)
+type SplitFunc func([]Value, *bound.Bound, BuildState) (axis vector.Axis, pivot float64, cost float64)
 
-func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float) {
+func DefaultSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float64) {
 	const pigeonThreshold = 128
 
 	if len(vals) > pigeonThreshold {
@@ -32,7 +32,7 @@ func (a float64array) Len() int             { return len(a) }
 func (a float64array) Less(i1, i2 int) bool { return a[i1] < a[i2] }
 func (a float64array) Swap(i1, i2 int)      { a[i1], a[i2] = a[i2], a[i1] }
 
-func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float) {
+func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float64) {
 	axis = bd.GetLargestAxis()
 	data := make([]float64, 0, len(vals)*2)
 	for i, v := range vals {
@@ -48,7 +48,7 @@ func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.A
 	return
 }
 
-func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float) {
+func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
@@ -59,9 +59,9 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 
 	var bins [numBins + 1]pigeonBin
 	d := [3]float64{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
-	bestCost = float(math.Inf(1))
+	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
-	invTotalSA := float64(0.0)
+	invTotalSA := 0.0
 	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}
@@ -156,7 +156,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 	return
 }
 
-func computeCost(axis vector.Axis, bd *bound.Bound, capArea, capPerim, invTotalSA float64, nBelow, nAbove int, edget float64) float {
+func computeCost(axis vector.Axis, bd *bound.Bound, capArea, capPerim, invTotalSA float64, nBelow, nAbove int, edget float64) float64 {
 	const emptyBonus = 0.33
 	const costRatio = 0.35
 
@@ -173,7 +173,7 @@ func computeCost(axis vector.Axis, bd *bound.Bound, capArea, capPerim, invTotalS
 		eb = (0.1 + l1/d) * emptyBonus * rawCosts
 	}
 
-	return float(costRatio + invTotalSA*(rawCosts-eb))
+	return costRatio + invTotalSA*(rawCosts-eb)
 }
 
 type boundEdge struct {
@@ -205,11 +205,11 @@ const (
 	upperB
 )
 
-func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float) {
+func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
 	d := bd.GetSize()
-	bestCost = float(math.Inf(1))
+	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
-	invTotalSA := float64(0.0)
+	invTotalSA := 0.0
 	if totalSA != 0.0 {
 		invTotalSA = 1.0 / totalSA
 	}

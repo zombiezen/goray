@@ -61,7 +61,7 @@ func colorSum(n int, concurrent bool, f colorFunc) (col color.Color) {
 }
 
 func sample(n int, f colorFunc) color.Color {
-	return color.ScalarDiv(colorSum(n, true, f), float(n))
+	return color.ScalarDiv(colorSum(n, true, f), float64(n))
 }
 
 func halSeq(n int, base, start uint) (seq []float64) {
@@ -127,7 +127,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 			//TODO: transmitCol
 			return color.ScalarMul(
 				color.Mul(surfCol, lcol),
-				float(math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))),
+				math.Fabs(vector.Dot(sp.Normal, lightRay.Dir)),
 			)
 		}
 	}
@@ -204,7 +204,7 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
 			col = color.ScalarMul(
 				color.Mul(surfCol, lightSamp.Color),
-				float(math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))),
+				math.Fabs(vector.Dot(sp.Normal, lightRay.Dir)),
 			)
 			if canIntersect {
 				mPdf := mat.Pdf(
@@ -214,9 +214,9 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 				l2 := lightSamp.Pdf * lightSamp.Pdf
 				m2 := mPdf * mPdf
 				w := l2 / (l2 + m2)
-				col = color.ScalarMul(col, float(w/lightSamp.Pdf))
+				col = color.ScalarMul(col, w/lightSamp.Pdf)
 			} else {
-				col = color.ScalarDiv(col, float(lightSamp.Pdf))
+				col = color.ScalarDiv(col, lightSamp.Pdf)
 			}
 		}
 	}
@@ -255,7 +255,7 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col c
 			if s.Pdf > pdfCutoff {
 				col = color.ScalarMul(
 					color.Mul(surfCol, lcol),
-					float(cos2*float64(w/s.Pdf)),
+					cos2*w/s.Pdf,
 				)
 			}
 		}
@@ -277,9 +277,9 @@ func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo ve
 			phot := gResult.Photon
 			surfCol := mat.Eval(state, sp, wo, phot.GetDirection(), material.BSDFAll)
 			k := kernel(gResult.Distance, radius)
-			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.GetColor(), float(k))))
+			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.GetColor(), k)))
 		}
-		sum = color.ScalarMul(sum, 1.0/float(m.GetNumPaths()))
+		sum = color.ScalarMul(sum, 1.0/float64(m.GetNumPaths()))
 	}
 	return
 }
@@ -330,6 +330,6 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 			return color.Black
 		}
 		cos := math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))
-		return color.ScalarMul(color.Mul(aoColor, surfCol), float(cos/float64(s.Pdf)))
+		return color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf)
 	})
 }
