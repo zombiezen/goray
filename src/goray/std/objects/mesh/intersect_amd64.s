@@ -41,7 +41,7 @@
 // pvec/qvec: +48(SP)
 // tvec: +72(SP)
 // d: +96(SP)
-TEXT ·intersect(SB),$104
+TEXT ·intersect(SB),7,$104
     // Step 1: edge1, edge2 = b - a, c - a
     // Move vertices into XMM registers
     MOVUPD      bXY+24(FP), X0
@@ -200,5 +200,6 @@ TEXT ·intersect(SB),$104
     RET
     // No collision return
 NoCollision:
-    MOVQ        $-1.0, rayDepth+120(FP)
+    MOVSD       $-1.0, X0
+    MOVSD       X0, rayDepth+120(FP)
     RET
