@@ -70,7 +70,7 @@ TEXT ·intersect(SB),$96-144
     // Step 2: pvec = rDir cross edge2
     // X
     MOVHPD      rDirY+80(FP), X0
-    MOVHPD      rDirZ+88(FP), X0
+    MOVLPD      rDirZ+88(FP), X0
     MOVUPD      edge2YZ+-16(SP), X1
     MULPD       X1, X0
     SHUFPD      $0, X0, X1
