@@ -6,6 +6,7 @@ go_files = [
     'bound.go',
     'clip.go',
     'clip_test.go',
+    'intersect_test.go',
     'mesh.go',
     'triangle.go',
 ]
