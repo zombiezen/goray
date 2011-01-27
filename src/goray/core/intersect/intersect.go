@@ -12,6 +12,7 @@
 package intersect
 
 import (
+	"sort"
 	"goray/logging"
 	"goray/core/bound"
 	"goray/core/color"
@@ -120,7 +121,19 @@ type followFrame struct {
 	point vector.Vector3D
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
+type collideList []primitive.Collision
+
+func (cl collideList) Len() int { return len(cl) }
+
+func (cl collideList) Less(a, b int) bool {
+	return cl[a].RayDepth < cl[b].RayDepth
+}
+
+func (cl collideList) Swap(a, b int) {
+	cl[a], cl[b] = cl[b], cl[a]
+}
+
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly bool, ch chan<- primitive.Collision) {
 	defer close(ch)
 
 	var a, b, t float64
@@ -146,7 +159,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 	copy(exitStack, enterStack)
 	exitStack[len(exitStack)-1] = followFrame{nil, b, vector.Add(r.From, vector.ScalarMul(r.Dir, b))}
 
-	for currNode := kd.GetRoot(); currNode != nil; {
+	for currNode := kd.GetRoot(); currNode != nil && !closed(ch); {
 		var farChild kdtree.Node
 		// Stop looping if we've passed the maximum distance
 		if enterStack[len(enterStack)-1].t > maxDist {
@@ -186,9 +199,32 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 
 		// Okay, we've reached a leaf.
 		// Now check for any intersections.
-		for _, v := range currNode.(*kdtree.Leaf).GetValues() {
-			p := v.(primitive.Primitive)
-			if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
+		prims := currNode.(*kdtree.Leaf).GetValues()
+		if firstOnly {
+			var firstColl primitive.Collision
+			for _, v := range prims {
+				p := v.(primitive.Primitive)
+				coll := p.Intersect(r)
+				if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+					firstColl = coll
+				}
+			}
+
+			if firstColl.Hit() {
+				ch <- firstColl
+				return
+			}
+		} else {
+			cl := make(collideList, 0, len(prims))
+			for _, v := range prims {
+				p := v.(primitive.Primitive)
+				if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
+					cl = append(cl, coll)
+				}
+			}
+			// Yield the collisions in order.
+			sort.Sort(cl)
+			for _, coll := range cl {
 				ch <- coll
 			}
 		}
@@ -208,26 +244,22 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, ch)
-	for newColl := range ch {
-		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
-			coll = newColl
-		}
-	}
-	return
+	go kd.followRay(r, r.TMin, dist, true, ch)
+	return <-ch
 }
 
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
 	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, ch)
+	go kd.followRay(r, r.TMin, dist, true, ch)
 	coll := <-ch
 	return coll.Hit()
 }
 
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
 	ch := make(chan primitive.Collision)
+	defer close(ch)
 
-	go kd.followRay(r, r.TMin, dist, ch)
+	go kd.followRay(r, r.TMin, dist, false, ch)
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
 	for coll := range ch {
