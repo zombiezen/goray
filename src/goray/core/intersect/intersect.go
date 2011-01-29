@@ -12,7 +12,6 @@
 package intersect
 
 import (
-	"sort"
 	"goray/logging"
 	"goray/core/bound"
 	"goray/core/color"
@@ -133,9 +132,7 @@ func (cl collideList) Swap(a, b int) {
 	cl[a], cl[b] = cl[b], cl[a]
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly bool, ch chan<- primitive.Collision) {
-	defer close(ch)
-
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl primitive.Collision) {
 	var a, b, t float64
 	var hit bool
 
@@ -144,23 +141,19 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly 
 	}
 
 	invDir := r.Dir.Inverse()
-	enterStack := make([]followFrame, 0)
-	{
-		frame := followFrame{t: a}
-		if a >= 0.0 {
-			frame.point = vector.Add(r.From, vector.ScalarMul(r.Dir, a))
-		} else {
-			frame.point = r.From
-		}
-		enterStack = append(enterStack, frame)
+	enterStack := []followFrame{
+		{t: a, point: r.From},
+	}
+	if a >= 0.0 {
+		enterStack[0].point = vector.Add(enterStack[0].point, vector.ScalarMul(r.Dir, a))
 	}
 
-	exitStack := make([]followFrame, len(enterStack)+1)
-	copy(exitStack, enterStack)
-	exitStack[len(exitStack)-1] = followFrame{nil, b, vector.Add(r.From, vector.ScalarMul(r.Dir, b))}
+	exitStack := []followFrame{
+		enterStack[0],
+		{t: b, point: vector.Add(r.From, vector.ScalarMul(r.Dir, b))},
+	}
 
-	for currNode := kd.GetRoot(); currNode != nil && !closed(ch); {
-		var farChild kdtree.Node
+	for currNode := kd.GetRoot(); currNode != nil; {
 		// Stop looping if we've passed the maximum distance
 		if enterStack[len(enterStack)-1].t > maxDist {
 			break
@@ -171,15 +164,16 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly 
 			axis := currInter.GetAxis()
 			pivot := currInter.GetPivot()
 
-			if enterStack[len(enterStack)-1].point[axis] <= pivot {
+			var farChild kdtree.Node
+			if enterStack[len(enterStack)-1].point[axis] < pivot {
 				currNode = currInter.GetLeft()
-				if exitStack[len(exitStack)-1].point[axis] <= pivot {
+				if exitStack[len(exitStack)-1].point[axis] < pivot {
 					continue
 				}
 				farChild = currInter.GetRight()
 			} else {
 				currNode = currInter.GetRight()
-				if exitStack[len(exitStack)-1].point[axis] > pivot {
+				if exitStack[len(exitStack)-1].point[axis] >= pivot {
 					continue
 				}
 				farChild = currInter.GetLeft()
@@ -193,41 +187,34 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly 
 			pt[axis] = pivot
 			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
 			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
-			frame := followFrame{farChild, t, pt}
-			exitStack = append(exitStack, frame)
+			exitStack = append(exitStack, followFrame{farChild, t, pt})
 		}
 
 		// Okay, we've reached a leaf.
 		// Now check for any intersections.
 		prims := currNode.(*kdtree.Leaf).GetValues()
-		if firstOnly {
-			var firstColl primitive.Collision
-			for _, v := range prims {
-				p := v.(primitive.Primitive)
-				coll := p.Intersect(r)
-				if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
-					firstColl = coll
-				}
-			}
-
-			if firstColl.Hit() {
-				ch <- firstColl
-				return
-			}
-		} else {
-			cl := make(collideList, 0, len(prims))
-			for _, v := range prims {
-				p := v.(primitive.Primitive)
-				if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
-					cl = append(cl, coll)
-				}
-			}
-			// Yield the collisions in order.
-			sort.Sort(cl)
-			for _, coll := range cl {
-				ch <- coll
+		for _, v := range prims {
+			p := v.(primitive.Primitive)
+			coll := p.Intersect(r)
+			if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+				firstColl = coll
 			}
 		}
+		if firstColl.Hit() {
+			return
+		}
+		//	cl := make(collideList, 0, len(prims))
+		//	for _, v := range prims {
+		//		p := v.(primitive.Primitive)
+		//		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
+		//			cl = append(cl, coll)
+		//		}
+		//	}
+		//	// Yield the collisions in order.
+		//	sort.Sort(cl)
+		//	for _, coll := range cl {
+		//		ch <- coll
+		//	}
 
 		// Update stack
 		if cap(enterStack) < len(exitStack) {
@@ -240,42 +227,40 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, firstOnly 
 		currNode = exitStack[len(exitStack)-1].node
 		exitStack = exitStack[:len(exitStack)-1]
 	}
+	return
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
-	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, true, ch)
-	return <-ch
+	return kd.followRay(r, r.TMin, dist)
 }
 
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
-	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, true, ch)
-	coll := <-ch
+	coll := kd.followRay(r, r.TMin, dist)
 	return coll.Hit()
 }
 
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
-	ch := make(chan primitive.Collision)
-	defer close(ch)
-
-	go kd.followRay(r, r.TMin, dist, false, ch)
-	depth := 0
-	hitList := make(map[primitive.Primitive]bool)
-	for coll := range ch {
-		mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
-		if !trans {
-			return true
-		}
-		if hit, _ := hitList[coll.Primitive]; !hit {
-			hitList[coll.Primitive] = true
-			if depth >= maxDepth {
-				return false
-			}
-			sp := coll.Primitive.GetSurface(coll)
-			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
-			depth++
-		}
-	}
 	return false
+	//ch := make(chan primitive.Collision)
+	//defer close(ch)
+
+	//go kd.followRay(r, r.TMin, dist, false, ch)
+	//depth := 0
+	//hitList := make(map[primitive.Primitive]bool)
+	//for coll := range ch {
+	//	mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+	//	if !trans {
+	//		return true
+	//	}
+	//	if hit, _ := hitList[coll.Primitive]; !hit {
+	//		hitList[coll.Primitive] = true
+	//		if depth >= maxDepth {
+	//			return false
+	//		}
+	//		sp := coll.Primitive.GetSurface(coll)
+	//		*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
+	//		depth++
+	//	}
+	//}
+	//return false
 }
