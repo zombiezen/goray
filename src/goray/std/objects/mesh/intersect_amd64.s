@@ -20,14 +20,27 @@
         For each component, use two XMM registers to calculate the determinant.
         For the Y component, we simply swap the columns to negate the value.
 
-        X0 | a b |
-        X1 | d c |
+        X0 |a b|
+        X1 |d c|
 
         1) Multiply X1 by X0, store into X0
         2) Copy X0's lower value into X1's higher value (using shuffle)
         3) Subtract X1 from X0, store into X0
         4) The high value from X0 is the result.
     Dot product:
+        This is another weird one, motivated by a desire to have the result in a
+        low register so that we can immediately multiply by other scalars.
+
+        X0 |ay ax| X1 |0 az|
+        X2 |by bx| X3 |0 bz|
+
+        1) Multiply X2 by X0, store into X0
+        2) Multiply X3 by X1, store into X1
+        3) Copy X0 into X2
+        4) Swap high and low in X2
+        5) Add X2 to X0, store into X0.
+        6) Add X1 to X0, store into X0.
+        7) The low (scalar) value from X0 is the result.
  */
 
 // func intersect(a, b, c, rDir, rFrom [3]float64) (rayDepth, u, v float64)
