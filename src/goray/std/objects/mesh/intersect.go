@@ -7,6 +7,8 @@ import (
 )
 
 func intersect(a, b, c, rDir, rFrom [3]float64) (rayDepth, u, v float64) {
+	// Tomas Möller and Ben Trumbore ray intersection scheme
+	// Explanation: <http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle>
 	rayDepth = -1.0
 	edge1 := vector.Vector3D{b[vector.X] - a[vector.X], b[vector.Y] - a[vector.Y], b[vector.Z] - a[vector.Z]}
 	edge2 := vector.Vector3D{c[vector.X] - a[vector.X], c[vector.Y] - a[vector.Y], c[vector.Z] - a[vector.Z]}

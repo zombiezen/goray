@@ -73,11 +73,14 @@ func (tri *Triangle) getUVs() (a, b, c UV) {
 }
 
 func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
-	// Tomas Möller and Ben Trumbore ray intersection scheme
-	// Explanation: <http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle>
 	coll.Ray = r
-	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
-	rayDepth, u, v := intersect([3]float64(a), [3]float64(b), [3]float64(c), [3]float64(r.Dir), [3]float64(r.From))
+	rayDepth, u, v := intersect(
+		[3]float64(tri.mesh.vertices[tri.va]),
+		[3]float64(tri.mesh.vertices[tri.vb]),
+		[3]float64(tri.mesh.vertices[tri.vc]),
+		[3]float64(r.Dir),
+		[3]float64(r.From),
+	)
 	if rayDepth < 0 {
 		return
 	}
