@@ -32,7 +32,7 @@ variables.AddVariables(
     BoolVariable(
         'SSE2',
         "Use Intel SSE2 to optimize triangle intersection",
-        False,
+        True,
     )
 )
 env = Environment(
