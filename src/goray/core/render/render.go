@@ -31,8 +31,9 @@ type State struct {
 	ScreenPos      vector.Vector3D
 	Chromatic      bool
 	IncludeLights  bool
-	WaveLength     bool
+	WaveLength     float64
 	Time           float64
+	MaterialData   interface{}
 }
 
 // Init initializes the state.
