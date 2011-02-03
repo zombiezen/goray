@@ -10,9 +10,10 @@ packages = [
     env.Go('integrators/util'),
     env.Go('lights/point'),
     env.Go('materials/debug'),
-    env.Go('objects/mesh', Glob('objects/mesh/*.go')),
     env.Go('primitives/sphere'),
     env.Go('yamlscene', Glob('yamlscene/*.go')),
 ]
+
+packages += SConscript('objects/mesh/SConscript', exports=['env'])
 
 Return('packages')

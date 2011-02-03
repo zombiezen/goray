@@ -73,41 +73,20 @@ func (tri *Triangle) getUVs() (a, b, c UV) {
 }
 
 func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
-	// Tomas Möller and Ben Trumbore ray intersection scheme
-	// Explanation: <http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle>
-	// Much of the vector code has been inlined for speed.
 	coll.Ray = r
-	a, b, c := tri.mesh.vertices[tri.va], tri.mesh.vertices[tri.vb], tri.mesh.vertices[tri.vc]
-
-	edge1 := vector.Vector3D{b[vector.X] - a[vector.X], b[vector.Y] - a[vector.Y], b[vector.Z] - a[vector.Z]}
-	edge2 := vector.Vector3D{c[vector.X] - a[vector.X], c[vector.Y] - a[vector.Y], c[vector.Z] - a[vector.Z]}
-	pvec := vector.Vector3D{
-		r.Dir[vector.Y]*edge2[vector.Z] - r.Dir[vector.Z]*edge2[vector.Y],
-		r.Dir[vector.Z]*edge2[vector.X] - r.Dir[vector.X]*edge2[vector.Z],
-		r.Dir[vector.X]*edge2[vector.Y] - r.Dir[vector.Y]*edge2[vector.X],
-	}
-	det := edge1[vector.X]*pvec[vector.X] + edge1[vector.Y]*pvec[vector.Y] + edge1[vector.Z]*pvec[vector.Z]
-	if det == 0.0 {
-		return
-	}
-	invDet := 1.0 / det
-	tvec := vector.Vector3D{r.From[vector.X] - a[vector.X], r.From[vector.Y] - a[vector.Y], r.From[vector.Z] - a[vector.Z]}
-	u := (pvec[vector.X]*tvec[vector.X] + pvec[vector.Y]*tvec[vector.Y] + pvec[vector.Z]*tvec[vector.Z]) * invDet
-	if u < 0.0 || u > 1.0 {
-		return
-	}
-	qvec := vector.Vector3D{
-		tvec[vector.Y]*edge1[vector.Z] - tvec[vector.Z]*edge1[vector.Y],
-		tvec[vector.Z]*edge1[vector.X] - tvec[vector.X]*edge1[vector.Z],
-		tvec[vector.X]*edge1[vector.Y] - tvec[vector.Y]*edge1[vector.X],
-	}
-	v := (r.Dir[vector.X]*qvec[vector.X] + r.Dir[vector.Y]*qvec[vector.Y] + r.Dir[vector.Z]*qvec[vector.Z]) * invDet
-	if v < 0.0 || u+v > 1.0 {
+	rayDepth, u, v := intersect(
+		[3]float64(tri.mesh.vertices[tri.va]),
+		[3]float64(tri.mesh.vertices[tri.vb]),
+		[3]float64(tri.mesh.vertices[tri.vc]),
+		[3]float64(r.Dir),
+		[3]float64(r.From),
+	)
+	if rayDepth < 0 {
 		return
 	}
 
 	coll.Primitive = tri
-	coll.RayDepth = (edge2[vector.X]*qvec[vector.X] + edge2[vector.Y]*qvec[vector.Y] + edge2[vector.Z]*qvec[vector.Z]) * invDet
+	coll.RayDepth = rayDepth
 	coll.UserData = interface{}([2]float64{u, v})
 	return
 }
