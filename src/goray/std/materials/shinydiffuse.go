@@ -13,6 +13,7 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type ShinyDiffuse struct {
@@ -182,4 +183,25 @@ func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vecto
 func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *PhotonSample) (wo vector.Vector3D, scattered bool) {
 	// TODO
 	return
+}
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	col, ok := m["color"].(color.Color)
+	if !ok {
+		err = os.NewError("Color must be an RGB")
+		return
+	}
+	srcol, ok := m["mirror-color"].(color.Color)
+	if !ok {
+		err = os.NewError("Mirror color must be an RGB")
+		return
+	}
+	diffuse, ok := m["diffuse-reflect"].(float64)
+	if !ok {
+		err = os.NewError("Diffuse reflection must be an RGB")
+		return
+	}
+
+	mat := New(col, srcol, diffuse)
+	return mat, nil
 }
