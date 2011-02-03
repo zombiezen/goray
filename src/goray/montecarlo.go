@@ -57,8 +57,6 @@ func (hal *Halton) Float64() float64 {
 	return hal.value
 }
 
-func (h *Halton) Float() float { return float(h.Float64()) }
-
 // VanDerCorput returns the next number in the van der Corput sequence.
 //
 // This function can also be used to generate Sobol sequences and Larcher &

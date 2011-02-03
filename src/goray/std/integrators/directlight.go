@@ -30,7 +30,7 @@ type directLighting struct {
 
 	caustics       bool
 	causticsDepth  int
-	causticsRadius float
+	causticsRadius float64
 
 	doAO      bool
 	aoSamples int
@@ -152,7 +152,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		state.RayLevel--
 
 		matAlpha := mat.GetAlpha(state, sp, wo)
-		alpha = float(matAlpha) + float(1-matAlpha)*alpha
+		alpha = matAlpha + (1-matAlpha)*alpha
 	} else {
 		// Nothing was hit, use the background.
 		if dl.background != nil {

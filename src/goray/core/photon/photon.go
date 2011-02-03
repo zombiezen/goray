@@ -38,7 +38,7 @@ type Map struct {
 	photons      []*Photon
 	paths        int
 	fresh        bool
-	searchRadius float
+	searchRadius float64
 	tree         *kdtree.Tree
 }
 
@@ -162,7 +162,7 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ro
 	maxDistSqr := <-distCh
 
 	next := func() (n kdtree.Node, empty bool) {
-		empty = (len(st) == 0)
+		empty = len(st) == 0
 		if empty {
 			return
 		}

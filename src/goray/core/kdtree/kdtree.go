@@ -72,7 +72,7 @@ type ClipInfo struct {
 type BuildState struct {
 	Options
 	TreeBound  *bound.Bound
-	OldCost    float
+	OldCost    float64
 	BadRefines uint
 	Clips      []ClipInfo
 	ClipAxis   vector.Axis
@@ -102,7 +102,7 @@ func New(vals []Value, opts Options) (tree *Tree) {
 	tree = new(Tree)
 	state := BuildState{
 		Options:    opts,
-		OldCost:    float(len(vals)),
+		OldCost:    float64(len(vals)),
 		BadRefines: 0,
 		ClipAxis:   -1,
 	}

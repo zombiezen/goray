@@ -77,7 +77,7 @@ func (d Differentials) RefractRay(in, out *ray.DifferentialRay, ior float64) {
 	incidenceX, incidenceY := vector.Sub(in.Dir, in.DirX), vector.Sub(in.Dir, in.DirY)
 	normDx, normDy := vector.Dot(incidenceX, d.Point.Normal), vector.Dot(incidenceY, d.Point.Normal)
 
-	muDeriv := ior - (ior*ior*vector.Dot(in.Dir, d.Point.Normal))/vector.Dot(out.Dir, d.Point.Normal)
+	muDeriv := ior - ior*ior*vector.Dot(in.Dir, d.Point.Normal)/vector.Dot(out.Dir, d.Point.Normal)
 	muDx := muDeriv * normDx
 	muDy := muDeriv * normDy
 

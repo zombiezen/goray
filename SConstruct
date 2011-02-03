@@ -29,6 +29,11 @@ variables.AddVariables(
         "Whether this is a debug build",
         False,
     ),
+    BoolVariable(
+        'SSE2',
+        "Use Intel SSE2 to optimize triangle intersection",
+        True,
+    )
 )
 env = Environment(
     TOOLS=['default', 'go'],

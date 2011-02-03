@@ -120,34 +120,38 @@ type followFrame struct {
 	point vector.Vector3D
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
-	defer close(ch)
+type collideList []primitive.Collision
 
-	var a, b, t float64
-	var hit bool
+func (cl collideList) Len() int { return len(cl) }
 
-	if a, b, hit = kd.GetBound().Cross(r.From, r.Dir, maxDist); !hit {
+func (cl collideList) Less(a, b int) bool {
+	return cl[a].RayDepth < cl[b].RayDepth
+}
+
+func (cl collideList) Swap(a, b int) {
+	cl[a], cl[b] = cl[b], cl[a]
+}
+
+func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl primitive.Collision) {
+	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
+	if !hit {
 		return
 	}
 
 	invDir := r.Dir.Inverse()
-	enterStack := make([]followFrame, 0)
-	{
-		frame := followFrame{t: a}
-		if a >= 0.0 {
-			frame.point = vector.Add(r.From, vector.ScalarMul(r.Dir, a))
-		} else {
-			frame.point = r.From
-		}
-		enterStack = append(enterStack, frame)
+	enterStack := []followFrame{
+		{t: a, point: r.From},
+	}
+	if a >= 0.0 {
+		enterStack[0].point = vector.Add(enterStack[0].point, vector.ScalarMul(r.Dir, a))
 	}
 
-	exitStack := make([]followFrame, len(enterStack)+1)
-	copy(exitStack, enterStack)
-	exitStack[len(exitStack)-1] = followFrame{nil, b, vector.Add(r.From, vector.ScalarMul(r.Dir, b))}
+	exitStack := []followFrame{
+		enterStack[0],
+		{t: b, point: vector.Add(r.From, vector.ScalarMul(r.Dir, b))},
+	}
 
 	for currNode := kd.GetRoot(); currNode != nil; {
-		var farChild kdtree.Node
 		// Stop looping if we've passed the maximum distance
 		if enterStack[len(enterStack)-1].t > maxDist {
 			break
@@ -158,21 +162,22 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 			axis := currInter.GetAxis()
 			pivot := currInter.GetPivot()
 
-			if enterStack[len(enterStack)-1].point[axis] <= pivot {
+			var farChild kdtree.Node
+			if enterStack[len(enterStack)-1].point[axis] < pivot {
 				currNode = currInter.GetLeft()
-				if exitStack[len(exitStack)-1].point[axis] <= pivot {
+				if exitStack[len(exitStack)-1].point[axis] < pivot {
 					continue
 				}
 				farChild = currInter.GetRight()
 			} else {
 				currNode = currInter.GetRight()
-				if exitStack[len(exitStack)-1].point[axis] > pivot {
+				if exitStack[len(exitStack)-1].point[axis] >= pivot {
 					continue
 				}
 				farChild = currInter.GetLeft()
 			}
 
-			t = (pivot - r.From[axis]) * invDir[axis]
+			t := (pivot - r.From[axis]) * invDir[axis]
 
 			// Set up the new exit point
 			var pt vector.Vector3D
@@ -180,17 +185,113 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 			pt[axis] = pivot
 			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
 			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
-			frame := followFrame{farChild, t, pt}
-			exitStack = append(exitStack, frame)
+			exitStack = append(exitStack, followFrame{farChild, t, pt})
 		}
 
 		// Okay, we've reached a leaf.
 		// Now check for any intersections.
-		for _, v := range currNode.(*kdtree.Leaf).GetValues() {
+		prims := currNode.(*kdtree.Leaf).GetValues()
+		for _, v := range prims {
+			p := v.(primitive.Primitive)
+			coll := p.Intersect(r)
+			if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+				firstColl = coll
+			}
+		}
+		if firstColl.Hit() {
+			return
+		}
+
+		// Update stack
+		if cap(enterStack) < len(exitStack) {
+			enterStack = make([]followFrame, len(exitStack))
+		} else {
+			enterStack = enterStack[:len(exitStack)]
+		}
+		copy(enterStack, exitStack)
+
+		currNode = exitStack[len(exitStack)-1].node
+		exitStack = exitStack[:len(exitStack)-1]
+	}
+	return
+}
+
+func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
+	defer close(ch)
+	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
+	if !hit {
+		return
+	}
+
+	invDir := r.Dir.Inverse()
+	enterStack := []followFrame{
+		{t: a, point: r.From},
+	}
+	if a >= 0.0 {
+		enterStack[0].point = vector.Add(enterStack[0].point, vector.ScalarMul(r.Dir, a))
+	}
+
+	exitStack := []followFrame{
+		enterStack[0],
+		{t: b, point: vector.Add(r.From, vector.ScalarMul(r.Dir, b))},
+	}
+
+	for currNode := kd.GetRoot(); currNode != nil && !closed(ch); {
+		// Stop looping if we've passed the maximum distance
+		if enterStack[len(enterStack)-1].t > maxDist {
+			break
+		}
+		// Traverse to the leaves
+		for !currNode.IsLeaf() {
+			currInter := currNode.(*kdtree.Interior)
+			axis := currInter.GetAxis()
+			pivot := currInter.GetPivot()
+
+			var farChild kdtree.Node
+			if enterStack[len(enterStack)-1].point[axis] < pivot {
+				currNode = currInter.GetLeft()
+				if exitStack[len(exitStack)-1].point[axis] < pivot {
+					continue
+				}
+				farChild = currInter.GetRight()
+			} else {
+				currNode = currInter.GetRight()
+				if exitStack[len(exitStack)-1].point[axis] >= pivot {
+					continue
+				}
+				farChild = currInter.GetLeft()
+			}
+
+			t := (pivot - r.From[axis]) * invDir[axis]
+
+			// Set up the new exit point
+			var pt vector.Vector3D
+			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
+			pt[axis] = pivot
+			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
+			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
+			exitStack = append(exitStack, followFrame{farChild, t, pt})
+		}
+
+		// Okay, we've reached a leaf.
+		// Now check for any intersections.
+		prims := currNode.(*kdtree.Leaf).GetValues()
+		clist := make([]primitive.Collision, 0, len(prims))
+		for _, v := range prims {
 			p := v.(primitive.Primitive)
 			if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
-				ch <- coll
+				clist = append(clist, coll)
+				// Move new collision to proper location (insertion sort while inserting! :D)
+				var i int
+				for i = len(clist) - 1; i > 0 && coll.RayDepth < clist[i-1].RayDepth; i-- {
+					clist[i] = clist[i-1]
+				}
+				clist[i] = coll
 			}
+		}
+		// Yield the collisions in order.
+		for _, coll := range clist {
+			ch <- coll
 		}
 
 		// Update stack
@@ -207,27 +308,19 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64, ch chan<- 
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
-	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, ch)
-	for newColl := range ch {
-		if !coll.Hit() || newColl.RayDepth < coll.RayDepth {
-			coll = newColl
-		}
-	}
-	return
+	return kd.followRay(r, r.TMin, dist)
 }
 
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
-	ch := make(chan primitive.Collision)
-	go kd.followRay(r, r.TMin, dist, ch)
-	coll := <-ch
+	coll := kd.followRay(r, r.TMin, dist)
 	return coll.Hit()
 }
 
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
 	ch := make(chan primitive.Collision)
+	defer close(ch)
 
-	go kd.followRay(r, r.TMin, dist, ch)
+	go kd.followRayFull(r, r.TMin, dist, ch)
 	depth := 0
 	hitList := make(map[primitive.Primitive]bool)
 	for coll := range ch {

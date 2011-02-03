@@ -10,6 +10,7 @@ package time
 
 import (
 	"fmt"
+	"math"
 	stdtime "time"
 )
 
@@ -35,11 +36,9 @@ type Time float64
 
 // Split returns the components of the time in hours, minutes, and seconds.
 func (t Time) Split() (hours, minutes int, seconds float64) {
-	seconds = float64(t)
 	hours = int(t / Hour)
-	seconds -= float64(hours * Hour)
-	minutes = int(seconds / Minute)
-	seconds -= float64(minutes * Minute)
+	minutes = int(math.Fmod(float64(t), Hour) / Minute)
+	seconds = math.Fmod(float64(t), Minute)
 	return
 }
 
