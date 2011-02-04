@@ -36,7 +36,9 @@ func buildTree(targets []Node) (nodes []*evalNode) {
 	tree := make(map[Node]*evalNode)
 	queue := list.New()
 	for _, n := range targets {
-		queue.PushBack(eqItem{n, nil})
+		if n != nil {
+			queue.PushBack(eqItem{n, nil})
+		}
 	}
 
 	for queue.Len() > 0 {
@@ -114,7 +116,9 @@ func Eval(params map[string]interface{}, targets []Node) (final []Result) {
 
 	final = make([]Result, len(targets))
 	for i, t := range targets {
-		final[i] = results[t]
+		if t != nil {
+			final[i] = results[t]
+		}
 	}
 	return
 }
