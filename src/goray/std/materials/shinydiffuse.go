@@ -8,20 +8,22 @@
 package shinydiffuse
 
 import (
+	"os"
+	"goray/core/color"
 	"goray/core/material"
-	"goray/core/shader"
 	"goray/core/render"
+	"goray/core/shader"
 	"goray/core/surface"
 	"goray/core/vector"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type ShinyDiffuse struct {
-	Color, SpecRefCol color.Color
-	Diffuse, SpecRef, Transp, Transl float64
+	Color, SpecReflCol color.Color
+	Diffuse, SpecRefl, Transp, Transl float64
 	isDiffuse, isReflective, isTransp, isTransl bool
 	fresnelEffect bool
-	diffuseS, specRefS, transpS, translS, mirColS shader.Node
+	diffuseS, specReflS, transpS, translS, mirColS shader.Node
 	bsdfFlags material.BSDF
 	nBsdf int
 }
@@ -29,7 +31,7 @@ type ShinyDiffuse struct {
 func New(col, srcol color.Color, diffuse float64) (sd *ShinyDiffuse) {
 	return &ShinyDiffuse{
 		Color: col,
-		SpecRefCol: srcol,
+		SpecReflCol: srcol,
 		Diffuse: diffuse,
 		bsdfFlags: material.BSDFNone,
 	}
@@ -45,7 +47,7 @@ type sdData struct {
 }
 
 func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
-	params := map[string]interface{}{}
+	params := make(map[string]interface{})
 	results := shader.Eval(params, []shader.Node{sd.diffuseS, sd.transpS, sd.translS, sd.specReflS, sd.mirColS})
 	data.Diffuse = results[0]
 	data.Transp = results[1]
@@ -84,7 +86,8 @@ func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material
 	return sd.bsdfFlags
 }
 
-func (sd *ShinyDiffuse) GetFlags() BSDF {
+func (sd *ShinyDiffuse) GetFlags() material.BSDF {
+	return sd.bsdfFlags
 }
 
 func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) float64 {
@@ -116,7 +119,7 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 		n = vector.ScalarMul(n, -1)
 	}
 
-	if types&sd.bsdfFlags&material.BSDF_DIFFUSE == 0 {
+	if types&sd.bsdfFlags&material.BSDFDiffuse == 0 {
 		return
 	}
 
@@ -129,11 +132,11 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 		// Transmit -- light comes from opposite side of surface
 		if sd.isTransl {
 			if sd.diffuseS != nil {
-				col = data.Diffuse
+				col = data.Diffuse.Color()
 			} else {
 				col = sd.Color
 			}
-			col = color.Mul(col, data.Components[2] * mt)
+			col = color.ScalarMul(col, data.Components[2] * mt)
 		}
 		return
 	}
@@ -144,11 +147,11 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 	md := mt * (1 - data.Components[2]) * data.Components[3]
 	// TODO: Oren-Nayer
 	if sd.diffuseS != nil {
-		col = data.Diffuse
+		col = data.Diffuse.Color()
 	} else {
 		col = sd.Color
 	}
-	col = color.Mul(col, md)
+	col = color.ScalarMul(col, md)
 	return
 }
 
@@ -175,12 +178,12 @@ func (sd *ShinyDiffuse) GetReflectivity(state *render.State, sp surface.Point, f
 
 func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	if sd.isTransp {
-		data := state.MaterialData.(sdData)
+		//data := state.MaterialData.(sdData)
 	}
 	return 1
 }
 
-func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *PhotonSample) (wo vector.Vector3D, scattered bool) {
+func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
 	// TODO
 	return
 }
@@ -191,12 +194,12 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Color must be an RGB")
 		return
 	}
-	srcol, ok := m["mirror-color"].(color.Color)
+	srcol, ok := m["mirrorColor"].(color.Color)
 	if !ok {
 		err = os.NewError("Mirror color must be an RGB")
 		return
 	}
-	diffuse, ok := m["diffuse-reflect"].(float64)
+	diffuse, ok := m["diffuseReflect"].(float64)
 	if !ok {
 		err = os.NewError("Diffuse reflection must be an RGB")
 		return
