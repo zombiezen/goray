@@ -19,21 +19,34 @@ import (
 )
 
 type ShinyDiffuse struct {
-	Color, SpecReflCol color.Color
+	Color, SpecReflCol                color.Color
 	Diffuse, SpecRefl, Transp, Transl float64
+
+	DiffuseShad, SpecReflShad, TranspShad, TranslShad, MirColShad shader.Node
+
 	isDiffuse, isReflective, isTransp, isTransl bool
+
 	fresnelEffect bool
-	diffuseS, specReflS, transpS, translS, mirColS shader.Node
-	bsdfFlags material.BSDF
-	nBsdf int
+	bsdfFlags     material.BSDF
+	nBsdf         int
 }
 
-func New(col, srcol color.Color, diffuse float64) (sd *ShinyDiffuse) {
-	return &ShinyDiffuse{
-		Color: col,
-		SpecReflCol: srcol,
-		Diffuse: diffuse,
-		bsdfFlags: material.BSDFNone,
+func (sd *ShinyDiffuse) Init() {
+	sd.nBsdf = 0
+	acc := 1.0
+	if sd.SpecRefl > 0 || sd.SpecReflShad != nil {
+		sd.isReflective = true
+		// TODO: viNodes?
+		sd.bsdfFlags |= material.BSDFSpecular | material.BSDFReflect
+		sd.nBsdf++
+	}
+	// TODO: Transparency
+	// TODO: Translucency
+	if sd.Diffuse * acc > 0 {
+		sd.isDiffuse = true
+		// TODO: viNodes?
+		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFReflect
+		sd.nBsdf++
 	}
 }
 
@@ -48,7 +61,7 @@ type sdData struct {
 
 func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
 	params := make(map[string]interface{})
-	results := shader.Eval(params, []shader.Node{sd.diffuseS, sd.transpS, sd.translS, sd.specReflS, sd.mirColS})
+	results := shader.Eval(params, []shader.Node{sd.DiffuseShad, sd.TranspShad, sd.TranslShad, sd.SpecReflShad, sd.MirColShad})
 	data.Diffuse = results[0]
 	data.Transp = results[1]
 	data.Transl = results[2]
@@ -126,17 +139,17 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 	data := state.MaterialData.(sdData)
 
 	kr := sd.getFresnel(wo, n)
-	mt := (1 - kr * data.Components[0]) * (1 - data.Components[1])
+	mt := (1 - kr*data.Components[0]) * (1 - data.Components[1])
 
-	if cosNgWo * cosNgWl < 0 {
+	if cosNgWo*cosNgWl < 0 {
 		// Transmit -- light comes from opposite side of surface
 		if sd.isTransl {
-			if sd.diffuseS != nil {
+			if sd.DiffuseShad != nil {
 				col = data.Diffuse.Color()
 			} else {
 				col = sd.Color
 			}
-			col = color.ScalarMul(col, data.Components[2] * mt)
+			col = color.ScalarMul(col, data.Components[2]*mt)
 		}
 		return
 	}
@@ -146,7 +159,7 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 	}
 	md := mt * (1 - data.Components[2]) * data.Components[3]
 	// TODO: Oren-Nayer
-	if sd.diffuseS != nil {
+	if sd.DiffuseShad != nil {
 		col = data.Diffuse.Color()
 	} else {
 		col = sd.Color
@@ -201,10 +214,15 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	}
 	diffuse, ok := m["diffuseReflect"].(float64)
 	if !ok {
-		err = os.NewError("Diffuse reflection must be an RGB")
+		err = os.NewError("Diffuse reflection must be a float")
 		return
 	}
 
-	mat := New(col, srcol, diffuse)
+	mat := &ShinyDiffuse{
+		Color: col,
+		SpecReflCol: srcol,
+		Diffuse: diffuse,
+	}
+	mat.Init()
 	return mat, nil
 }

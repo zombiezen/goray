@@ -16,7 +16,7 @@ objects:
       faces:
          # Back
          -  vertices: [0, 3, 2]
-            material: &mat !std!materials/debug { color: !goray!rgb [1.0, 1.0, 1.0] }
+            material: &mat !std!materials/shinydiffuse { color: !goray!rgb [1.0, 1.0, 1.0], mirrorColor: !goray!rgb [0.0, 0.0, 0.0], diffuseReflect: 1.0  }
          -  vertices: [0, 2, 1]
             material: *mat
          # Top
