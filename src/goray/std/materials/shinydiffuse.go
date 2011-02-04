@@ -21,6 +21,7 @@ import (
 type ShinyDiffuse struct {
 	Color, SpecReflCol                color.Color
 	Diffuse, SpecRefl, Transp, Transl float64
+	TransmitFilter float64
 
 	DiffuseShad, SpecReflShad, TranspShad, TranslShad, MirColShad shader.Node
 
@@ -180,7 +181,40 @@ func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector
 }
 
 func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
-	// TODO
+	data := state.MaterialData.(sdData)
+	backface := vector.Dot(sp.GeometricNormal, wo) < 0
+	n, ng := sp.Normal, sp.GeometricNormal
+	if backface {
+		n = vector.ScalarMul(n, -1)
+		ng = vector.ScalarMul(ng, -1)
+	}
+	kr := sd.getFresnel(wo, n)
+	refract = sd.isTransp
+	if sd.isTransp {
+		dir[1] = vector.ScalarMul(wo, -1)
+		if sd.DiffuseShad != nil {
+			col[1] = data.Diffuse.Color()
+		} else {
+			col[1] = sd.Color
+		}
+		col[1] = color.Add(color.ScalarMul(col[1], sd.TransmitFilter), color.Gray(1 - sd.TransmitFilter))
+		col[1] = color.ScalarMul(col[1], (1 - data.Components[0] * kr) * data.Components[1])
+	}
+	reflect = sd.isReflective
+	if sd.isReflective {
+		dir[0] = vector.Sub(vector.ScalarMul(n, 2.0 * vector.Dot(wo, n)), wo)
+		cosWiNg := vector.Dot(dir[0], ng)
+		if cosWiNg < 0.01 {
+			dir[0] = vector.Add(dir[0], vector.ScalarMul(ng, (0.01 - cosWiNg)))
+			dir[0] = dir[0].Normalize()
+		}
+		if sd.MirColShad != nil {
+			col[0] = data.MirCol.Color()
+		} else {
+			col[0] = sd.SpecReflCol
+		}
+		col[0] = color.ScalarMul(col[0], data.Components[0] * kr)
+	}
 	return
 }
 
@@ -217,11 +251,17 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Diffuse reflection must be a float")
 		return
 	}
+	specRefl, ok := m["specularReflect"].(float64)
+	if !ok {
+		// TODO: Better error checking
+		specRefl = 0
+	}
 
 	mat := &ShinyDiffuse{
 		Color: col,
 		SpecReflCol: srcol,
 		Diffuse: diffuse,
+		SpecRefl: specRefl,
 	}
 	mat.Init()
 	return mat, nil
