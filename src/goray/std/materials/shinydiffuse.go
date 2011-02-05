@@ -8,6 +8,7 @@
 package shinydiffuse
 
 import (
+	"math"
 	"os"
 	"goray/core/color"
 	"goray/core/material"
@@ -21,7 +22,7 @@ import (
 type ShinyDiffuse struct {
 	Color, SpecReflCol                color.Color
 	Diffuse, SpecRefl, Transp, Transl float64
-	TransmitFilter float64
+	TransmitFilter                    float64
 
 	DiffuseShad, SpecReflShad, TranspShad, TranslShad, MirColShad shader.Node
 
@@ -29,31 +30,29 @@ type ShinyDiffuse struct {
 
 	fresnelEffect bool
 	bsdfFlags     material.BSDF
-	nBsdf         int
 }
 
 func (sd *ShinyDiffuse) Init() {
-	sd.nBsdf = 0
 	acc := 1.0
 	if sd.SpecRefl > 0 || sd.SpecReflShad != nil {
 		sd.isReflective = true
+		// TODO: acc
 		// TODO: viNodes?
 		sd.bsdfFlags |= material.BSDFSpecular | material.BSDFReflect
-		sd.nBsdf++
 	}
 	// TODO: Transparency
 	// TODO: Translucency
-	if sd.Diffuse * acc > 0 {
+	if sd.Diffuse*acc > 0 {
 		sd.isDiffuse = true
+		// TODO: acc
 		// TODO: viNodes?
 		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFReflect
-		sd.nBsdf++
 	}
 }
 
 type sdData struct {
 	Diffuse, SpecRefl, Transp, Transl float64
-	DiffuseColor, MirrorColor color.Color
+	DiffuseColor, MirrorColor         color.Color
 }
 
 func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
@@ -99,14 +98,16 @@ func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
 // calculate the absolute value of scattering components from the "normalized"
 // fractions which are between 0 (no scattering) and 1 (scatter all remaining light)
 // Kr is an optional reflection multiplier (e.g. from Fresnel)
-func (data sdData) accumulate(kr float64) (accum [4]float64) {
-	accum[0] = data.SpecRefl * kr
-	acc := 1 - accum[0]
-	accum[1] = data.Transp * acc
+func (data sdData) accumulate(kr float64) (newData sdData) {
+	newData.DiffuseColor, newData.MirrorColor = data.DiffuseColor, data.MirrorColor
+
+	newData.SpecRefl = data.SpecRefl * kr
+	acc := 1 - newData.SpecRefl
+	newData.Transp = data.Transp * acc
 	acc *= 1 - data.Transp
-	accum[2] = data.Transl * acc
+	newData.Transp = data.Transl * acc
 	acc *= 1 - data.Transl
-	accum[3] = data.Diffuse * acc
+	newData.Transp = data.Diffuse * acc
 	return
 }
 
@@ -166,9 +167,49 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 	return
 }
 
-func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float64 {
-	// TODO
-	return 0.0
+func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) (pdf float64) {
+	if bsdfs&material.BSDFDiffuse == 0 {
+		return
+	}
+
+	data := state.MaterialData.(sdData)
+	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
+	cosNgWi := vector.Dot(sp.GeometricNormal, wi)
+	n := sp.Normal
+	if cosNgWo < 0 {
+		n = n.Negate()
+	}
+	kr := sd.getFresnel(wo, n)
+	accumC := data.accumulate(kr)
+	possibleBsdfs := map[material.BSDF]float64{
+		material.BSDFSpecular | material.BSDFReflect: accumC.SpecRefl,
+		material.BSDFTransmit | material.BSDFFilter:  accumC.Transp,
+		material.BSDFDiffuse | material.BSDFTransmit: accumC.Transl,
+		material.BSDFDiffuse | material.BSDFReflect:  accumC.Diffuse,
+	}
+
+	sum := 0.0
+	matched := false
+	for p, width := range possibleBsdfs {
+		if bsdfs&p == p {
+			sum += width
+			switch p {
+			case material.BSDFDiffuse | material.BSDFTransmit: // translucency
+				if cosNgWo*cosNgWi < 0 {
+					pdf += math.Fabs(vector.Dot(wi, n)) * width
+				}
+			case material.BSDFDiffuse | material.BSDFReflect: // translucency
+				if cosNgWo*cosNgWi > 0 {
+					pdf += math.Fabs(vector.Dot(wi, n)) * width
+				}
+			}
+			matched = true
+		}
+	}
+	if !matched || sum < 0.00001 {
+		return 0.0
+	}
+	return pdf / sum
 }
 
 func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
@@ -182,18 +223,18 @@ func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo ve
 	refract = sd.isTransp
 	if sd.isTransp {
 		dir[1] = wo.Negate()
-		col[1] = color.Add(color.ScalarMul(data.DiffuseColor, sd.TransmitFilter), color.Gray(1 - sd.TransmitFilter))
-		col[1] = color.ScalarMul(col[1], (1 - data.SpecRefl * kr) * data.Transp)
+		col[1] = color.Add(color.ScalarMul(data.DiffuseColor, sd.TransmitFilter), color.Gray(1-sd.TransmitFilter))
+		col[1] = color.ScalarMul(col[1], (1-data.SpecRefl*kr)*data.Transp)
 	}
 	reflect = sd.isReflective
 	if sd.isReflective {
-		dir[0] = vector.Sub(vector.ScalarMul(n, 2.0 * vector.Dot(wo, n)), wo)
+		dir[0] = vector.Sub(vector.ScalarMul(n, 2.0*vector.Dot(wo, n)), wo)
 		cosWiNg := vector.Dot(dir[0], ng)
 		if cosWiNg < 0.01 {
-			dir[0] = vector.Add(dir[0], vector.ScalarMul(ng, (0.01 - cosWiNg)))
+			dir[0] = vector.Add(dir[0], vector.ScalarMul(ng, (0.01-cosWiNg)))
 			dir[0] = dir[0].Normalize()
 		}
-		col[0] = color.ScalarMul(data.MirrorColor, data.SpecRefl * kr)
+		col[0] = color.ScalarMul(data.MirrorColor, data.SpecRefl*kr)
 	}
 	return
 }
@@ -238,10 +279,10 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	}
 
 	mat := &ShinyDiffuse{
-		Color: col,
+		Color:       col,
 		SpecReflCol: srcol,
-		Diffuse: diffuse,
-		SpecRefl: specRefl,
+		Diffuse:     diffuse,
+		SpecRefl:    specRefl,
 	}
 	mat.Init()
 	return mat, nil
