@@ -148,7 +148,7 @@ func CreateCS(normal Vector3D) (u, v Vector3D) {
 func Reflect(v, n Vector3D) Vector3D {
 	vn := Dot(v, n)
 	if vn < 0 {
-		return ScalarMul(v, -1)
+		return v.Negate()
 	}
 	return Sub(ScalarMul(n, 2*vn), v)
 }
