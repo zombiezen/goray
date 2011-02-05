@@ -16,6 +16,7 @@ import (
 	"goray/core/shader"
 	"goray/core/surface"
 	"goray/core/vector"
+	"goray/std/materials/common"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -23,6 +24,7 @@ type ShinyDiffuse struct {
 	Color, SpecReflCol                color.Color
 	Diffuse, SpecRefl, Transp, Transl float64
 	TransmitFilter                    float64
+	IOR                               float64
 
 	DiffuseShad, SpecReflShad, TranspShad, TranslShad, MirColShad shader.Node
 
@@ -120,9 +122,12 @@ func (sd *ShinyDiffuse) GetFlags() material.BSDF {
 	return sd.bsdfFlags
 }
 
-func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) float64 {
-	// TODO
-	return 1.0
+func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) (kr float64) {
+	if !sd.fresnelEffect {
+		return 1.0
+	}
+	kr, _ = common.Fresnel(wo, n, sd.IOR)
+	return
 }
 
 func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types material.BSDF) (col color.Color) {
