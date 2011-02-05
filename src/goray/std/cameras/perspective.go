@@ -107,7 +107,7 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 
 	cam.up = cam.up.Normalize()
 	cam.right = cam.right.Normalize()
-	cam.right = vector.ScalarMul(cam.right, -1.0) // Due to the order of vectors, we need to flip the vector to get "right"
+	cam.right = cam.right.Negate() // Due to the order of vectors, we need to flip the vector to get "right"
 
 	cam.look = cam.look.Normalize()
 	cam.x = cam.right

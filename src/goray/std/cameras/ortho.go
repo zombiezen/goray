@@ -36,7 +36,7 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) c
 	c.vup = c.vup.Normalize()
 	c.vright = c.vright.Normalize()
 
-	c.vright = vector.ScalarMul(c.vright, -1.0)
+	c.vright = c.vright.Negate()
 	c.vup = vector.ScalarMul(c.vup, aspect*float64(resy)/float64(resx))
 
 	c.position = vector.Sub(pos, vector.ScalarMul(vector.Add(c.vup, c.vright), 0.5*scale))
