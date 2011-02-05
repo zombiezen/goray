@@ -130,7 +130,7 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 
 	n := sp.Normal
 	if cosNgWo < 0 {
-		n = vector.ScalarMul(n, -1)
+		n = n.Negate()
 	}
 
 	if types&sd.bsdfFlags&material.BSDFDiffuse == 0 {
@@ -185,13 +185,12 @@ func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo ve
 	backface := vector.Dot(sp.GeometricNormal, wo) < 0
 	n, ng := sp.Normal, sp.GeometricNormal
 	if backface {
-		n = vector.ScalarMul(n, -1)
-		ng = vector.ScalarMul(ng, -1)
+		n, ng = n.Negate(), ng.Negate()
 	}
 	kr := sd.getFresnel(wo, n)
 	refract = sd.isTransp
 	if sd.isTransp {
-		dir[1] = vector.ScalarMul(wo, -1)
+		dir[1] = wo.Negate()
 		if sd.DiffuseShad != nil {
 			col[1] = data.Diffuse.Color()
 		} else {
