@@ -45,7 +45,7 @@ func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Imag
 	s.Update()
 	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
 	i.Preprocess(s)
-	ch := WorkerIntegrate(s, i, log)
+	ch := BlockIntegrate(s, i, log)
 	img.Acquire(ch)
 	return
 }
@@ -92,41 +92,47 @@ func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 
 // BlockIntegrate integrates an image in small batches.
 func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
-	const numWorkers = 8
+	const blockDim = 32
+	numWorkers := runtime.GOMAXPROCS(0)
 	cam := s.GetCamera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment, numWorkers*2)
+	ch := make(chan render.Fragment, 100)
+	// Separate goroutine manages block locations
+	locCh := make(chan [2]int)
+	go func() {
+		defer close(locCh)
+		for y := 0; y < h; y += blockDim {
+			for x := 0; x < w; x += blockDim {
+				locCh <- [2]int{x, y}
+			}
+		}
+	}()
+
 	go func() {
 		defer close(ch)
 		// Set up end signals
 		signals := make([]chan bool, numWorkers)
 		for i, _ := range signals {
-			signals[i] = make(chan bool, 1)
+			signals[i] = make(chan bool)
 		}
-		// Calculate the number of batches needed
-		batchCount, extras := w*h/numWorkers, w*h%numWorkers
-		if extras > 0 {
-			batchCount++
+		// Start workers
+		for _, sig := range signals {
+			go func(finish chan<- bool) {
+				for loc := range locCh {
+					//logging.Debug(log, "BLOCK (%3d, %3d)", loc[0], loc[1])
+					for y := loc[1]; y < loc[1]+blockDim && y < h; y++ {
+						for x := loc[0]; x < loc[0]+blockDim && x < w; x++ {
+							ch <- RenderPixel(s, in, x, y)
+							//logging.VerboseDebug(log, "Rendered (%3d, %3d)", x, y)
+						}
+					}
+				}
+				finish <- true
+			}(sig)
 		}
-
-		for batch := 0; batch < batchCount; batch++ {
-			// If this is the last batch, scale down accordingly.
-			if extras > 0 && batch == batchCount-1 {
-				signals = signals[0:extras]
-			}
-			// Start new batch
-			for i := 0; i < len(signals); i++ {
-				pixelNum := batch*numWorkers + i
-				go func(pixelNum int, finish chan<- bool) {
-					ch <- RenderPixel(s, in, pixelNum%w, pixelNum/w)
-					finish <- true
-				}(pixelNum, signals[i])
-			}
-			// Join goroutines
-			for _, sig := range signals {
-				<-sig
-			}
-			logging.Debug(log, "Finished batch %d of %d (%d pixels)", batch+1, batchCount, len(signals))
+		// Join workers
+		for _, sig := range signals {
+			<-sig
 		}
 	}()
 	return ch

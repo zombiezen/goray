@@ -64,8 +64,8 @@ func (d Differentials) ReflectRay(in, out *ray.DifferentialRay) {
 	// Compute differential reflected directions
 	incidenceX, incidenceY := vector.Sub(in.Dir, in.DirX), vector.Sub(in.Dir, in.DirY)
 	normDx, normDy := vector.Dot(incidenceX, d.Point.Normal), vector.Dot(incidenceY, d.Point.Normal)
-	out.DirX = vector.Add(out.Dir, vector.ScalarMul(incidenceX, -1), vector.ScalarMul(d.Point.Normal, 2*normDx))
-	out.DirY = vector.Add(out.Dir, vector.ScalarMul(incidenceY, -1), vector.ScalarMul(d.Point.Normal, 2*normDy))
+	out.DirX = vector.Add(out.Dir, incidenceX.Negate(), vector.ScalarMul(d.Point.Normal, 2*normDx))
+	out.DirY = vector.Add(out.Dir, incidenceY.Negate(), vector.ScalarMul(d.Point.Normal, 2*normDy))
 }
 
 // RefractRay computes differentials for a scattered ray.

@@ -17,7 +17,6 @@ import (
 	"goray/core/ray"
 	"goray/core/render"
 	"goray/core/scene"
-	"goray/core/vector"
 	"goray/std/integrators/util"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -85,7 +84,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 		mat := sp.Material.(material.Material)
 		bsdfs := mat.InitBSDF(state, sp)
-		wo := vector.ScalarMul(r.Dir, -1)
+		wo := r.Dir.Negate()
 
 		// Contribution of light-emitting surfaces
 		if emat, ok := mat.(material.EmitMaterial); ok {

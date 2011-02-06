@@ -74,6 +74,30 @@ func TestAbs(t *testing.T) {
 	}
 }
 
+func TestNegate(t *testing.T) {
+	var v Vector3D
+
+	v = Vector3D{0, 0, 0}.Negate()
+	if v[X] != 0 || v[Y] != 0 || v[Z] != 0 {
+		t.Error("Zero vector incorrect")
+	}
+
+	v = Vector3D{1, 2, 3}.Negate()
+	if v[X] != -1 || v[Y] != -2 || v[Z] != -3 {
+		t.Error("All positive vector incorrect")
+	}
+
+	v = Vector3D{-1, -2, -3}.Negate()
+	if v[X] != 1 || v[Y] != 2 || v[Z] != 3 {
+		t.Error("All negative vector incorrect")
+	}
+
+	v = Vector3D{-1, 2, -3}.Negate()
+	if v[X] != 1 || v[Y] != -2 || v[Z] != 3 {
+		t.Error("Mixed vector incorrect")
+	}
+}
+
 func TestIsZero(t *testing.T) {
 	var v Vector3D
 
