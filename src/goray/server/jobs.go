@@ -24,10 +24,17 @@ type Job struct {
 	YAML       io.Reader
 	OutputFile io.WriteCloser
 	Done       bool
+	Status     chan bool
 }
 
 func (job Job) Render() (err os.Error) {
 	defer job.OutputFile.Close()
+	defer func() {
+		job.Done = true
+		job.Status <- job.Done
+		close(job.Status)
+	}()
+
 	sc := scene.New()
 	integ, err := yamlscene.Load(job.YAML, sc)
 	if err != nil {
@@ -66,6 +73,7 @@ func (manager *JobManager) New(yaml io.Reader) (j Job, err os.Error) {
 		Name:       name,
 		YAML:       yaml,
 		OutputFile: f,
+		Status:     make(chan bool),
 	}
 	if manager.jobs == nil {
 		manager.jobs = make(map[string]Job)

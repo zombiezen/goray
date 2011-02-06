@@ -13,8 +13,10 @@ package server
 import (
 	"bytes"
 	"http"
+	"net/textproto"
 	pathutil "path"
 	"strings"
+	"websocket"
 )
 
 type Server struct {
@@ -34,6 +36,10 @@ func New(output, data string) (s *Server) {
 	}
 	s.Handle("/", serverHandler{s, (*Server).handleSubmitJob})
 	s.Handle("/job/", serverHandler{s, (*Server).handleViewJob})
+	s.Handle("/status", websocket.Handler(func(ws *websocket.Conn) {
+		s.handleStatus(ws)
+	}))
+	s.Handle("/static/", http.FileServer(pathutil.Join(data, "static"), "/static/"))
 	s.Handle("/output/", http.FileServer(output, "/output/"))
 	return
 }
@@ -66,6 +72,30 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
 	} else {
 		http.NotFound(w, req)
 	}
+}
+
+func (server *Server) handleStatus(ws *websocket.Conn) {
+	defer ws.Close()
+	conn := textproto.NewConn(ws)
+	jobName, err := conn.ReadLine()
+	if err != nil {
+		return
+	}
+	job, found := server.JobManager.Get(jobName)
+	if !found {
+		conn.PrintfLine("404 Job not found")
+		return
+	}
+
+	conn.PrintfLine("200 Job found")
+	if job.Done {
+		conn.PrintfLine("done")
+		return
+	}
+
+	// Wait for job to finish
+	<-job.Status
+	conn.PrintfLine("done")
 }
 
 type serverHandler struct {

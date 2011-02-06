@@ -43,9 +43,11 @@ func (loader *TemplateLoader) Get(name string) (templ *template.Template, err os
 	}
 	// Load template
 	path := pathutil.Join(loader.Root, name)
-	templ, err = template.ParseFile(path, fmap)
+	templ = template.New(fmap)
+	templ.SetDelims("{{", "}}")
+	err = templ.ParseFile(path)
 	if err != nil {
-		return
+		return nil, err
 	}
 	// Save template to cache
 	// Yes, another thread may have already read in the template. However, the

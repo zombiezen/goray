@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Goray - Job {Name}</title>
-	</head>
-	<body>
-		<h1>Job #{Name}</h1>
-		<p>Wait a little bit...</p>
-		<p><a href="/output/{Name}.png">And then click this.</a></p>
-	</body>
+    <head>
+        <title>Goray - Job {{Name}}</title>
+    </head>
+    <body>
+        <h1>Job #{{Name}}</h1>
+        <p id="loading">
+            <img src="/static/load.gif">
+            Rendering, please wait...
+        </p>
+        <p style="font-style:italic">Note: You must use a browser that supports <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a>.</p>
+        <script type="text/javascript" src="/static/jquery.js"></script>
+        <script type="text/javascript" src="/static/job.js"></script>
+        <script type="text/javascript">
+            var jobName = "{{Name}}";
+            $(function()
+            {
+                var feed = new StatusFeed(document.location.host, jobName);
+                feed.onUpdate = function(st)
+                {
+                    var img = $("<img/>", {src: "/output/" + jobName + ".png"});
+                    $("#loading").replaceWith(img);
+                };
+            });
+        </script>
+    </body>
 </html>
