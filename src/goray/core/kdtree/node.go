@@ -29,7 +29,7 @@ func newLeaf(vals []Value) *Node {
 	}
 }
 
-func newInterior(axis vector.Axis, pivot float64, left, right Node) *Node {
+func newInterior(axis vector.Axis, pivot float64, left, right *Node) *Node {
 	return &Node{
 		axis:   int8(axis),
 		pivot:  pivot,
