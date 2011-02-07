@@ -31,7 +31,7 @@ type State struct {
 	ScreenPos      vector.Vector3D
 	Chromatic      bool
 	IncludeLights  bool
-	WaveLength     bool
+	WaveLength     float64
 	Time           float64
 }
 
@@ -63,50 +63,33 @@ type Fragment struct {
 // Image stores a two-dimensional array of colors.
 // It implements the image.Image interface, so you can use it directly with the standard library.
 type Image struct {
-	width, height int
-	data          [][]color.RGBA
+	Width, Height int
+	Pix           []color.RGBA
 }
 
 // NewImage creates a new, black image with the given width and height.
-func NewImage(width, height int) (img *Image) {
-	img = new(Image)
-	img.width, img.height = width, height
-	// Allocate image memory
-	dataBlock := make([]color.RGBA, width*height)
-	img.data = make([][]color.RGBA, height)
-	for i, _ := range img.data {
-		img.data[i] = dataBlock[i*width : (i+1)*width]
+func NewImage(w, h int) (img *Image) {
+	return &Image{
+		Width:  w,
+		Height: h,
+		Pix:    make([]color.RGBA, w*h),
 	}
-	return
 }
 
 func (i *Image) ColorModel() image.ColorModel { return color.Model }
-func (i *Image) Width() int                   { return i.width }
-func (i *Image) Height() int                  { return i.height }
-func (i *Image) At(x, y int) image.Color {
-	return i.data[y][x]
-}
-
-func (i *Image) Bounds() image.Rectangle {
-	return image.Rect(0, 0, i.width, i.height)
-}
+func (i *Image) At(x, y int) image.Color      { return i.Pix[y*i.Width+x] }
+func (i *Image) Bounds() image.Rectangle      { return image.Rect(0, 0, i.Width, i.Height) }
 
 // Clear sets all of the pixels in the image to a given color.
 func (i *Image) Clear(clearColor color.AlphaColor) {
-	for y, _ := range i.data {
-		for x, _ := range i.data[y] {
-			i.data[y][x].Copy(clearColor)
-		}
+	for j, _ := range i.Pix {
+		i.Pix[j].Copy(clearColor)
 	}
 }
 
 // Acquire receives fragments from a channel until the channel is closed.
 func (i *Image) Acquire(ch <-chan Fragment) {
 	for frag := range ch {
-		i.data[frag.Y][frag.X].Copy(frag.Color)
+		i.Pix[frag.Y*i.Width+frag.X].Copy(frag.Color)
 	}
-}
-
-type Renderer interface {
-	Render() <-chan Fragment
 }
