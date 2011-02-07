@@ -8,8 +8,76 @@
 package kdtree
 
 import (
+	"sync"
 	"goray/core/vector"
 )
+
+type nodePool struct {
+	nodes    []Node
+	nodeIdx  int
+	values   []Value
+	valueIdx int
+	lock     sync.Mutex
+}
+
+func newNodePool(nNodes, nValues int) (pool *nodePool) {
+	if nNodes < 1 {
+		nNodes = 1
+	}
+	return &nodePool{
+		nodes:  make([]Node, nNodes),
+		values: make([]Value, nValues),
+	}
+}
+
+func (pool *nodePool) nextNode() (n *Node) {
+	if pool.nodeIdx == len(pool.nodes) {
+		pool.nodes = make([]Node, len(pool.nodes))
+		pool.nodeIdx = 0
+	}
+	n = &pool.nodes[pool.nodeIdx]
+	pool.nodeIdx++
+	return
+}
+
+func (pool *nodePool) nextValues(size int) (vals []Value) {
+	if len(pool.values) < pool.valueIdx+size {
+		if len(pool.values) < size {
+			pool.values = make([]Value, size)
+		} else {
+			pool.values = make([]Value, len(pool.values))
+		}
+		pool.valueIdx = 0
+	}
+	vals = pool.values[pool.valueIdx : pool.valueIdx+size]
+	pool.valueIdx += size
+	return
+}
+
+func (pool *nodePool) NewLeaf(vals []Value) (n *Node) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+
+	n = pool.nextNode()
+	n.axis = -1
+	n.pivot = 0.0
+	n.values = pool.nextValues(len(vals))
+	copy(n.values, vals)
+	return
+}
+
+func (pool *nodePool) NewInterior(axis vector.Axis, pivot float64, left, right *Node) (n *Node) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+
+	n = pool.nextNode()
+	n.axis = int8(axis)
+	n.pivot = pivot
+	n.values = pool.nextValues(2)
+	n.values[0] = left
+	n.values[1] = right
+	return
+}
 
 // Value is a type for the individual elements stored in the leaves of the tree.
 type Value interface{}

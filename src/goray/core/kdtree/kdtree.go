@@ -77,6 +77,7 @@ type BuildState struct {
 	Clips      []ClipInfo
 	ClipAxis   vector.Axis
 	ClipLower  bool
+	Pool       *nodePool
 }
 
 func (state BuildState) getBound(v Value) *bound.Bound {
@@ -105,6 +106,7 @@ func New(vals []Value, opts Options) (tree *Tree) {
 		OldCost:    float64(len(vals)),
 		BadRefines: 0,
 		ClipAxis:   -1,
+		Pool:       newNodePool(len(vals)/2, len(vals)),
 	}
 
 	if len(vals) > 0 {
@@ -167,7 +169,7 @@ func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 	// If we're within acceptable bounds (or we're just sick of building the tree),
 	// then make a leaf.
 	if len(vals) <= state.LeafSize || state.MaxDepth <= 0 {
-		return newLeaf(vals)
+		return state.Pool.NewLeaf(vals)
 	}
 	// Pick a pivot
 	axis, pivot, cost := state.SplitFunc(vals, bd, state)
@@ -178,7 +180,7 @@ func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 	if (cost > state.OldCost*1.6 && len(vals) < 16) || state.BadRefines >= state.FaultTolerance {
 		// We've done some *bad* splitting.  Just leaf it.
 		logging.Debug(state.Log, "Faulted %d values", len(vals))
-		return newLeaf(vals)
+		return state.Pool.NewLeaf(vals)
 	}
 	// Sort out values
 	left, right := make([]Value, 0, len(vals)), make([]Value, 0, len(vals))
@@ -224,7 +226,7 @@ func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 		rightChan <- build(right, rightBound, rightState)
 	}()
 	// Return interior node
-	return newInterior(axis, pivot, <-leftChan, <-rightChan)
+	return state.Pool.NewInterior(axis, pivot, <-leftChan, <-rightChan)
 }
 
 func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Value, clipData []ClipInfo, clipBox *bound.Bound) {
