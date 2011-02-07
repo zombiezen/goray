@@ -37,7 +37,7 @@ func newInterior(axis vector.Axis, pivot float64, left, right Node) *Interior {
 	}
 }
 
-func (n *Node) IsLeaf() bool      { return n.axis == 0xff }
+func (n *Node) Leaf() bool        { return n.axis == 0xff }
 func (n *Node) Axis() vector.Axis { return vector.Axis(n.axis) }
 func (n *Node) Pivot() float64    { return n.pivot }
 func (n *Node) Left() Node        { return n.values[0].(*Node) }
