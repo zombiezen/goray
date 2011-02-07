@@ -16,14 +16,14 @@ type Value interface{}
 
 // Node represents nodes in a kd-tree, both interior and leaf.
 type Node struct {
-	axis   uint8
+	axis   int8
 	pivot  float64
 	values []Value
 }
 
 func newLeaf(vals []Value) *Node {
 	return &Node{
-		axis:   0xff,
+		axis:   -1,
 		pivot:  0.0,
 		values: vals,
 	}
@@ -37,7 +37,7 @@ func newInterior(axis vector.Axis, pivot float64, left, right *Node) *Node {
 	}
 }
 
-func (n *Node) Leaf() bool        { return n.axis == 0xff }
+func (n *Node) Leaf() bool        { return n.axis == -1 }
 func (n *Node) Axis() vector.Axis { return vector.Axis(n.axis) }
 func (n *Node) Pivot() float64    { return n.pivot }
 func (n *Node) Left() *Node       { return n.values[0].(*Node) }
