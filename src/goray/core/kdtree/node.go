@@ -14,33 +14,32 @@ import (
 // Value is a type for the individual elements stored in the leaves of the tree.
 type Value interface{}
 
-// Node is the common interface for leaf and interior nodes.
-type Node interface {
-	IsLeaf() bool
-}
-
-// Leaf is the node type that actually stores values.
-type Leaf struct {
+// Node represents nodes in a kd-tree, both interior and leaf.
+type Node struct {
+	axis   uint8
+	pivot  float64
 	values []Value
 }
 
-func newLeaf(vals []Value) *Leaf      { return &Leaf{vals} }
-func (leaf *Leaf) IsLeaf() bool       { return true }
-func (leaf *Leaf) GetValues() []Value { return leaf.values }
-
-// Interior is represents a planar split.
-type Interior struct {
-	axis        int8
-	pivot       float64
-	left, right Node
+func newLeaf(vals []Value) *Node {
+	return &Node{
+		axis:   0xff,
+		pivot:  0.0,
+		values: vals,
+	}
 }
 
 func newInterior(axis vector.Axis, pivot float64, left, right Node) *Interior {
-	return &Interior{int8(axis), pivot, left, right}
+	return &Node{
+		axis:   int8(axis),
+		pivot:  pivot,
+		values: []Value{left, right},
+	}
 }
 
-func (i *Interior) IsLeaf() bool         { return false }
-func (i *Interior) GetAxis() vector.Axis { return vector.Axis(i.axis) }
-func (i *Interior) GetPivot() float64    { return i.pivot }
-func (i *Interior) GetLeft() Node        { return i.left }
-func (i *Interior) GetRight() Node       { return i.right }
+func (n *Node) IsLeaf() bool      { return n.axis == 0xff }
+func (n *Node) Axis() vector.Axis { return vector.Axis(n.axis) }
+func (n *Node) Pivot() float64    { return n.pivot }
+func (n *Node) Left() Node        { return n.values[0].(*Node) }
+func (n *Node) Right() Node       { return n.values[1].(*Node) }
+func (n *Node) Values() []Value   { return n.values }
