@@ -18,7 +18,7 @@ import (
 
 // Tree is a generic kd-tree.
 type Tree struct {
-	root  Node
+	root  *Node
 	bound *bound.Bound
 }
 
@@ -124,13 +124,10 @@ func New(vals []Value, opts Options) (tree *Tree) {
 
 // Depth returns the number of levels in the tree (excluding leaves).
 func (tree *Tree) Depth() int {
-	var nodeDepth func(Node) int
-	nodeDepth = func(n Node) int {
-		switch node := n.(type) {
-		case *Leaf:
-			return 0
-		case *Interior:
-			leftDepth, rightDepth := nodeDepth(node.left), nodeDepth(node.right)
+	var nodeDepth func(*Node) int
+	nodeDepth = func(n *Node) int {
+		if !n.Leaf() {
+			leftDepth, rightDepth := nodeDepth(n.Left()), nodeDepth(n.Right())
 			if leftDepth >= rightDepth {
 				return leftDepth + 1
 			} else {
@@ -143,29 +140,26 @@ func (tree *Tree) Depth() int {
 }
 
 func (tree *Tree) String() string {
-	var nodeString func(Node, int) string
-	nodeString = func(n Node, indent int) string {
+	var nodeString func(*Node, int) string
+	nodeString = func(n *Node, indent int) string {
 		tab := "  "
 		indentString := ""
 		for i := 0; i < indent; i++ {
 			indentString += tab
 		}
-		switch node := n.(type) {
-		case *Leaf:
-			return fmt.Sprint(node.values)
-		case *Interior:
-			return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
-				"XYZ"[node.axis], node.pivot,
-				indentString+tab, nodeString(node.left, indent+1),
-				indentString+tab, nodeString(node.right, indent+1),
-				indentString)
+		if n.Leaf() {
+			return fmt.Sprint(n.Values())
 		}
-		return ""
+		return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
+			"XYZ"[n.Axis()], n.Pivot(),
+			indentString+tab, nodeString(n.Left(), indent+1),
+			indentString+tab, nodeString(n.Right(), indent+1),
+			indentString)
 	}
 	return nodeString(tree.root, 0)
 }
 
-func build(vals []Value, bd *bound.Bound, state BuildState) Node {
+func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 	// Clip any primitives
 	if uint(len(vals)) <= state.ClipThreshold {
 		vals, state.Clips, _ = clip(vals, bd, state)
@@ -215,7 +209,7 @@ func build(vals []Value, bd *bound.Bound, state BuildState) Node {
 	}
 	// Build subtrees
 	state.OldCost = cost
-	leftChan, rightChan := make(chan Node, 1), make(chan Node, 1)
+	leftChan, rightChan := make(chan *Node, 1), make(chan *Node, 1)
 	state.MaxDepth--
 	go func() {
 		leftState := state
@@ -298,7 +292,7 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 }
 
 // GetRoot returns the root of the kd-tree.
-func (tree *Tree) GetRoot() Node { return tree.root }
+func (tree *Tree) GetRoot() *Node { return tree.root }
 
 // GetBound returns a bounding box that encloses all objects in the tree.
 func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }
