@@ -156,12 +156,12 @@ func (pm *Map) FindNearest(p, n vector.Vector3D, dist float64) (nearest *Photon)
 	return
 }
 
-func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, root kdtree.Node) {
+func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, root *kdtree.Node) {
 	defer close(ch)
-	st := []kdtree.Node{root}
+	st := []*kdtree.Node{root}
 	maxDistSqr := <-distCh
 
-	next := func() (n kdtree.Node, empty bool) {
+	next := func() (n *kdtree.Node, empty bool) {
 		empty = len(st) == 0
 		if empty {
 			return
@@ -172,9 +172,8 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ro
 	}
 
 	for currNode, empty := next(); !empty; currNode, empty = next() {
-		if currNode.IsLeaf() {
-			leaf := currNode.(*kdtree.Leaf)
-			phot := leaf.GetValues()[0].(*Photon)
+		if currNode.Leaf() {
+			phot := currNode.Values()[0].(*Photon)
 			v := vector.Sub(phot.position, p)
 			distSqr := v.LengthSqr()
 			if distSqr < maxDistSqr {
@@ -184,13 +183,12 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ro
 			continue
 		}
 
-		currInt := currNode.(*kdtree.Interior)
-		axis := currInt.GetAxis()
-		dist2 := p[axis] - currInt.GetPivot()
+		axis := currNode.Axis()
+		dist2 := p[axis] - currNode.Pivot()
 		dist2 *= dist2
 
-		primaryChild, altChild := currInt.GetLeft(), currInt.GetRight()
-		if p[axis] > currInt.GetPivot() {
+		primaryChild, altChild := currNode.Left(), currNode.Right()
+		if p[axis] > currNode.Pivot() {
 			primaryChild, altChild = altChild, primaryChild
 		}
 
