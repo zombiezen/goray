@@ -20,7 +20,7 @@ type Ray struct {
 }
 
 func (r Ray) String() string {
-	return fmt.Sprintf("Ray{From: %v, Dir: %v, TMin: %.2f, TMax: %.2f, Time: %.2f}", r.From, r.Dir, r.TMin, r.TMax, r.Time)
+	return fmt.Sprintf("Ray{From: %v, Dir: %v, TMin: %.4f, TMax: %.4f, Time: %.4f}", r.From, r.Dir, r.TMin, r.TMax, r.Time)
 }
 
 // DifferentialRay stores additional information about a ray for use in surface intersections.

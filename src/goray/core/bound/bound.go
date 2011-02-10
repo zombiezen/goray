@@ -32,6 +32,10 @@ func (b *Bound) String() string {
 	return fmt.Sprintf("Bound{min: %v, max: %v}", b.a, b.g)
 }
 
+func (b *Bound) GoString() string {
+	return fmt.Sprintf("Bound{a: %#v, g: %#v}", b.a, b.g)
+}
+
 // Union creates a new bounding box that contains the two bounds.
 func Union(b1, b2 *Bound) *Bound {
 	newBound := &Bound{}
