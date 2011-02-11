@@ -32,6 +32,10 @@ func (b *Bound) String() string {
 	return fmt.Sprintf("Bound{min: %v, max: %v}", b.a, b.g)
 }
 
+func (b *Bound) GoString() string {
+	return fmt.Sprintf("Bound{a: %#v, g: %#v}", b.a, b.g)
+}
+
 // Union creates a new bounding box that contains the two bounds.
 func Union(b1, b2 *Bound) *Bound {
 	newBound := &Bound{}
@@ -68,33 +72,33 @@ func (b *Bound) SetMaxZ(z float64) { b.g[vector.Z] = z }
 // from specifies a point where the ray starts.
 // ray specifies the direction the ray is in.
 // dist is the maximum distance that this method will check.  Pass in math.Inf(1) to remove the check.
-func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (enter, leave float64, crosses bool) {
-	a0, a1 := b.a, b.g
-	p := vector.Sub(from, a0)
-	lmin, lmax := -1.0, -1.0
+func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (lmin, lmax float64, crosses bool) {
+	p := vector.Sub(from, b.a)
+	lmin, lmax = math.Inf(-1), math.Inf(1)
+	crosses = true
 
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		if ray[axis] != 0 {
 			tmp1 := -p[axis] / ray[axis]
-			tmp2 := (a1[axis] - a0[axis] - p[axis]) / ray[axis]
+			tmp2 := (b.g[axis] - b.a[axis] - p[axis]) / ray[axis]
 			if tmp1 > tmp2 {
 				tmp1, tmp2 = tmp2, tmp1
 			}
-			lmin, lmax = tmp1, tmp2
+			if tmp1 > lmin {
+				lmin = tmp1
+			}
+			if tmp2 < lmax {
+				lmax = tmp2
+			}
 			if lmax < 0 || lmin > dist {
-				crosses = false
-				return
+				return 0, 0, false
 			}
 		}
 	}
 
-	if lmin <= lmax && lmax >= 0 && lmin <= dist {
-		enter, leave = lmin, lmax
-		crosses = true
-		return
+	if lmin > lmax || lmax < 0 || lmin > dist {
+		return 0, 0, false
 	}
-
-	crosses = false
 	return
 }
 

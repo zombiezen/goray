@@ -88,20 +88,19 @@ func TestSimpleTree(t *testing.T) {
 		t.Error("Creation failed")
 	}
 
-	if tree.root.IsLeaf() {
+	if tree.root.Leaf() {
 		t.Fatal("Tree root is not an interior node")
 	}
-	root := tree.root.(*Interior)
-	if root.GetAxis() != 0 {
-		t.Errorf("Wrong split axis (got %d)", root.GetAxis())
+	if tree.root.Axis() != 0 {
+		t.Errorf("Wrong split axis (got %d)", tree.root.Axis())
 	}
-	if root.GetPivot() != 1 {
-		t.Errorf("Wrong pivot value (got %.2f)", root.GetPivot())
+	if tree.root.Pivot() != 1 {
+		t.Errorf("Wrong pivot value (got %.2f)", tree.root.Pivot())
 	}
 
-	if root.GetLeft() != nil {
-		if leaf, ok := root.GetLeft().(*Leaf); ok {
-			if len(leaf.GetValues()) != 2 {
+	if tree.root.Left() != nil {
+		if tree.root.Left().Leaf() {
+			if len(tree.root.Left().Values()) != 2 {
 				t.Error("Wrong number of values in left")
 			}
 		} else {
@@ -111,9 +110,9 @@ func TestSimpleTree(t *testing.T) {
 		t.Error("Left child is nil")
 	}
 
-	if root.GetRight() != nil {
-		if leaf, ok := root.GetRight().(*Leaf); ok {
-			if len(leaf.GetValues()) != 2 {
+	if tree.root.Right() != nil {
+		if tree.root.Right().Leaf() {
+			if len(tree.root.Right().Values()) != 2 {
 				t.Error("Wrong number of values in right")
 			}
 		} else {
