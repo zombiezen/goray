@@ -10,6 +10,7 @@ package shinydiffuse
 import (
 	"math"
 	"os"
+	"goray/sampleutil"
 	"goray/core/color"
 	"goray/core/material"
 	"goray/core/render"
@@ -166,9 +167,120 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 	return
 }
 
+type sdc struct {
+	BSDF  material.BSDF
+	Value float64
+}
+
+type sdComps []sdc
+
+func (comps sdComps) Get(b material.BSDF) (v float64, ok bool) {
+	for _, c := range comps {
+		if c.BSDF == b {
+			return c.Value, true
+		}
+	}
+	return
+}
+
+func getComps(sd *ShinyDiffuse, data sdData) (comps sdComps) {
+	comps = make(sdComps, 0, 4)
+	if sd.isReflective {
+		comps = append(comps, sdc{material.BSDFSpecular | material.BSDFReflect, data.SpecRefl})
+	}
+	if sd.isTransp {
+		comps = append(comps, sdc{material.BSDFTransmit | material.BSDFFilter, data.Transp})
+	}
+	if sd.isTransl {
+		comps = append(comps, sdc{material.BSDFDiffuse | material.BSDFTransmit, data.Transl})
+	}
+	if sd.isDiffuse {
+		comps = append(comps, sdc{material.BSDFDiffuse | material.BSDFReflect, data.Diffuse})
+	}
+	return
+}
+
 func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (col color.Color, wi vector.Vector3D) {
-	// TODO
+	data := state.MaterialData.(sdData)
+	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
+	cosNgWi := vector.Dot(sp.GeometricNormal, wi)
+	n := sp.Normal
+	if cosNgWo < 0 {
+		n = n.Negate()
+	}
+	kr := sd.getFresnel(wo, n)
+	accumC := data.accumulate(kr)
+
+	// Pick component to sample
+	sum := 0.0
+	comps := getComps(sd, accumC)
+	vals := make([]float64, len(comps))
+	for i, c := range comps {
+		sum += c.Value
+		vals[i] = sum
+	}
+	if len(comps) == 0 || sum < 1e-6 {
+		s.SampledFlags = material.BSDFNone
+		s.Pdf = 0
+		col = color.White
+		return
+	}
+	pick := -1
+	invSum := 1 / sum
+	for i, _ := range comps {
+		vals[i] *= invSum
+		comps[i].Value *= invSum
+		if s.S1 <= vals[i] && pick < 0 {
+			pick = i
+		}
+	}
+	if pick < 0 {
+		pick = len(comps) - 1
+	}
+	s1 := s.S1 / comps[pick].Value
+	if pick > 0 {
+		s1 -= vals[pick-1] / comps[pick].Value
+	}
+
+	// Update sample information
 	col = color.Black
+	switch comps[pick].BSDF {
+	case material.BSDFSpecular | material.BSDFReflect:
+		wi = vector.Reflect(n, wo)
+		s.Pdf = comps[pick].Value
+		col = color.ScalarMul(accumC.MirrorColor, accumC.SpecRefl)
+		if s.Reverse {
+			s.PdfBack = s.Pdf
+			s.ColorBack = color.ScalarDiv(col, math.Fabs(vector.Dot(sp.Normal, wo)))
+		}
+		col = color.ScalarDiv(col, math.Fabs(vector.Dot(sp.Normal, wi)))
+	case material.BSDFTransmit | material.BSDFFilter:
+		wi = wo.Negate()
+		col = color.ScalarMul(color.Add(color.ScalarMul(accumC.DiffuseColor, sd.TransmitFilter), color.Gray(1-sd.TransmitFilter)), accumC.Transp)
+		cosN := math.Fabs(vector.Dot(wi, n))
+		if cosN < 1e-6 {
+			s.Pdf = 0
+		} else {
+			col = color.ScalarDiv(col, cosN)
+			s.Pdf = comps[pick].Value
+		}
+	case material.BSDFDiffuse | material.BSDFTransmit:
+		wi = sampleutil.CosHemisphere(n.Negate(), sp.NormalU, sp.NormalV, s1, s.S2)
+		if cosNgWo*cosNgWi < 0 {
+			col = color.ScalarMul(accumC.DiffuseColor, accumC.Transl)
+		}
+		s.Pdf = math.Fabs(vector.Dot(wi, n)) * comps[pick].Value
+	case material.BSDFDiffuse | material.BSDFReflect:
+		fallthrough
+	default:
+		wi = sampleutil.CosHemisphere(n, sp.NormalU, sp.NormalV, s1, s.S2)
+		if cosNgWo*cosNgWi > 0 {
+			col = color.ScalarMul(accumC.DiffuseColor, accumC.Diffuse)
+		}
+		// TODO: if OrenNayer
+		s.Pdf = math.Fabs(vector.Dot(wi, n)) * comps[pick].Value
+	}
+	s.SampledFlags = comps[pick].BSDF
 	return
 }
 
@@ -186,32 +298,23 @@ func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector
 	}
 	kr := sd.getFresnel(wo, n)
 	accumC := data.accumulate(kr)
-	possibleBsdfs := map[material.BSDF]float64{
-		material.BSDFSpecular | material.BSDFReflect: accumC.SpecRefl,
-		material.BSDFTransmit | material.BSDFFilter:  accumC.Transp,
-		material.BSDFDiffuse | material.BSDFTransmit: accumC.Transl,
-		material.BSDFDiffuse | material.BSDFReflect:  accumC.Diffuse,
-	}
 
 	sum := 0.0
-	matched := false
-	for p, width := range possibleBsdfs {
-		if bsdfs&p == p {
-			sum += width
-			switch p {
-			case material.BSDFDiffuse | material.BSDFTransmit: // translucency
-				if cosNgWo*cosNgWi < 0 {
-					pdf += math.Fabs(vector.Dot(wi, n)) * width
-				}
-			case material.BSDFDiffuse | material.BSDFReflect: // translucency
-				if cosNgWo*cosNgWi > 0 {
-					pdf += math.Fabs(vector.Dot(wi, n)) * width
-				}
+	comps := getComps(sd, accumC)
+	for _, c := range comps {
+		sum += c.Value
+		switch c.BSDF {
+		case material.BSDFDiffuse | material.BSDFTransmit:
+			if cosNgWo*cosNgWi < 0 {
+				pdf += math.Fabs(vector.Dot(wi, n)) * c.Value
 			}
-			matched = true
+		case material.BSDFDiffuse | material.BSDFReflect:
+			if cosNgWo*cosNgWi > 0 {
+				pdf += math.Fabs(vector.Dot(wi, n)) * c.Value
+			}
 		}
 	}
-	if !matched || sum < 0.00001 {
+	if len(comps) == 0 || sum < 0.00001 {
 		return 0.0
 	}
 	return pdf / sum
