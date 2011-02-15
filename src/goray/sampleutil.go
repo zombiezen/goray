@@ -13,8 +13,8 @@ import (
 	"goray/core/vector"
 )
 
-// SampleCosHemisphere samples a cosine-weighted hemisphere given the coordinate system built by n, ru, and rv.
-func SampleCosHemisphere(n, ru, rv vector.Vector3D, s1, s2 float64) (v vector.Vector3D) {
+// CosHemisphere samples a cosine-weighted hemisphere given the coordinate system built by n, ru, and rv.
+func CosHemisphere(n, ru, rv vector.Vector3D, s1, s2 float64) (v vector.Vector3D) {
 	z1 := s1
 	z2 := s2 * 2 * math.Pi
 	v = vector.ScalarMul(vector.Add(vector.ScalarMul(ru, math.Cos(z2)), vector.ScalarMul(rv, math.Sin(z2))), math.Sqrt(1 - z1))

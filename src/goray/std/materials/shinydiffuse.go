@@ -245,8 +245,7 @@ func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo ve
 }
 
 func (sd *ShinyDiffuse) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
-	// TODO
-	return color.Black
+	return common.GetReflectivity(sd, state, sp, flags)
 }
 
 func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
@@ -257,8 +256,7 @@ func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vecto
 }
 
 func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
-	// TODO
-	return
+	return common.ScatterPhoton(sd, state, sp, wi, s)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
