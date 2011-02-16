@@ -62,18 +62,18 @@ func (loader *TemplateLoader) Get(name string) (templ *template.Template, err os
 	return
 }
 
-func (loader *TemplateLoader) Render(name string, data interface{}, w io.Writer) (err os.Error) {
+func (loader *TemplateLoader) Render(w io.Writer, name string, data interface{}) (err os.Error) {
 	t, err := loader.Get(name)
 	if err != nil {
 		return
 	}
-	return t.Execute(data, w)
+	return t.Execute(w, data)
 }
 
-func (loader *TemplateLoader) RenderResponse(name string, data interface{}, rw http.ResponseWriter) (err os.Error) {
+func (loader *TemplateLoader) RenderResponse(rw http.ResponseWriter, name string, data interface{}) (err os.Error) {
 	// Buffer template output
 	buf := new(bytes.Buffer)
-	err = loader.Render(name, data, buf)
+	err = loader.Render(buf, name, data)
 	if err != nil {
 		return
 	}

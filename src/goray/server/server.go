@@ -53,7 +53,7 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) 
 	switch req.Method {
 	case "GET":
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
-		server.templates.RenderResponse("submit.html", nil, w)
+		server.templates.RenderResponse(w, "submit.html", nil)
 	case "POST":
 		j, _ := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
 		go j.Render()
@@ -68,7 +68,7 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
 	job, ok := server.JobManager.Get(jobName)
 	if ok {
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
-		server.templates.RenderResponse("job.html", job, w)
+		server.templates.RenderResponse(w, "job.html", job)
 	} else {
 		http.NotFound(w, req)
 	}
