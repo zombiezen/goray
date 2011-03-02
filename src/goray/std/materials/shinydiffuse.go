@@ -22,12 +22,22 @@ import (
 )
 
 type ShinyDiffuse struct {
-	Color, SpecReflCol                color.Color
-	Diffuse, SpecRefl, Transp, Transl float64
-	TransmitFilter                    float64
-	IOR                               float64
+	Color       color.Color
+	Diffuse     float64
+	DiffuseShad shader.Node
 
-	DiffuseShad, SpecReflShad, TranspShad, TranslShad, MirColShad shader.Node
+	SpecReflCol  color.Color
+	SpecRefl     float64
+	SpecReflShad shader.Node
+	MirColShad   shader.Node
+
+	Transp, Transl         float64
+	TranspShad, TranslShad shader.Node
+
+	EmitCol color.Color
+	EmitVal float64
+
+	TransmitFilter, IOR float64
 
 	isDiffuse, isReflective, isTransp, isTransl bool
 
@@ -36,6 +46,7 @@ type ShinyDiffuse struct {
 }
 
 func (sd *ShinyDiffuse) Init() {
+	sd.EmitCol = color.ScalarMul(sd.EmitCol, sd.EmitVal)
 	acc := 1.0
 	if sd.SpecRefl > 0 || sd.SpecReflShad != nil {
 		sd.isReflective = true
@@ -362,6 +373,14 @@ func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi 
 	return common.ScatterPhoton(sd, state, sp, wi, s)
 }
 
+func (sd *ShinyDiffuse) Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
+	if sd.DiffuseShad != nil {
+		data := state.MaterialData.(sdData)
+		return color.ScalarMul(data.DiffuseColor, sd.EmitVal)
+	}
+	return sd.EmitCol
+}
+
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	col, ok := m["color"].(color.Color)
 	if !ok {
@@ -387,6 +406,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	mat := &ShinyDiffuse{
 		Color:       col,
 		SpecReflCol: srcol,
+		EmitCol:     color.Black,
 		Diffuse:     diffuse,
 		SpecRefl:    specRefl,
 	}
