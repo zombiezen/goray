@@ -126,39 +126,39 @@ func New(vals []Value, opts Options) (tree *Tree) {
 
 // Depth returns the number of levels in the tree (excluding leaves).
 func (tree *Tree) Depth() int {
-	var nodeDepth func(*Node) int
-	nodeDepth = func(n *Node) int {
-		if !n.Leaf() {
-			leftDepth, rightDepth := nodeDepth(n.Left()), nodeDepth(n.Right())
-			if leftDepth >= rightDepth {
-				return leftDepth + 1
-			} else {
-				return rightDepth + 1
-			}
-		}
-		return 0
-	}
 	return nodeDepth(tree.root)
 }
 
-func (tree *Tree) String() string {
-	var nodeString func(*Node, int) string
-	nodeString = func(n *Node, indent int) string {
-		tab := "  "
-		indentString := ""
-		for i := 0; i < indent; i++ {
-			indentString += tab
+func nodeDepth(n *Node) int {
+	if !n.Leaf() {
+		leftDepth, rightDepth := nodeDepth(n.Left()), nodeDepth(n.Right())
+		if leftDepth >= rightDepth {
+			return leftDepth + 1
+		} else {
+			return rightDepth + 1
 		}
-		if n.Leaf() {
-			return fmt.Sprint(n.Values())
-		}
-		return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
-			"XYZ"[n.Axis()], n.Pivot(),
-			indentString+tab, nodeString(n.Left(), indent+1),
-			indentString+tab, nodeString(n.Right(), indent+1),
-			indentString)
 	}
+	return 0
+}
+
+func (tree *Tree) String() string {
 	return nodeString(tree.root, 0)
+}
+
+func nodeString(n *Node, indent int) string {
+	tab := "  "
+	indentString := ""
+	for i := 0; i < indent; i++ {
+		indentString += tab
+	}
+	if n.Leaf() {
+		return fmt.Sprint(n.Values())
+	}
+	return fmt.Sprintf("{%c at %.2f\n%sL: %v\n%sR: %v\n%s}",
+		"XYZ"[n.Axis()], n.Pivot(),
+		indentString+tab, nodeString(n.Left(), indent+1),
+		indentString+tab, nodeString(n.Right(), indent+1),
+		indentString)
 }
 
 func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
