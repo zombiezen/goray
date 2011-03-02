@@ -108,9 +108,9 @@ func (data sdData) accumulate(kr float64) (newData sdData) {
 	acc := 1 - newData.SpecRefl
 	newData.Transp = data.Transp * acc
 	acc *= 1 - data.Transp
-	newData.Transp = data.Transl * acc
+	newData.Transl = data.Transl * acc
 	acc *= 1 - data.Transl
-	newData.Transp = data.Diffuse * acc
+	newData.Diffuse = data.Diffuse * acc
 	return
 }
 
