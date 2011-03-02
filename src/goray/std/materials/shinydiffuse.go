@@ -22,9 +22,9 @@ import (
 )
 
 type ShinyDiffuse struct {
-	Color       color.Color
-	Diffuse     float64
-	DiffuseShad shader.Node
+	Color            color.Color
+	Diffuse          float64
+	DiffuseColorShad shader.Node
 
 	SpecReflColor   color.Color
 	SpecRefl        float64
@@ -46,19 +46,36 @@ type ShinyDiffuse struct {
 }
 
 func (sd *ShinyDiffuse) Init() {
+	const threshold = 1e-5
+
 	sd.EmitColor = color.ScalarMul(sd.EmitColor, sd.EmitValue)
 	acc := 1.0
-	if sd.SpecRefl > 0 || sd.SpecReflShad != nil {
+	if sd.SpecRefl > threshold || sd.SpecReflShad != nil {
 		sd.isReflective = true
-		// TODO: acc
 		// TODO: viNodes?
+		if sd.SpecReflShad == nil && !sd.fresnelEffect {
+			acc = 1.0 - sd.SpecRefl
+		}
 		sd.bsdfFlags |= material.BSDFSpecular | material.BSDFReflect
 	}
-	// TODO: Transparency
-	// TODO: Translucency
-	if sd.Diffuse*acc > 0 {
+	if sd.Transp*acc > threshold || sd.TranspShad != nil {
+		sd.isTransp = true
+		// TODO: viNodes?
+		if sd.TranspShad == nil && !sd.fresnelEffect {
+			acc = 1.0 - sd.Transp
+		}
+		sd.bsdfFlags |= material.BSDFTransmit | material.BSDFFilter
+	}
+	if sd.Transl*acc > threshold || sd.TranslShad != nil {
+		sd.isTransl = true
+		// TODO: viNodes?
+		if sd.TranslShad == nil && !sd.fresnelEffect {
+			acc = 1.0 - sd.Transl
+		}
+		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFTransmit
+	}
+	if sd.Diffuse*acc > threshold {
 		sd.isDiffuse = true
-		// TODO: acc
 		// TODO: viNodes?
 		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFReflect
 	}
@@ -71,7 +88,7 @@ type sdData struct {
 
 func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
 	params := make(map[string]interface{})
-	results := shader.Eval(params, []shader.Node{sd.DiffuseShad, sd.TranspShad, sd.TranslShad, sd.SpecReflShad, sd.MirrorColorShad})
+	results := shader.Eval(params, []shader.Node{sd.DiffuseColorShad, sd.TranspShad, sd.TranslShad, sd.SpecReflShad, sd.MirrorColorShad})
 	if sd.isReflective {
 		if use[0] {
 			data.SpecRefl = results[3].Scalar()
@@ -96,7 +113,7 @@ func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
 	if sd.isDiffuse {
 		data.Diffuse = sd.Diffuse
 	}
-	if sd.DiffuseShad != nil {
+	if sd.DiffuseColorShad != nil {
 		data.DiffuseColor = results[0].Color()
 	} else {
 		data.DiffuseColor = sd.Color
@@ -364,7 +381,13 @@ func (sd *ShinyDiffuse) GetReflectivity(state *render.State, sp surface.Point, f
 
 func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	if sd.isTransp {
-		//data := state.MaterialData.(sdData)
+		data := state.MaterialData.(sdData)
+		n := sp.Normal
+		if vector.Dot(sp.GeometricNormal, wo) < 0 {
+			n = n.Negate()
+		}
+		kr := sd.getFresnel(wo, n)
+		return 1 - (1-data.SpecRefl*kr)*data.Transp
 	}
 	return 1
 }
@@ -374,7 +397,7 @@ func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi 
 }
 
 func (sd *ShinyDiffuse) Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
-	if sd.DiffuseShad != nil {
+	if sd.DiffuseColorShad != nil {
 		data := state.MaterialData.(sdData)
 		return color.ScalarMul(data.DiffuseColor, sd.EmitValue)
 	}
@@ -392,23 +415,41 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Mirror color must be an RGB")
 		return
 	}
-	diffuse, ok := m["diffuseReflect"].(float64)
+	diffuse, ok := yamldata.AsFloat(m["diffuseReflect"])
 	if !ok {
 		err = os.NewError("Diffuse reflection must be a float")
 		return
 	}
-	specRefl, ok := m["specularReflect"].(float64)
+	specRefl, ok := yamldata.AsFloat(m["specularReflect"])
 	if !ok {
 		// TODO: Better error checking
 		specRefl = 0
 	}
+	transp, ok := yamldata.AsFloat(m["transparency"])
+	if !ok {
+		// TODO: Better error checking
+		transp = 0
+	}
+	transl, ok := yamldata.AsFloat(m["translucency"])
+	if !ok {
+		// TODO: Better error checking
+		transl = 0
+	}
+	transmit, ok := yamldata.AsFloat(m["transmit"])
+	if !ok {
+		// TODO: Better error checking
+		transmit = 0
+	}
 
 	mat := &ShinyDiffuse{
-		Color:         col,
-		SpecReflColor: srcol,
-		EmitColor:     color.Black,
-		Diffuse:       diffuse,
-		SpecRefl:      specRefl,
+		Color:          col,
+		SpecReflColor:  srcol,
+		EmitColor:      color.Black,
+		Diffuse:        diffuse,
+		SpecRefl:       specRefl,
+		Transp:         transp,
+		Transl:         transl,
+		TransmitFilter: transmit,
 	}
 	mat.Init()
 	return mat, nil
