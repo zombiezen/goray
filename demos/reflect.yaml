@@ -31,9 +31,9 @@ objects:
       faces:
          # Back
          -  vertices: [0, 3, 2]
-            material: &mat !std!materials/debug
+            material: &mat !std!materials/shinydiffuse
                 color: !goray!rgb [1.0, 0.0, 0.0]
-                mirrorColor: !goray!rgb [0.5, 0.0, 0.0]
+                mirrorColor: !goray!rgb [1.0, 1.0, 1.0]
                 diffuseReflect: 1.0
                 specularReflect: 0.25
          -  vertices: [0, 2, 1]
