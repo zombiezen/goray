@@ -17,7 +17,7 @@ import (
 func CosHemisphere(n, ru, rv vector.Vector3D, s1, s2 float64) (v vector.Vector3D) {
 	z1 := s1
 	z2 := s2 * 2 * math.Pi
-	v = vector.ScalarMul(vector.Add(vector.ScalarMul(ru, math.Cos(z2)), vector.ScalarMul(rv, math.Sin(z2))), math.Sqrt(1 - z1))
+	v = vector.ScalarMul(vector.Add(vector.ScalarMul(ru, math.Cos(z2)), vector.ScalarMul(rv, math.Sin(z2))), math.Sqrt(1-z1))
 	v = vector.Add(v, vector.ScalarMul(n, math.Sqrt(z1)))
 	return
 }

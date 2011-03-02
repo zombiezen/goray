@@ -10,7 +10,7 @@ package shader
 import "testing"
 
 type testNode struct {
-	val float64
+	val  float64
 	deps []Node
 }
 
@@ -26,7 +26,7 @@ func (n *testNode) EvalDerivative(params map[string]interface{}, inputs []Result
 	return Result{}
 }
 
-func (n *testNode) ViewDependent() bool { return false }
+func (n *testNode) ViewDependent() bool  { return false }
 func (n *testNode) Dependencies() []Node { return n.deps }
 
 func TestBasicEval(t *testing.T) {
