@@ -14,6 +14,7 @@ import (
 	"goray/core/render"
 	"goray/core/surface"
 	"goray/core/vector"
+	"goray/std/materials/common"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -45,7 +46,7 @@ func (mat *debugMaterial) GetSpecular(state *render.State, sp surface.Point, wo 
 }
 
 func (mat *debugMaterial) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
-	return nil
+	return common.GetReflectivity(mat, state, sp, flags)
 }
 
 func (mat *debugMaterial) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
@@ -53,7 +54,7 @@ func (mat *debugMaterial) GetAlpha(state *render.State, sp surface.Point, wo vec
 }
 
 func (mat *debugMaterial) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
-	return
+	return common.ScatterPhoton(mat, state, sp, wi, s)
 }
 
 func (mat *debugMaterial) GetFlags() material.BSDF {

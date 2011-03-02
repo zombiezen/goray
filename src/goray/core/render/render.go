@@ -33,6 +33,7 @@ type State struct {
 	IncludeLights  bool
 	WaveLength     float64
 	Time           float64
+	MaterialData   interface{}
 }
 
 // Init initializes the state.
