@@ -1,0 +1,41 @@
+goray
+=======
+
+goray is very much alpha quality software and not ready for production.  Many
+features are missing, some things may not work right, and the behavior of the
+program is not well documented.
+
+That said, here's what you need to get goray running:
+
+* The most recent release of the Go programming language. <http://golang.org/>
+* SCons <http://www.scons.org/>
+* SCons Go Tools <https://launchpad.net/sconsgo>
+* The goyaml package <http://goyaml.googlecode.com/>
+
+Build goray with::
+
+    scons -Q debug=0
+
+To run goray, provide a scene description file (a YAML file) as the sole
+argument.  By default, goray will render to a file called ``goray.png`` in the
+current directory.  For example::
+
+    bin/goray demos/suzanne.yaml
+
+For further help::
+
+    bin/goray -help
+
+License
+---------
+
+Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef
+Copyright © 2010 Ross Light
+
+Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and
+Alfredo de Greef.
+Go rewrite by Ross Light in 2010.
+
+goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are
+welcome to redistribute it under the conditions of the GNU Lesser General
+Public License v3, or (at your option) any later version.

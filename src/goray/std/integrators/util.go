@@ -10,6 +10,7 @@ package util
 import (
 	"math"
 	"goray/montecarlo"
+	"goray/sampleutil"
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/material"
@@ -135,14 +136,6 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	return color.Black
 }
 
-func addMod1(a, b float64) (s float64) {
-	s = a + b
-	if s > 1 {
-		s -= 1
-	}
-	return
-}
-
 func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	ccol = color.Black
 
@@ -188,8 +181,8 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 	mat := sp.Material.(material.Material)
 
 	if params.State.RayDivision > 1 {
-		lightSamp.S1 = addMod1(lightSamp.S1, params.State.Dc1)
-		lightSamp.S2 = addMod1(lightSamp.S2, params.State.Dc2)
+		lightSamp.S1 = sampleutil.AddMod1(lightSamp.S1, params.State.Dc1)
+		lightSamp.S2 = sampleutil.AddMod1(lightSamp.S2, params.State.Dc2)
 	}
 
 	lightRay := ray.Ray{ // Illuminate will fill in most of the ray
@@ -233,8 +226,8 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col c
 	}
 
 	if params.State.RayDivision > 1 {
-		s1 = addMod1(s1, params.State.Dc1)
-		s2 = addMod1(s2, params.State.Dc2)
+		s1 = sampleutil.AddMod1(s1, params.State.Dc1)
+		s2 = sampleutil.AddMod1(s2, params.State.Dc2)
 	}
 	s := material.NewSample(s1, s2)
 	s.Flags = material.BSDFGlossy | material.BSDFDiffuse | material.BSDFDispersive | material.BSDFReflect | material.BSDFTransmit
@@ -312,8 +305,8 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 		s1 := montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0)
 		s2 := hals[i]
 		if state.RayDivision > 1 {
-			s1 = addMod1(s1, state.Dc1)
-			s2 = addMod1(s2, state.Dc2)
+			s1 = sampleutil.AddMod1(s1, state.Dc1)
+			s2 = sampleutil.AddMod1(s2, state.Dc2)
 		}
 		lightRay := ray.Ray{
 			From: sp.Position,

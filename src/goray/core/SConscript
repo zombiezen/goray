@@ -19,6 +19,7 @@ packages = [
     env.Go('ray', Glob('ray/*.go')),
     env.Go('render', Glob('render/*.go')),
     env.Go('scene', Glob('scene/*.go')),
+    env.Go('shader', Glob('shader/*.go')),
     env.Go('surface', Glob('surface/*.go')),
     env.Go('vector', Glob('vector/*.go')),
     env.Go('vmap', Glob('vmap/*.go')),

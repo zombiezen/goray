@@ -17,6 +17,7 @@ import (
 	directlight    "goray/std/integrators/directlight"
 	pointlight     "goray/std/lights/point"
 	debugmaterial  "goray/std/materials/debug"
+	shinydiffuse   "goray/std/materials/shinydiffuse"
 	mesh           "goray/std/objects/mesh"
 
 	yamldata "goyaml.googlecode.com/hg/data"
@@ -44,6 +45,7 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	StdPrefix + "integrators/directlight": MapConstruct(directlight.Construct),
 	StdPrefix + "lights/point":            MapConstruct(pointlight.Construct),
 	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),
+	StdPrefix + "materials/shinydiffuse":  MapConstruct(shinydiffuse.Construct),
 	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
 }
 

@@ -4,10 +4,10 @@ import "testing"
 
 func TestLeaf(t *testing.T) {
 	myLeaf := newLeaf([]Value{1, 2, 3})
-	if !myLeaf.IsLeaf() {
+	if !myLeaf.Leaf() {
 		t.Error("Leaf nodes claim that they are not leaves")
 	}
-	vals := myLeaf.GetValues()
+	vals := myLeaf.Values()
 	if len(vals) != 3 {
 		t.Error("Leaf nodes don't store the right number of values")
 	}
@@ -21,19 +21,19 @@ func TestLeaf(t *testing.T) {
 func TestInterior(t *testing.T) {
 	leafA, leafB := newLeaf([]Value{}), newLeaf([]Value{})
 	myInt := newInterior(2, 3.14, leafA, leafB)
-	if myInt.IsLeaf() {
+	if myInt.Leaf() {
 		t.Error("Interior node claims that it is a leaf")
 	}
-	if myInt.GetAxis() != 2 {
+	if myInt.Axis() != 2 {
 		t.Error("Interior node stores wrong axis")
 	}
-	if myInt.GetPivot() != 3.14 {
+	if myInt.Pivot() != 3.14 {
 		t.Error("Interior node stores wrong pivot")
 	}
-	if child, _ := myInt.GetLeft().(*Leaf); child != leafA {
+	if myInt.Left() != leafA {
 		t.Error("Left child not stored")
 	}
-	if child, _ := myInt.GetRight().(*Leaf); child != leafB {
+	if myInt.Right() != leafB {
 		t.Error("Right child not stored")
 	}
 }

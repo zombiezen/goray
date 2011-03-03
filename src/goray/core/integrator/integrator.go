@@ -10,6 +10,7 @@ package integrator
 
 import (
 	"runtime"
+	"sync"
 	"goray/logging"
 	"goray/core/color"
 	"goray/core/ray"
@@ -110,14 +111,10 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 
 	go func() {
 		defer close(ch)
-		// Set up end signals
-		signals := make([]chan bool, numWorkers)
-		for i, _ := range signals {
-			signals[i] = make(chan bool)
-		}
-		// Start workers
-		for _, sig := range signals {
-			go func(finish chan<- bool) {
+		wg := new(sync.WaitGroup)
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go func() {
 				for loc := range locCh {
 					//logging.Debug(log, "BLOCK (%3d, %3d)", loc[0], loc[1])
 					for y := loc[1]; y < loc[1]+blockDim && y < h; y++ {
@@ -127,13 +124,10 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 						}
 					}
 				}
-				finish <- true
-			}(sig)
+				wg.Done()
+			}()
 		}
-		// Join workers
-		for _, sig := range signals {
-			<-sig
-		}
+		wg.Wait()
 	}()
 	return ch
 }
@@ -150,30 +144,23 @@ func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 	ch := make(chan render.Fragment, 100)
 	go func() {
 		defer close(ch)
-		// Set up end signals
-		signals := make([]chan bool, numWorkers)
-		for i, _ := range signals {
-			signals[i] = make(chan bool)
-		}
-		// Start workers
 		rowsPerWorker := h / numWorkers
 		if h%numWorkers != 0 {
-			signals = append(signals, make(chan bool))
+			numWorkers++
 		}
-		for i, sig := range signals {
-			go func(baseY int, finish chan<- bool) {
+		wg := new(sync.WaitGroup)
+		for i := 0; i < numWorkers; i++ {
+			wg.Add(1)
+			go func(baseY int) {
 				for y := baseY; y < baseY+rowsPerWorker && y < h; y++ {
 					for x := 0; x < w; x++ {
 						ch <- RenderPixel(s, in, x, y)
 					}
 				}
-				finish <- true
-			}(i*rowsPerWorker, sig)
+				wg.Done()
+			}(i * rowsPerWorker)
 		}
-		// Join goroutines
-		for _, sig := range signals {
-			<-sig
-		}
+		wg.Wait()
 	}()
 	return ch
 }

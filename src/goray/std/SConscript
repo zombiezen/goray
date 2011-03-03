@@ -9,7 +9,9 @@ packages = [
     env.Go('integrators/trivial'),
     env.Go('integrators/util'),
     env.Go('lights/point'),
+    env.Go('materials/common'),
     env.Go('materials/debug'),
+    env.Go('materials/shinydiffuse'),
     env.Go('primitives/sphere'),
     env.Go('yamlscene', Glob('yamlscene/*.go')),
 ]

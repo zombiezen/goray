@@ -52,11 +52,11 @@ func (v Vector3D) Inverse() (r Vector3D) {
 func (v Vector3D) IsZero() bool { return v[X] == 0 && v[Y] == 0 && v[Z] == 0 }
 
 func (v Vector3D) String() string {
-	return fmt.Sprintf("<%.2f, %.2f, %.2f>", v[X], v[Y], v[Z])
+	return fmt.Sprintf("<%.4f, %.4f, %.4f>", v[X], v[Y], v[Z])
 }
 
 func (v Vector3D) GoString() string {
-	return fmt.Sprintf("vector.Vector3D{%.3f, %.3f, %.3f}", v[X], v[Y], v[Z])
+	return fmt.Sprintf("vector.Vector3D{%#v, %#v, %#v}", v[X], v[Y], v[Z])
 }
 
 // Add computes the sum of two or more vectors.

@@ -115,7 +115,7 @@ func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
 }
 
 type followFrame struct {
-	node  kdtree.Node
+	node  *kdtree.Node
 	t     float64
 	point vector.Vector3D
 }
@@ -157,24 +157,22 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl
 			break
 		}
 		// Traverse to the leaves
-		for !currNode.IsLeaf() {
-			currInter := currNode.(*kdtree.Interior)
-			axis := currInter.GetAxis()
-			pivot := currInter.GetPivot()
+		for !currNode.Leaf() {
+			axis, pivot := currNode.Axis(), currNode.Pivot()
 
-			var farChild kdtree.Node
+			var farChild *kdtree.Node
 			if enterStack[len(enterStack)-1].point[axis] < pivot {
-				currNode = currInter.GetLeft()
+				farChild = currNode.Right()
+				currNode = currNode.Left()
 				if exitStack[len(exitStack)-1].point[axis] < pivot {
 					continue
 				}
-				farChild = currInter.GetRight()
 			} else {
-				currNode = currInter.GetRight()
+				farChild = currNode.Left()
+				currNode = currNode.Right()
 				if exitStack[len(exitStack)-1].point[axis] >= pivot {
 					continue
 				}
-				farChild = currInter.GetLeft()
 			}
 
 			t := (pivot - r.From[axis]) * invDir[axis]
@@ -190,8 +188,7 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl
 
 		// Okay, we've reached a leaf.
 		// Now check for any intersections.
-		prims := currNode.(*kdtree.Leaf).GetValues()
-		for _, v := range prims {
+		for _, v := range currNode.Values() {
 			p := v.(primitive.Primitive)
 			coll := p.Intersect(r)
 			if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
@@ -242,24 +239,22 @@ func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch cha
 			break
 		}
 		// Traverse to the leaves
-		for !currNode.IsLeaf() {
-			currInter := currNode.(*kdtree.Interior)
-			axis := currInter.GetAxis()
-			pivot := currInter.GetPivot()
+		for !currNode.Leaf() {
+			axis, pivot := currNode.Axis(), currNode.Pivot()
 
-			var farChild kdtree.Node
+			var farChild *kdtree.Node
 			if enterStack[len(enterStack)-1].point[axis] < pivot {
-				currNode = currInter.GetLeft()
+				farChild = currNode.Right()
+				currNode = currNode.Left()
 				if exitStack[len(exitStack)-1].point[axis] < pivot {
 					continue
 				}
-				farChild = currInter.GetRight()
 			} else {
-				currNode = currInter.GetRight()
+				farChild = currNode.Left()
+				currNode = currNode.Right()
 				if exitStack[len(exitStack)-1].point[axis] >= pivot {
 					continue
 				}
-				farChild = currInter.GetLeft()
 			}
 
 			t := (pivot - r.From[axis]) * invDir[axis]
@@ -275,7 +270,7 @@ func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch cha
 
 		// Okay, we've reached a leaf.
 		// Now check for any intersections.
-		prims := currNode.(*kdtree.Leaf).GetValues()
+		prims := currNode.Values()
 		clist := make([]primitive.Collision, 0, len(prims))
 		for _, v := range prims {
 			p := v.(primitive.Primitive)
