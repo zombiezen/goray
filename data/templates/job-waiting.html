@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Goray - Job {{Name}}</title>
+        <style type="text/css">
+            #websocket_warning
+            {
+                font-style: italic;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Job #{{Name}}</h1>
+        <p id="loading">
+            <img src="/static/load.gif">
+            Rendering, please wait...
+        </p>
+        <p id="websocket_warning">Note: Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
+        <script type="text/javascript" src="/static/jquery.js"></script>
+        <script type="text/javascript" src="/static/job.js"></script>
+        <script type="text/javascript">
+            var jobName = "{{Name}}";
+            $(function()
+            {
+                if (!!window.WebSocket)
+                {
+                    $("#websocket_warning").hide();
+                    var feed = new StatusFeed(document.location.host, jobName);
+                    feed.onUpdate = function(st)
+                    {
+                        var img = $("<img/>", {src: "/output/" + jobName + ".png"});
+                        $("#loading").replaceWith(img);
+                    };
+                }
+                else
+                {
+                    $("#loading").hide();
+                }
+            });
+        </script>
+    </body>
+</html>

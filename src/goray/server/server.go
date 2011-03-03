@@ -72,7 +72,16 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
 	job, ok := server.JobManager.Get(jobName)
 	if ok {
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
-		server.templates.RenderResponse(w, "job.html", job)
+		// Check to see whether the job is done
+		job.Cond.L.Lock()
+		done := job.Done
+		job.Cond.L.Unlock()
+		// Render appropriate template
+		if done {
+			server.templates.RenderResponse(w, "job.html", job)
+		} else {
+			server.templates.RenderResponse(w, "job-waiting.html", job)
+		}
 	} else {
 		http.NotFound(w, req)
 	}
