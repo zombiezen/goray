@@ -23,16 +23,19 @@ type Job struct {
 	Name       string
 	YAML       io.Reader
 	OutputFile io.WriteCloser
+
 	Done       bool
-	Status     chan bool
+	Cond       *sync.Cond
+	statusLock sync.RWMutex
 }
 
-func (job Job) Render() (err os.Error) {
+func (job *Job) Render() (err os.Error) {
 	defer job.OutputFile.Close()
 	defer func() {
+		job.statusLock.Lock()
 		job.Done = true
-		job.Status <- job.Done
-		close(job.Status)
+		job.statusLock.Unlock()
+		job.Cond.Broadcast()
 	}()
 
 	sc := scene.New()
@@ -46,43 +49,70 @@ func (job Job) Render() (err os.Error) {
 	return
 }
 
+// JobManager maintains a render job queue and records completed jobs.
 type JobManager struct {
 	OutputDirectory string
-	jobs            map[string]Job
-	nextNum         int
-	lock            sync.RWMutex
+
+	jobs     map[string]*Job
+	jobQueue chan *Job
+	nextNum  int
+	lock     sync.RWMutex
 }
 
-func (manager *JobManager) New(yaml io.Reader) (j Job, err os.Error) {
+// NewJobManager creates a new, initialized job manager.
+func NewJobManager(outdir string, queueSize int) (manager *JobManager) {
+	manager = &JobManager{OutputDirectory: outdir}
+	manager.Init(queueSize)
+	return
+}
+
+// Init initializes the manager.  This function is called automatically by
+// NewJobManager.
+func (manager *JobManager) Init(queueSize int) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+
+	if manager.jobQueue != nil {
+		close(manager.jobQueue)
+	}
+	manager.jobs = make(map[string]*Job)
+	manager.jobQueue = make(chan *Job, queueSize)
+	manager.nextNum = 0
+}
+
+// New creates a new job and adds it to the job queue.
+func (manager *JobManager) New(yaml io.Reader) (j *Job, err os.Error) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
 	// Get next name
 	name := fmt.Sprintf("%04d", manager.nextNum)
-	manager.nextNum++
 	// Open output file
-	f, err := os.Open(
-		pathutil.Join(manager.OutputDirectory, name+".png"),
-		os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666,
-	)
-	if err != nil {
-		return
+	f := &deferredFile{
+		Path: pathutil.Join(manager.OutputDirectory, name+".png"),
+		Flag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
+		Perm: 0666,
 	}
 	// Create job
-	j = Job{
+	j = &Job{
 		Name:       name,
 		YAML:       yaml,
 		OutputFile: f,
-		Status:     make(chan bool),
 	}
-	if manager.jobs == nil {
-		manager.jobs = make(map[string]Job)
+	j.Cond = sync.NewCond(j.statusLock.RLocker())
+	// Try to add job to queue
+	select {
+	case manager.jobQueue <- j:
+		manager.jobs[name] = j
+		manager.nextNum++
+	default:
+		err = os.NewError("Job queue is full")
 	}
-	manager.jobs[name] = j
 	return
 }
 
-func (manager *JobManager) Get(name string) (j Job, ok bool) {
+// Get returns a job with the given name.
+func (manager *JobManager) Get(name string) (j *Job, ok bool) {
 	manager.lock.RLock()
 	defer manager.lock.RUnlock()
 
@@ -91,4 +121,52 @@ func (manager *JobManager) Get(name string) (j Job, ok bool) {
 	}
 	j, ok = manager.jobs[name]
 	return
+}
+
+// Stop causes the manager to stop accepting new jobs.
+func (manager *JobManager) Stop() {
+	close(manager.jobQueue)
+}
+
+// RenderJobs renders jobs in the queue until Stop is called.
+func (manager *JobManager) RenderJobs() {
+	for job := range manager.jobQueue {
+		job.Render()
+	}
+}
+
+// A deferredFile holds the parameters to an open call, and only opens the file
+// when a write occurs.
+type deferredFile struct {
+	Path string
+	Flag int
+	Perm uint32
+	file *os.File
+}
+
+// open opens the underlying file and returns any error.  This does nothing if
+// the file was already opened.
+func (f *deferredFile) open() (err os.Error) {
+	if f.file != nil {
+		return
+	}
+	f.file, err = os.Open(f.Path, f.Flag, f.Perm)
+	return
+}
+
+func (f *deferredFile) Write(p []byte) (n int, err os.Error) {
+	if f.file == nil {
+		err = f.open()
+		if err != nil {
+			return
+		}
+	}
+	return f.file.Write(p)
+}
+
+func (f *deferredFile) Close() (err os.Error) {
+	if f.file == nil {
+		return
+	}
+	return f.file.Close()
 }

@@ -31,7 +31,7 @@ func New(output, data string) (s *Server) {
 	s = &Server{
 		ServeMux:   http.NewServeMux(),
 		DataRoot:   data,
-		JobManager: &JobManager{OutputDirectory: output},
+		JobManager: NewJobManager(output, 5),
 		templates:  &TemplateLoader{Root: pathutil.Join(data, "templates")},
 	}
 	s.Handle("/", serverHandler{s, (*Server).handleSubmitJob})
@@ -41,6 +41,7 @@ func New(output, data string) (s *Server) {
 	}))
 	s.Handle("/static/", http.FileServer(pathutil.Join(data, "static"), "/static/"))
 	s.Handle("/output/", http.FileServer(output, "/output/"))
+	go s.JobManager.RenderJobs()
 	return
 }
 
@@ -55,8 +56,11 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) 
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
 		server.templates.RenderResponse(w, "submit.html", nil)
 	case "POST":
-		j, _ := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
-		go j.Render()
+		j, err := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
+		if err != nil {
+			http.Error(w, err.String(), http.StatusInternalServerError)
+			return
+		}
 		http.Redirect(w, req, "/job/"+j.Name, http.StatusMovedPermanently)
 	default:
 		http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
@@ -81,21 +85,20 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 	if err != nil {
 		return
 	}
+	// Find job
 	job, found := server.JobManager.Get(jobName)
 	if !found {
 		conn.PrintfLine("404 Job not found")
 		return
 	}
-
 	conn.PrintfLine("200 Job found")
-	if job.Done {
-		conn.PrintfLine("done")
-		return
+	// Notify when job is finished
+	job.Cond.L.Lock()
+	for !job.Done {
+		job.Cond.Wait()
 	}
-
-	// Wait for job to finish
-	<-job.Status
 	conn.PrintfLine("done")
+	job.Cond.L.Unlock()
 }
 
 type serverHandler struct {
