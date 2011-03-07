@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"http"
 	"net/textproto"
-	pathutil "path"
+	"path/filepath"
 	"strings"
 	"websocket"
 )
@@ -32,14 +32,14 @@ func New(output, data string) (s *Server) {
 		ServeMux:   http.NewServeMux(),
 		DataRoot:   data,
 		JobManager: NewJobManager(output, 5),
-		templates:  &TemplateLoader{Root: pathutil.Join(data, "templates")},
+		templates:  &TemplateLoader{Root: filepath.Join(data, "templates")},
 	}
 	s.Handle("/", serverHandler{s, (*Server).handleSubmitJob})
 	s.Handle("/job/", serverHandler{s, (*Server).handleViewJob})
 	s.Handle("/status", websocket.Handler(func(ws *websocket.Conn) {
 		s.handleStatus(ws)
 	}))
-	s.Handle("/static/", http.FileServer(pathutil.Join(data, "static"), "/static/"))
+	s.Handle("/static/", http.FileServer(filepath.Join(data, "static"), "/static/"))
 	s.Handle("/output/", http.FileServer(output, "/output/"))
 	go s.JobManager.RenderJobs()
 	return

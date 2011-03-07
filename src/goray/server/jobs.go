@@ -12,7 +12,7 @@ import (
 	"image/png"
 	"io"
 	"os"
-	pathutil "path"
+	"path/filepath"
 	"sync"
 	"goray/core/scene"
 	"goray/core/integrator"
@@ -89,7 +89,7 @@ func (manager *JobManager) New(yaml io.Reader) (j *Job, err os.Error) {
 	name := fmt.Sprintf("%04d", manager.nextNum)
 	// Open output file
 	f := &deferredFile{
-		Path: pathutil.Join(manager.OutputDirectory, name+".png"),
+		Path: filepath.Join(manager.OutputDirectory, name+".png"),
 		Flag: os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
 		Perm: 0666,
 	}

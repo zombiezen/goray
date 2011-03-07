@@ -12,7 +12,7 @@ import (
 	"http"
 	"io"
 	"os"
-	pathutil "path"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"template"
@@ -42,7 +42,7 @@ func (loader *TemplateLoader) Get(name string) (templ *template.Template, err os
 		return
 	}
 	// Load template
-	path := pathutil.Join(loader.Root, name)
+	path := filepath.Join(loader.Root, filepath.FromSlash(name))
 	templ = template.New(fmap)
 	templ.SetDelims("{{", "}}")
 	err = templ.ParseFile(path)
