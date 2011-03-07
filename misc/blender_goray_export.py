@@ -21,10 +21,11 @@ indent = '  '
 def write_file(path, scene):
     f = open(path, 'w')
     write_header(f)
+    write_integrator(f)
     write_camera(f, scene)
     write_lights(f, scene)
+    write_materials(f, scene)
     write_objects(f, scene)
-    write_integrator(f)
     print('...', file=f)
     f.close()
 
@@ -54,13 +55,31 @@ def write_mesh(f, obj):
         if len(face.vertices) == 3:
             # Triangle
             print(indent * 3 + "- vertices: [%d, %d, %d]" % (face.vertices[0], face.vertices[1], face.vertices[2]), file=f)
-            print(indent * 3 + "  material: !std!materials/debug { color: !goray!rgb [0.7, 0.7, 0.7] }", file=f)
+            print(indent * 3 + "  material: *mat%s" % (obj.data.materials[face.material_index].name), file=f)
         else:
             # Quad
             print(indent * 3 + "- vertices: [%d, %d, %d]" % (face.vertices[0], face.vertices[1], face.vertices[2]), file=f)
-            print(indent * 3 + "  material: !std!materials/debug { color: !goray!rgb [0.7, 0.7, 0.7] }", file=f)
+            print(indent * 3 + "  material: *mat%s" % (obj.data.materials[face.material_index].name), file=f)
             print(indent * 3 + "- vertices: [%d, %d, %d]" % (face.vertices[2], face.vertices[3], face.vertices[0]), file=f)
-            print(indent * 3 + "  material: !std!materials/debug { color: !goray!rgb [0.7, 0.7, 0.7] }", file=f)
+            print(indent * 3 + "  material: *mat%s" % (obj.data.materials[face.material_index].name), file=f)
+
+def write_materials(f, scene):
+    # Gather materials from objects in scene
+    mats = set()
+    for obj in scene.objects:
+        if obj.type == 'MESH':
+            mats |= set(obj.data.materials)
+    # We don't technically have a materials section, but goray lets us get away with it.
+    print("materials:", file=f)
+    for material in mats:
+        print(indent + "- &mat%s !std!materials/shinydiffuse" % (material.name), file=f)
+        print(indent * 2 + "color: !goray!rgb [%f, %f, %f]" % (material.diffuse_color.r, material.diffuse_color.g, material.diffuse_color.b), file=f)
+        print(indent * 2 + "diffuseReflect: %f" % (material.diffuse_intensity), file=f)
+        print(indent * 2 + "mirrorColor: !goray!rgb [%f, %f, %f]" % (material.specular_color.r, material.specular_color.g, material.specular_color.b), file=f)
+        print(indent * 2 + "specularReflect: %f" % (material.specular_intensity), file=f)
+        print(indent * 2 + "transparency: %f" % (1 - material.alpha), file=f)
+        print(indent * 2 + "translucency: %f" % (material.translucency), file=f)
+        print(indent * 2 + "transmit: %f" % (material.raytrace_transparency.filter), file=f)
 
 def write_lights(f, scene):
     # TODO: Handle no lights
