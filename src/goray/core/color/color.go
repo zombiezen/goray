@@ -21,13 +21,13 @@ import (
 )
 
 func quantizeComponent(f float64) uint32 {
-	temp := uint32(f * math.MaxUint16)
-	if temp > math.MaxUint16 {
+	switch {
+	case f > 1:
 		return math.MaxUint16
-	} else if temp < 0 {
+	case f < 0:
 		return 0
 	}
-	return temp
+	return uint32(f * math.MaxUint16)
 }
 
 // Alpha defines anything that has an alpha channel.
