@@ -37,6 +37,7 @@ variables.AddVariables(
 )
 env = Environment(
     TOOLS=['default', 'go'],
+    GOSTRIPTESTS=True,
     variables=variables,
 )
 Help(variables.GenerateHelpText(env))
