@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"http"
 	"image/png"
 	"runtime"
 	"syscall"
@@ -20,6 +21,7 @@ import (
 	"buildversion"
 	"goray/logging"
 	"goray/time"
+	"goray/server"
 	"goray/version"
 	"goray/core/integrator"
 	"goray/core/render"
@@ -27,8 +29,14 @@ import (
 	"goray/std/yamlscene"
 )
 
+var showHelp, showVersion bool
+var httpAddress string
+var outputPath string
+var debug int
+
 func printInstructions() {
-	fmt.Println("USAGE: goray [OPTION]... FILE")
+	fmt.Println("USAGE: goray [OPTIONS] FILE")
+	fmt.Println("       goray -http=:PORT [OPTIONS]")
 	fmt.Println("OPTIONS:")
 	flag.PrintDefaults()
 }
@@ -72,68 +80,73 @@ func logMemInfo() {
 	logging.MainLog.Debug("  [MEM] %d KiB/%d KiB", runtime.MemStats.Alloc/1024, runtime.MemStats.Sys/1024)
 }
 
-func main() {
-	var err os.Error
+func setupLogging() {
+	level := logging.Level(logging.InfoLevel - 10*debug)
+	writeHandler := logging.NewWriterHandler(os.Stdout)
+	logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
+}
 
-	showHelp := flag.Bool("help", false, "display this help")
-	format := flag.String("f", "png", "the output format")
-	outputPath := flag.String("o", "goray.png", "path for the output file")
-	//width := flag.Int("w", 100, "the output width")
-	//height := flag.Int("h", 100, "the output height")
-	debug := flag.Int("d", 0, "set debug verbosity level")
-	showVersion := flag.Bool("version", false, "display the version")
+func main() {
+	flag.BoolVar(&showHelp, "help", false, "display this help")
+	flag.BoolVar(&showVersion, "version", false, "display the version")
+	flag.StringVar(&httpAddress, "http", "", "start HTTP server")
+	flag.StringVar(&outputPath, "o", "", "path for the output")
+	flag.IntVar(&debug, "d", 0, "set debug verbosity level")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
 
 	flag.Usage = printInstructions
 	flag.Parse()
 
+	setupLogging()
+
+	runtime.GOMAXPROCS(*maxProcs)
+	logging.MainLog.Debug("Using %d processor(s)", runtime.GOMAXPROCS(0))
+
+	var exitCode int
 	switch {
-	case *showHelp:
+	case showHelp:
 		printInstructions()
-		return
-	case *showVersion:
+	case showVersion:
 		printVersion()
-		return
+	case httpAddress != "":
+		exitCode = httpServer()
+	default:
+		exitCode = singleFile()
+	}
+	logging.MainLog.Close()
+	os.Exit(exitCode)
+}
+
+func singleFile() int {
+	if flag.NArg() != 1 {
+		printInstructions()
+		return 1
 	}
 
 	// Open input file
-	if flag.NArg() != 1 {
-		printInstructions()
-		return
-	}
 	inFile, err := os.Open(flag.Arg(0), os.O_RDONLY, 0)
 	if err != nil {
 		logging.MainLog.Critical("Error opening input file: %v", err)
-		return
+		return 1
 	}
 	defer inFile.Close()
-
-	// Set up logging
-	{
-		level := logging.Level(logging.InfoLevel - 10*(*debug))
-		writeHandler := logging.NewWriterHandler(os.Stdout)
-		logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
-	}
-	defer logging.MainLog.Close()
-
-	// Change the number of processors to use
-	runtime.GOMAXPROCS(*maxProcs)
-	logging.MainLog.Debug("Using %d processor(s)", runtime.GOMAXPROCS(0))
 
 	// Open output file
 	// Normally, we want to truncate upon open, but we do that right before
 	// writing data so that we preserve data for as long as possible.
-	outFile, err := os.Open(*outputPath, os.O_WRONLY|os.O_CREAT, 0644)
+	if outputPath == "" {
+		outputPath = "goray.png"
+	}
+	outFile, err := os.Open(outputPath, os.O_WRONLY|os.O_CREAT, 0644)
 	if err != nil {
 		logging.MainLog.Critical("Error opening output file: %v", err)
-		return
+		return 1
 	}
 	defer outFile.Close()
 
 	// Set up scene
-	sc := scene.New()
-
 	logging.MainLog.Info("Setting up scene...")
+	sc := scene.New()
 	sc.GetLog().AddHandler(logging.NewFormatFilter(
 		logging.MainLog,
 		func(rec logging.Record) string {
@@ -145,7 +158,7 @@ func main() {
 	integ, err := yamlscene.Load(inFile, sc)
 	if err != nil {
 		logging.MainLog.Critical("Error parsing input file: %v", err)
-		return
+		return 1
 	}
 
 	logMemInfo()
@@ -161,9 +174,9 @@ func main() {
 	logMemInfo()
 	garbage()
 
-	logging.MainLog.Info("Rendering...")
-
+	// Render scene
 	var outputImage *render.Image
+	logging.MainLog.Info("Rendering...")
 	renderTime := time.Stopwatch(func() {
 		renderLog := logging.NewFormatFilter(
 			logging.MainLog,
@@ -173,27 +186,37 @@ func main() {
 		)
 		outputImage = integrator.Render(sc, integ, renderLog)
 	})
-	if err != nil {
-		logging.MainLog.Error("Rendering error: %v", err)
-		return
-	}
 	logging.MainLog.Info("Render finished in %v", renderTime)
-
 	logging.MainLog.Info("TOTAL TIME: %v", finalizeTime+renderTime)
-
-	logging.MainLog.Info("Writing and finishing...")
 
 	logMemInfo()
 	garbage()
 
+	// Write file
+	logging.MainLog.Info("Writing and finishing...")
 	outFile.Truncate(0)
-	switch *format {
-	case "png":
-		err = png.Encode(outFile, outputImage)
-	}
-
+	err = png.Encode(outFile, outputImage)
 	if err != nil {
 		logging.MainLog.Critical("Error while writing: %v", err)
-		return
+		return 1
 	}
+
+	return 0
+}
+
+func httpServer() int {
+	if flag.NArg() != 0 {
+		printInstructions()
+		return 1
+	}
+	if outputPath == "" {
+		outputPath = "output"
+	}
+	s := server.New(outputPath, "data")
+	err := http.ListenAndServe(httpAddress, s)
+	if err != nil {
+		logging.MainLog.Critical("ListenAndServe: %v", err)
+		return 1
+	}
+	return 0
 }

@@ -110,9 +110,8 @@ def get_objs(e):
 l = get_objs(env)
 Alias('lib', l)
 program = env.GoProgram(env.subst('$BIN_DIR/goray'), env.subst('$BUILD_DIR/main.go'))
-http_program = env.GoProgram(env.subst('$BIN_DIR/goray-http'), env.subst('$BUILD_DIR/server.go'))
 
-Default(program, http_program)
+Default(program)
 
 # Test build
 test_suite = test_env.GoProgram(
