@@ -17,13 +17,15 @@ import (
 	"path/filepath"
 	"strings"
 	"websocket"
+
+	"goray/server/job"
 )
 
 type Server struct {
 	*http.ServeMux
 
 	DataRoot   string
-	JobManager *JobManager
+	JobManager *job.Manager
 	templates  *TemplateLoader
 }
 
@@ -31,11 +33,12 @@ func New(output, data string) (s *Server) {
 	s = &Server{
 		ServeMux:   http.NewServeMux(),
 		DataRoot:   data,
-		JobManager: NewJobManager(output, 5),
+		JobManager: job.NewManager(output, 5),
 		templates:  &TemplateLoader{Root: filepath.Join(data, "templates")},
 	}
-	s.Handle("/", serverHandler{s, (*Server).handleSubmitJob})
+	s.Handle("/", serverHandler{s, (*Server).handleIndex})
 	s.Handle("/job/", serverHandler{s, (*Server).handleViewJob})
+	s.Handle("/submit", serverHandler{s, (*Server).handleSubmitJob})
 	s.Handle("/status", websocket.Handler(func(ws *websocket.Conn) {
 		s.handleStatus(ws)
 	}))
@@ -45,12 +48,18 @@ func New(output, data string) (s *Server) {
 	return
 }
 
-func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) {
+func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/" {
 		http.NotFound(w, req)
 		return
 	}
+	w.SetHeader("Content-Type", "text/html; charset=utf-8")
+	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
+		"Jobs": server.JobManager.List(),
+	})
+}
 
+func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
@@ -69,18 +78,17 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) 
 
 func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
 	jobName := req.URL.Path[strings.LastIndex(req.URL.Path, "/")+1:]
-	job, ok := server.JobManager.Get(jobName)
+	j, ok := server.JobManager.Get(jobName)
 	if ok {
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
 		// Check to see whether the job is done
-		job.Cond.L.Lock()
-		done := job.Done
-		job.Cond.L.Unlock()
+		status := j.Status()
 		// Render appropriate template
-		if done {
-			server.templates.RenderResponse(w, "job.html", job)
-		} else {
-			server.templates.RenderResponse(w, "job-waiting.html", job)
+		switch status {
+		case job.StatusDone:
+			server.templates.RenderResponse(w, "job.html", j)
+		default:
+			server.templates.RenderResponse(w, "job-waiting.html", j)
 		}
 	} else {
 		http.NotFound(w, req)
@@ -95,19 +103,16 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 		return
 	}
 	// Find job
-	job, found := server.JobManager.Get(jobName)
+	j, found := server.JobManager.Get(jobName)
 	if !found {
 		conn.PrintfLine("404 Job not found")
 		return
 	}
 	conn.PrintfLine("200 Job found")
 	// Notify when job is finished
-	job.Cond.L.Lock()
-	for !job.Done {
-		job.Cond.Wait()
+	for status := range j.StatusChan() {
+		conn.PrintfLine("%s", status.Name())
 	}
-	conn.PrintfLine("done")
-	job.Cond.L.Unlock()
 }
 
 type serverHandler struct {

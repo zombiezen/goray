@@ -26,10 +26,17 @@
                 {
                     $("#websocket_warning").hide();
                     var feed = new StatusFeed(document.location.host, jobName);
-                    feed.onUpdate = function(st)
+                    feed.onUpdate = function(stat)
                     {
-                        var img = $("<img/>", {src: "/output/" + jobName + ".png"});
-                        $("#loading").replaceWith(img);
+                        if (stat == "done")
+                        {
+                            var img = $("<img/>", {src: "/output/" + jobName + ".png"});
+                            $("#loading").replaceWith(img);
+                        }
+                        else if (stat == "error")
+                        {
+                            $("#loading").replaceWith($("<p>An error occurred in processing your render job.</p>"));
+                        }
                     };
                 }
                 else

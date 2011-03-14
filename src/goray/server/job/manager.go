@@ -1,56 +1,22 @@
 //
-//  goray/server/jobs.go
+//  goray/server/job/manager.go
 //  goray
 //
-//  Created by Ross Light on 2011-02-05.
+//  Created by Ross Light on 2011-03-14.
 //
 
-package server
+package job
 
 import (
 	"fmt"
-	"image/png"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
-	"goray/core/scene"
-	"goray/core/integrator"
-	"goray/std/yamlscene"
 )
 
-type Job struct {
-	Name       string
-	YAML       io.Reader
-	OutputFile io.WriteCloser
-
-	Done       bool
-	Cond       *sync.Cond
-	statusLock sync.RWMutex
-}
-
-func (job *Job) Render() (err os.Error) {
-	defer job.OutputFile.Close()
-	defer func() {
-		job.statusLock.Lock()
-		job.Done = true
-		job.statusLock.Unlock()
-		job.Cond.Broadcast()
-	}()
-
-	sc := scene.New()
-	integ, err := yamlscene.Load(job.YAML, sc)
-	if err != nil {
-		return
-	}
-	sc.Update()
-	outputImage := integrator.Render(sc, integ, nil)
-	err = png.Encode(job.OutputFile, outputImage)
-	return
-}
-
-// JobManager maintains a render job queue and records completed jobs.
-type JobManager struct {
+// Manager maintains a render job queue and records completed jobs.
+type Manager struct {
 	OutputDirectory string
 
 	jobs     map[string]*Job
@@ -59,16 +25,16 @@ type JobManager struct {
 	lock     sync.RWMutex
 }
 
-// NewJobManager creates a new, initialized job manager.
-func NewJobManager(outdir string, queueSize int) (manager *JobManager) {
-	manager = &JobManager{OutputDirectory: outdir}
+// NewManager creates a new, initialized job manager.
+func NewManager(outdir string, queueSize int) (manager *Manager) {
+	manager = &Manager{OutputDirectory: outdir}
 	manager.Init(queueSize)
 	return
 }
 
 // Init initializes the manager.  This function is called automatically by
 // NewJobManager.
-func (manager *JobManager) Init(queueSize int) {
+func (manager *Manager) Init(queueSize int) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
@@ -81,7 +47,7 @@ func (manager *JobManager) Init(queueSize int) {
 }
 
 // New creates a new job and adds it to the job queue.
-func (manager *JobManager) New(yaml io.Reader) (j *Job, err os.Error) {
+func (manager *Manager) New(yaml io.Reader) (j *Job, err os.Error) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
@@ -99,7 +65,7 @@ func (manager *JobManager) New(yaml io.Reader) (j *Job, err os.Error) {
 		YAML:       yaml,
 		OutputFile: f,
 	}
-	j.Cond = sync.NewCond(j.statusLock.RLocker())
+	j.cond = sync.NewCond(j.lock.RLocker())
 	// Try to add job to queue
 	select {
 	case manager.jobQueue <- j:
@@ -112,24 +78,30 @@ func (manager *JobManager) New(yaml io.Reader) (j *Job, err os.Error) {
 }
 
 // Get returns a job with the given name.
-func (manager *JobManager) Get(name string) (j *Job, ok bool) {
+func (manager *Manager) Get(name string) (j *Job, ok bool) {
 	manager.lock.RLock()
 	defer manager.lock.RUnlock()
-
-	if manager.jobs == nil {
-		return
-	}
 	j, ok = manager.jobs[name]
 	return
 }
 
+func (manager *Manager) List() (jobs []*Job) {
+	manager.lock.RLock()
+	defer manager.lock.RUnlock()
+	jobs = make([]*Job, 0, len(manager.jobs))
+	for _, j := range manager.jobs {
+		jobs = append(jobs, j)
+	}
+	return
+}
+
 // Stop causes the manager to stop accepting new jobs.
-func (manager *JobManager) Stop() {
+func (manager *Manager) Stop() {
 	close(manager.jobQueue)
 }
 
 // RenderJobs renders jobs in the queue until Stop is called.
-func (manager *JobManager) RenderJobs() {
+func (manager *Manager) RenderJobs() {
 	for job := range manager.jobQueue {
 		job.Render()
 	}

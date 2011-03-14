@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Goray</title>
+    </head>
+    <body>
+        <h1>Goray</h1>
+        <a href="/submit">Submit a Job</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{.repeated section Jobs}}
+                <tr>
+                    <td><a href="/job/{{Name}}">{{Name}}</a></td>
+                    <td>{{Status}}</td>
+                </tr>
+                {{.end}}
+            </tbody>
+        </table>
+    </body>
+</html>
