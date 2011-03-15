@@ -43,10 +43,10 @@ func (status Status) Finished() bool { return status.Code.Finished() }
 type StatusCode int
 
 const (
-	StatusNew StatusCode = 0
-	StatusDone = 200
+	StatusNew       StatusCode = 0
+	StatusDone      = 200
 	StatusRendering = 100
-	StatusError = 500
+	StatusError     = 500
 )
 
 func (code StatusCode) String() string {
