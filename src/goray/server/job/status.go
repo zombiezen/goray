@@ -9,7 +9,26 @@ package job
 
 import (
 	"fmt"
+	"os"
+	"goray/time"
 )
+
+type Status struct {
+	Code  StatusCode
+	Error os.Error
+
+	ReadTime   time.Time
+	UpdateTime time.Time
+	RenderTime time.Time
+	WriteTime  time.Time
+}
+
+func (status Status) TotalTime() time.Time {
+	return status.ReadTime + status.UpdateTime + status.RenderTime + status.WriteTime
+}
+
+func (status Status) Started() bool  { return status.Code.Started() }
+func (status Status) Finished() bool { return status.Code.Finished() }
 
 type StatusCode int
 
@@ -20,8 +39,8 @@ const (
 	StatusError
 )
 
-func (status StatusCode) String() string {
-	switch status {
+func (code StatusCode) String() string {
+	switch code {
 	case StatusNew:
 		return "New"
 	case StatusDone:
@@ -31,11 +50,11 @@ func (status StatusCode) String() string {
 	case StatusError:
 		return "Failed"
 	}
-	return fmt.Sprintf("StatusCode(%d)", int(status))
+	return fmt.Sprintf("StatusCode(%d)", int(code))
 }
 
-func (status StatusCode) GoString() string {
-	switch status {
+func (code StatusCode) GoString() string {
+	switch code {
 	case StatusNew:
 		return "job.StatusNew"
 	case StatusDone:
@@ -45,12 +64,12 @@ func (status StatusCode) GoString() string {
 	case StatusError:
 		return "job.StatusError"
 	}
-	return fmt.Sprintf("job.StatusCode(%d)", int(status))
+	return fmt.Sprintf("job.StatusCode(%d)", int(code))
 }
 
-// Name returns the internal name of the status.
-func (status StatusCode) Name() string {
-	switch status {
+// Name returns the internal name of the code.
+func (code StatusCode) Name() string {
+	switch code {
 	case StatusNew:
 		return "new"
 	case StatusDone:
@@ -60,13 +79,13 @@ func (status StatusCode) Name() string {
 	case StatusError:
 		return "error"
 	}
-	return fmt.Sprint(int(status))
+	return fmt.Sprint(int(code))
 }
 
-func (status StatusCode) Started() bool {
-	return status != StatusNew
+func (code StatusCode) Started() bool {
+	return code != StatusNew
 }
 
-func (status StatusCode) Finished() bool {
-	return status == StatusDone || status == StatusError
+func (code StatusCode) Finished() bool {
+	return code == StatusDone || code == StatusError
 }

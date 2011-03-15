@@ -13,9 +13,11 @@ import (
 	"io"
 	"os"
 	"sync"
+	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/integrator"
 	"goray/std/yamlscene"
+	"goray/time"
 )
 
 type Job struct {
@@ -23,26 +25,19 @@ type Job struct {
 	YAML       io.Reader
 	OutputFile io.WriteCloser
 
-	status StatusCode
-	err    os.Error
+	status Status
 	lock   sync.RWMutex
 	cond   *sync.Cond
 }
 
-func (job *Job) Status() StatusCode {
+func (job *Job) Status() Status {
 	job.lock.RLock()
 	defer job.lock.RUnlock()
 	return job.status
 }
 
-func (job *Job) Error() os.Error {
-	job.lock.RLock()
-	defer job.lock.RUnlock()
-	return job.err
-}
-
-func (job *Job) StatusChan() <-chan StatusCode {
-	ch := make(chan StatusCode)
+func (job *Job) StatusChan() <-chan Status {
+	ch := make(chan Status)
 	go func() {
 		defer close(ch)
 		job.cond.L.Lock()
@@ -51,7 +46,7 @@ func (job *Job) StatusChan() <-chan StatusCode {
 		stat := job.status
 		for !stat.Finished() {
 			job.cond.Wait()
-			if job.status != stat {
+			if job.status.Code != stat.Code {
 				ch <- job.status
 			}
 			stat = job.status
@@ -61,7 +56,7 @@ func (job *Job) StatusChan() <-chan StatusCode {
 	return ch
 }
 
-func (job *Job) changeStatus(stat StatusCode) {
+func (job *Job) changeStatus(stat Status) {
 	job.lock.Lock()
 	defer job.lock.Unlock()
 	job.status = stat
@@ -70,22 +65,37 @@ func (job *Job) changeStatus(stat StatusCode) {
 
 func (job *Job) Render() (err os.Error) {
 	defer job.OutputFile.Close()
-	job.changeStatus(StatusRendering)
+
+	var status Status
+	status.Code = StatusRendering
+	job.changeStatus(status)
 	defer func() {
 		if err != nil {
-			job.changeStatus(StatusError)
+			status.Code, status.Error = StatusError, err
+			job.changeStatus(status)
 		} else {
-			job.changeStatus(StatusDone)
+			status.Code = StatusDone
+			job.changeStatus(status)
 		}
 	}()
 
 	sc := scene.New()
-	integ, err := yamlscene.Load(job.YAML, sc)
+	var integ integrator.Integrator
+	status.ReadTime = time.Stopwatch(func() {
+		integ, err = yamlscene.Load(job.YAML, sc)
+	})
 	if err != nil {
 		return
 	}
-	sc.Update()
-	outputImage := integrator.Render(sc, integ, nil)
-	err = png.Encode(job.OutputFile, outputImage)
+	status.UpdateTime = time.Stopwatch(func() {
+		sc.Update()
+	})
+	var outputImage *render.Image
+	status.RenderTime = time.Stopwatch(func() {
+		outputImage = integrator.Render(sc, integ, nil)
+	})
+	status.WriteTime = time.Stopwatch(func() {
+		err = png.Encode(job.OutputFile, outputImage)
+	})
 	return
 }
