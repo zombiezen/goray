@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+Import('env')
+
+packages = [
+    env.Go('../server', ['server.go', 'templates.go']),
+    env.Go('job', Glob('job/*.go')),
+    env.Go('urls', 'urls.go'),
+]
+
+Return('packages')

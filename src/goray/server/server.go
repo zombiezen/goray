@@ -16,16 +16,15 @@ import (
 	"io"
 	"net/textproto"
 	"path/filepath"
-	"strings"
 	"strconv"
 	"websocket"
 
 	"goray/server/job"
+	"goray/server/urls"
 )
 
 type Server struct {
-	*http.ServeMux
-
+	Resolver   *urls.RegexResolver
 	DataRoot   string
 	JobManager *job.Manager
 	templates  *TemplateLoader
@@ -33,35 +32,34 @@ type Server struct {
 
 func New(manager *job.Manager, data string) (s *Server) {
 	s = &Server{
-		ServeMux:   http.NewServeMux(),
 		DataRoot:   data,
 		JobManager: manager,
 		templates:  &TemplateLoader{Root: filepath.Join(data, "templates")},
 	}
-	s.Handle("/", serverHandler{s, (*Server).handleIndex})
-	s.Handle("/job/", serverHandler{s, (*Server).handleViewJob})
-	s.Handle("/submit", serverHandler{s, (*Server).handleSubmitJob})
-	s.Handle("/status", websocket.Handler(func(ws *websocket.Conn) {
-		s.handleStatus(ws)
-	}))
-	s.Handle("/static/", http.FileServer(filepath.Join(data, "static"), "/static/"))
-	s.Handle("/output/", serverHandler{s, (*Server).handleOutput})
+	s.Resolver = urls.Patterns(``,
+		urls.New(`^$`, serverView{s, (*Server).handleIndex}, "index"),
+		urls.New(`^job/([0-9]+)$`, serverView{s, (*Server).handleViewJob}, "view"),
+		urls.New(`^submit$`, serverView{s, (*Server).handleSubmitJob}, "submit"),
+		urls.New(`^status$`, urls.HandlerView{websocket.Handler(func(ws *websocket.Conn) { s.handleStatus(ws) })}, "status"),
+		urls.New(`^static/`, urls.HandlerView{http.FileServer(filepath.Join(data, "static"), "/static/")}, "static"),
+		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
+	)
 	go s.JobManager.RenderJobs()
 	return
 }
 
-func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path != "/" {
-		http.NotFound(w, req)
-		return
-	}
+func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	server.Resolver.ServeHTTP(w, req)
+}
+
+func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args []string) {
 	w.SetHeader("Content-Type", "text/html; charset=utf-8")
 	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
 		"Jobs": server.JobManager.List(),
 	})
 }
 
-func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) {
+func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, args []string) {
 	switch req.Method {
 	case "GET":
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
@@ -78,9 +76,8 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
-	jobName := req.URL.Path[strings.LastIndex(req.URL.Path, "/")+1:]
-	j, ok := server.JobManager.Get(jobName)
+func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, args []string) {
+	j, ok := server.JobManager.Get(args[0])
 	if ok {
 		w.SetHeader("Content-Type", "text/html; charset=utf-8")
 		// Check to see whether the job is done
@@ -126,9 +123,8 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 	}
 }
 
-func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request) {
-	jobName := req.URL.Path[strings.LastIndex(req.URL.Path, "/")+1:]
-	j, ok := server.JobManager.Get(jobName)
+func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request, args []string) {
+	j, ok := server.JobManager.Get(args[0])
 	if ok && j.Status().Code == job.StatusDone {
 		w.SetHeader("Content-Type", "image/png; charset=utf-8")
 		r, err := server.JobManager.Storage.OpenReader(j)
@@ -149,11 +145,11 @@ func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-type serverHandler struct {
+type serverView struct {
 	Server *Server
-	Func   func(*Server, http.ResponseWriter, *http.Request)
+	Func   func(*Server, http.ResponseWriter, *http.Request, []string)
 }
 
-func (h serverHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	h.Func(h.Server, w, req)
+func (v serverView) Render(w http.ResponseWriter, req *http.Request, args []string) {
+	v.Func(v.Server, w, req, args)
 }

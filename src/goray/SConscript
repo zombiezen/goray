@@ -5,14 +5,19 @@ Import('env')
 root_packages = [
     env.Go('logging', Glob('logging/*.go')),
     env.Go('montecarlo.go'),
-    env.Go('server', Glob('server/*.go')),
-    env.Go('server/job', Glob('server/job/*.go')),
     env.Go('sampleutil.go'),
     env.Go('time', Glob('time/*.go')),
     env.Go('version'),
 ]
 
-subpackages = SConscript(['core/SConscript', 'std/SConscript'], exports='env')
+subpackages = SConscript(
+    [
+        'core/SConscript',
+        'std/SConscript',
+        'server/SConscript',
+    ],
+    exports='env',
+)
 packages = Flatten([root_packages, subpackages])
 
 Return('packages')
