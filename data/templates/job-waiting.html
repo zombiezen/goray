@@ -11,11 +11,8 @@
     </head>
     <body>
         <h1>Job #{{Name}}</h1>
-        <p id="loading">
-            <img src="/static/load.gif">
-            Rendering, please wait...
-        </p>
-        <p id="websocket_warning">Note: Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
+        <div id="viewport">&nbsp;</div>
+        <p id="websocket_warning">Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
         <script type="text/javascript" src="/static/jquery.js"></script>
         <script type="text/javascript" src="/static/job.js"></script>
         <script type="text/javascript">
@@ -25,23 +22,56 @@
                 if (!!window.WebSocket)
                 {
                     $("#websocket_warning").hide();
+                    $("#viewport").append("<p><img src=\"/static/load.gif\"> Contacting server...</p>");
                     var feed = new StatusFeed(document.location.host, jobName);
-                    feed.onUpdate = function(stat)
+                    var code = -1;
+                    feed.onCode = function(stat)
                     {
-                        if (stat == "done")
+                        code = stat;
+                        switch (stat)
                         {
-                            var img = $("<img/>", {src: "/output/" + jobName + ".png"});
-                            $("#loading").replaceWith(img);
-                        }
-                        else if (stat == "error")
-                        {
-                            $("#loading").replaceWith($("<p>An error occurred in processing your render job.</p>"));
+                            case 0:
+                                // New
+                                $("#viewport").html("<p><img src=\"/static/load.gif\"> In queue, please wait...</p>");
+                                break;
+                            case 100:
+                                // Render In Progress
+                                $("#viewport").html("<p><img src=\"/static/load.gif\"> Rendering, please wait...</p>");
+                                break;
+                            case 200:
+                                // Done
+                                var img = $("<img/>", {src: "/output/" + jobName + ".png"});
+                                $("#viewport")
+                                    .empty()
+                                    .append(img)
+                                ;
+                                break;
+                            case 404:
+                                // Not found
+                                $("#viewport").html("<p>Job not found</p>");
+                                break;
+                            case 500:
+                                // Error
+                                $("#viewport")
+                                    .empty()
+                                    .append("<pre id=\"render_error\"></pre>")
+                                ;
+                                break;
                         }
                     };
-                }
-                else
-                {
-                    $("#loading").hide();
+                    feed.onData = function(line)
+                    {
+                        switch (code)
+                        {
+                            case 200:
+                                $("#viewport").append("<p>Total Time: " + line + "</p>");
+                                break;
+                            case 500:
+                                var err = $("#render_error");
+                                err.text(err.text() + line + "\r\n");
+                                break;
+                        }
+                    };
                 }
             });
         </script>

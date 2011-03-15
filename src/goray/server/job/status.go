@@ -23,6 +23,16 @@ type Status struct {
 	WriteTime  time.Time
 }
 
+func (status Status) String() string {
+	switch status.Code {
+	case StatusDone:
+		return fmt.Sprintf("%v (%v)", status.Code, status.TotalTime())
+	case StatusError:
+		return fmt.Sprintf("%v: %v", status.Code, status.Error)
+	}
+	return status.Code.String()
+}
+
 func (status Status) TotalTime() time.Time {
 	return status.ReadTime + status.UpdateTime + status.RenderTime + status.WriteTime
 }
@@ -33,10 +43,10 @@ func (status Status) Finished() bool { return status.Code.Finished() }
 type StatusCode int
 
 const (
-	StatusNew StatusCode = iota
-	StatusDone
-	StatusRendering
-	StatusError
+	StatusNew StatusCode = 0
+	StatusDone = 200
+	StatusRendering = 100
+	StatusError = 500
 )
 
 func (code StatusCode) String() string {
@@ -50,7 +60,7 @@ func (code StatusCode) String() string {
 	case StatusError:
 		return "Failed"
 	}
-	return fmt.Sprintf("StatusCode(%d)", int(code))
+	return fmt.Sprintf("%d", int(code))
 }
 
 func (code StatusCode) GoString() string {
@@ -65,21 +75,6 @@ func (code StatusCode) GoString() string {
 		return "job.StatusError"
 	}
 	return fmt.Sprintf("job.StatusCode(%d)", int(code))
-}
-
-// Name returns the internal name of the code.
-func (code StatusCode) Name() string {
-	switch code {
-	case StatusNew:
-		return "new"
-	case StatusDone:
-		return "done"
-	case StatusRendering:
-		return "rendering"
-	case StatusError:
-		return "error"
-	}
-	return fmt.Sprint(int(code))
 }
 
 func (code StatusCode) Started() bool {

@@ -87,6 +87,8 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
 		switch status.Code {
 		case job.StatusDone:
 			server.templates.RenderResponse(w, "job.html", j)
+		case job.StatusError:
+			server.templates.RenderResponse(w, "job-error.html", j)
 		default:
 			server.templates.RenderResponse(w, "job-waiting.html", j)
 		}
@@ -108,10 +110,17 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 		conn.PrintfLine("404 Job not found")
 		return
 	}
-	conn.PrintfLine("200 Job found")
 	// Notify when job is finished
 	for status := range j.StatusChan() {
-		conn.PrintfLine("%s", status.Code.Name())
+		conn.PrintfLine("%d %s", int(status.Code), status.Code)
+		switch status.Code {
+		case job.StatusDone:
+			conn.PrintfLine("")
+			conn.PrintfLine("%v", status.TotalTime())
+		case job.StatusError:
+			conn.PrintfLine("")
+			conn.PrintfLine("%s", status.Error)
+		}
 	}
 }
 

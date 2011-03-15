@@ -44,6 +44,7 @@ func (job *Job) StatusChan() <-chan Status {
 		defer job.cond.L.Unlock()
 
 		stat := job.status
+		ch <- stat
 		for !stat.Finished() {
 			job.cond.Wait()
 			if job.status.Code != stat.Code {
@@ -51,7 +52,6 @@ func (job *Job) StatusChan() <-chan Status {
 			}
 			stat = job.status
 		}
-		ch <- stat
 	}()
 	return ch
 }
