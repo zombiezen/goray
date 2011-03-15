@@ -22,6 +22,7 @@ import (
 	"goray/logging"
 	"goray/time"
 	"goray/server"
+	"goray/server/job"
 	"goray/version"
 	"goray/core/integrator"
 	"goray/core/render"
@@ -214,8 +215,14 @@ func httpServer() int {
 	if outputPath == "" {
 		outputPath = "output"
 	}
-	s := server.New(outputPath, "data")
-	err := http.ListenAndServe(httpAddress, s)
+	storage, err := job.NewFileStorage(outputPath)
+	if err != nil {
+		logging.MainLog.Critical("FileStorage: %v", err)
+		return 1
+	}
+
+	s := server.New(job.NewManager(storage, 5), "data")
+	err = http.ListenAndServe(httpAddress, s)
 	if err != nil {
 		logging.MainLog.Critical("ListenAndServe: %v", err)
 		return 1

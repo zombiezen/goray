@@ -13,9 +13,11 @@ package server
 import (
 	"bytes"
 	"http"
+	"io"
 	"net/textproto"
 	"path/filepath"
 	"strings"
+	"strconv"
 	"websocket"
 
 	"goray/server/job"
@@ -29,11 +31,11 @@ type Server struct {
 	templates  *TemplateLoader
 }
 
-func New(output, data string) (s *Server) {
+func New(manager *job.Manager, data string) (s *Server) {
 	s = &Server{
 		ServeMux:   http.NewServeMux(),
 		DataRoot:   data,
-		JobManager: job.NewManager(output, 5),
+		JobManager: manager,
 		templates:  &TemplateLoader{Root: filepath.Join(data, "templates")},
 	}
 	s.Handle("/", serverHandler{s, (*Server).handleIndex})
@@ -43,7 +45,7 @@ func New(output, data string) (s *Server) {
 		s.handleStatus(ws)
 	}))
 	s.Handle("/static/", http.FileServer(filepath.Join(data, "static"), "/static/"))
-	s.Handle("/output/", http.FileServer(output, "/output/"))
+	s.Handle("/output/", serverHandler{s, (*Server).handleOutput})
 	go s.JobManager.RenderJobs()
 	return
 }
@@ -121,6 +123,29 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 			conn.PrintfLine("")
 			conn.PrintfLine("%s", status.Error)
 		}
+	}
+}
+
+func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request) {
+	jobName := req.URL.Path[strings.LastIndex(req.URL.Path, "/")+1:]
+	j, ok := server.JobManager.Get(jobName)
+	if ok && j.Status().Code == job.StatusDone {
+		w.SetHeader("Content-Type", "image/png; charset=utf-8")
+		r, err := server.JobManager.Storage.OpenReader(j)
+		if err != nil {
+			http.Error(w, err.String(), http.StatusInternalServerError)
+			return
+		}
+		if seeker, ok := r.(io.Seeker); ok {
+			size, err := seeker.Seek(0, 2)
+			if err == nil {
+				w.SetHeader("Content-Length", strconv.Itoa64(size))
+			}
+			seeker.Seek(0, 0)
+		}
+		io.Copy(w, r)
+	} else {
+		http.NotFound(w, req)
 	}
 }
 

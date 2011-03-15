@@ -21,13 +21,22 @@ import (
 )
 
 type Job struct {
-	Name       string
-	YAML       io.Reader
-	OutputFile io.WriteCloser
+	Name   string
+	Source io.Reader
 
 	status Status
 	lock   sync.RWMutex
 	cond   *sync.Cond
+}
+
+// New returns a newly allocated job structure.
+func New(name string, source io.Reader) (job *Job) {
+	job = &Job{
+		Name:   name,
+		Source: source,
+	}
+	job.cond = sync.NewCond(job.lock.RLocker())
+	return
 }
 
 func (job *Job) Status() Status {
@@ -56,33 +65,31 @@ func (job *Job) StatusChan() <-chan Status {
 	return ch
 }
 
-func (job *Job) changeStatus(stat Status) {
+func (job *Job) ChangeStatus(stat Status) {
 	job.lock.Lock()
 	defer job.lock.Unlock()
 	job.status = stat
 	job.cond.Broadcast()
 }
 
-func (job *Job) Render() (err os.Error) {
-	defer job.OutputFile.Close()
-
+func (job *Job) Render(w io.Writer) (err os.Error) {
 	var status Status
 	status.Code = StatusRendering
-	job.changeStatus(status)
+	job.ChangeStatus(status)
 	defer func() {
 		if err != nil {
 			status.Code, status.Error = StatusError, err
-			job.changeStatus(status)
+			job.ChangeStatus(status)
 		} else {
 			status.Code = StatusDone
-			job.changeStatus(status)
+			job.ChangeStatus(status)
 		}
 	}()
 
 	sc := scene.New()
 	var integ integrator.Integrator
 	status.ReadTime = time.Stopwatch(func() {
-		integ, err = yamlscene.Load(job.YAML, sc)
+		integ, err = yamlscene.Load(job.Source, sc)
 	})
 	if err != nil {
 		return
@@ -95,7 +102,7 @@ func (job *Job) Render() (err os.Error) {
 		outputImage = integrator.Render(sc, integ, nil)
 	})
 	status.WriteTime = time.Stopwatch(func() {
-		err = png.Encode(job.OutputFile, outputImage)
+		err = png.Encode(w, outputImage)
 	})
 	return
 }
