@@ -120,19 +120,115 @@ type followFrame struct {
 	point vector.Vector3D
 }
 
-type collideList []primitive.Collision
+type kdFollower struct {
+	Ray              ray.Ray
+	MaxDist, MinDist float64
 
-func (cl collideList) Len() int { return len(cl) }
-
-func (cl collideList) Less(a, b int) bool {
-	return cl[a].RayDepth < cl[b].RayDepth
+	currNode              *kdtree.Node
+	enterStack, exitStack []followFrame
 }
 
-func (cl collideList) Swap(a, b int) {
-	cl[a], cl[b] = cl[b], cl[a]
+func (f *kdFollower) Init(kd *kdtree.Tree) {
+	a, b, hit := kd.GetBound().Cross(f.Ray.From, f.Ray.Dir, f.MaxDist)
+	if !hit {
+		f.currNode = nil
+		return
+	}
+
+	if f.enterStack == nil {
+		f.enterStack = make([]followFrame, 0, 10)
+	} else {
+		f.enterStack = f.enterStack[:0]
+	}
+	f.enterStack = append(f.enterStack, followFrame{t: a, point: f.Ray.From})
+	if a > 0 {
+		// XXX: May not align exactly with box
+		f.enterStack[0].point = vector.Add(f.enterStack[0].point, vector.ScalarMul(f.Ray.Dir, a))
+	}
+
+	if f.exitStack == nil {
+		f.exitStack = make([]followFrame, 0, 10)
+	} else {
+		f.exitStack = f.exitStack[:0]
+	}
+	f.exitStack = append(
+		f.exitStack,
+		f.enterStack[0],
+		followFrame{t: b, point: vector.Add(f.Ray.From, vector.ScalarMul(f.Ray.Dir, b))},
+	)
+
+	f.currNode = kd.GetRoot()
 }
 
-func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl primitive.Collision) {
+func (f *kdFollower) findLeaf() bool {
+	if f.enterStack[len(f.enterStack)-1].t > f.MaxDist {
+		return false
+	}
+	for !f.currNode.Leaf() {
+		var farChild *kdtree.Node
+		axis, pivot := f.currNode.Axis(), f.currNode.Pivot()
+		// TODO: Check logic
+		if f.enterStack[len(f.enterStack)-1].point[axis] < pivot {
+			if f.exitStack[len(f.exitStack)-1].point[axis] < pivot {
+				f.currNode = f.currNode.Left()
+				continue
+			}
+			farChild = f.currNode.Right()
+			f.currNode = f.currNode.Left()
+		} else {
+			if f.exitStack[len(f.exitStack)-1].point[axis] >= pivot {
+				f.currNode = f.currNode.Right()
+				continue
+			}
+			farChild = f.currNode.Left()
+			f.currNode = f.currNode.Right()
+		}
+
+		t := (pivot - f.Ray.From[axis]) * f.Ray.Dir.Inverse()[axis]
+
+		// Set up new exit point
+		var pt vector.Vector3D
+		pAxis, nAxis := axis.Prev(), axis.Next()
+		pt[axis] = pivot
+		pt[nAxis] = f.Ray.From[nAxis] + t*f.Ray.Dir[nAxis]
+		pt[pAxis] = f.Ray.From[pAxis] + t*f.Ray.Dir[pAxis]
+		f.exitStack = append(f.exitStack, followFrame{farChild, t, pt})
+	}
+	return true
+}
+
+func (f *kdFollower) pop() {
+	if cap(f.enterStack) < len(f.exitStack) {
+		f.enterStack = make([]followFrame, len(f.exitStack))
+	} else {
+		f.enterStack = f.enterStack[:len(f.exitStack)]
+	}
+	copy(f.enterStack, f.exitStack)
+	f.currNode = f.exitStack[len(f.exitStack)-1].node
+	f.exitStack = f.exitStack[:len(f.exitStack)-1]
+}
+
+func (f *kdFollower) First() (firstColl primitive.Collision) {
+	for f.currNode != nil {
+		if !f.findLeaf() {
+			break
+		}
+		for _, v := range f.currNode.Values() {
+			p := v.(primitive.Primitive)
+			coll := p.Intersect(f.Ray)
+			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+				firstColl = coll
+			}
+		}
+		if firstColl.Hit() {
+			return
+		}
+		f.pop()
+	}
+	return
+}
+
+func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
 	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
 	if !hit {
 		return
@@ -152,88 +248,6 @@ func (kd *kdPartition) followRay(r ray.Ray, minDist, maxDist float64) (firstColl
 	}
 
 	for currNode := kd.GetRoot(); currNode != nil; {
-		// Stop looping if we've passed the maximum distance
-		if enterStack[len(enterStack)-1].t > maxDist {
-			break
-		}
-		// Traverse to the leaves
-		for !currNode.Leaf() {
-			axis, pivot := currNode.Axis(), currNode.Pivot()
-
-			var farChild *kdtree.Node
-			if enterStack[len(enterStack)-1].point[axis] < pivot {
-				farChild = currNode.Right()
-				currNode = currNode.Left()
-				if exitStack[len(exitStack)-1].point[axis] < pivot {
-					continue
-				}
-			} else {
-				farChild = currNode.Left()
-				currNode = currNode.Right()
-				if exitStack[len(exitStack)-1].point[axis] >= pivot {
-					continue
-				}
-			}
-
-			t := (pivot - r.From[axis]) * invDir[axis]
-
-			// Set up the new exit point
-			var pt vector.Vector3D
-			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
-			pt[axis] = pivot
-			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
-			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
-			exitStack = append(exitStack, followFrame{farChild, t, pt})
-		}
-
-		// Okay, we've reached a leaf.
-		// Now check for any intersections.
-		for _, v := range currNode.Values() {
-			p := v.(primitive.Primitive)
-			coll := p.Intersect(r)
-			if coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
-				firstColl = coll
-			}
-		}
-		if firstColl.Hit() {
-			return
-		}
-
-		// Update stack
-		if cap(enterStack) < len(exitStack) {
-			enterStack = make([]followFrame, len(exitStack))
-		} else {
-			enterStack = enterStack[:len(exitStack)]
-		}
-		copy(enterStack, exitStack)
-
-		currNode = exitStack[len(exitStack)-1].node
-		exitStack = exitStack[:len(exitStack)-1]
-	}
-	return
-}
-
-func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
-	defer close(ch)
-	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
-	if !hit {
-		return
-	}
-
-	invDir := r.Dir.Inverse()
-	enterStack := []followFrame{
-		{t: a, point: r.From},
-	}
-	if a >= 0.0 {
-		enterStack[0].point = vector.Add(enterStack[0].point, vector.ScalarMul(r.Dir, a))
-	}
-
-	exitStack := []followFrame{
-		enterStack[0],
-		{t: b, point: vector.Add(r.From, vector.ScalarMul(r.Dir, b))},
-	}
-
-	for currNode := kd.GetRoot(); currNode != nil && !closed(ch); {
 		// Stop looping if we've passed the maximum distance
 		if enterStack[len(enterStack)-1].t > maxDist {
 			break
@@ -303,12 +317,16 @@ func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch cha
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
-	return kd.followRay(r, r.TMin, dist)
+	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
+	f.Init(kd.Tree)
+	return f.First()
 }
 
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
-	coll := kd.followRay(r, r.TMin, dist)
-	return coll.Hit()
+	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
+	f.Init(kd.Tree)
+	// TODO: Only check for a single collision
+	return f.First().Hit()
 }
 
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
