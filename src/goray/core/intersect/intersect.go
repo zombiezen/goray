@@ -228,6 +228,23 @@ func (f *kdFollower) First() (firstColl primitive.Collision) {
 	return
 }
 
+func (f *kdFollower) Hit() bool {
+	for f.currNode != nil {
+		if !f.findLeaf() {
+			break
+		}
+		for _, v := range f.currNode.Values() {
+			p := v.(primitive.Primitive)
+			coll := p.Intersect(f.Ray)
+			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
+				return true
+			}
+		}
+		f.pop()
+	}
+	return false
+}
+
 func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
 	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
 	if !hit {
@@ -325,8 +342,7 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collis
 func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
 	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
 	f.Init(kd.Tree)
-	// TODO: Only check for a single collision
-	return f.First().Hit()
+	return f.Hit()
 }
 
 func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
