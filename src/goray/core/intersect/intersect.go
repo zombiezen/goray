@@ -245,92 +245,52 @@ func (f *kdFollower) Hit() bool {
 	return false
 }
 
-func (kd *kdPartition) followRayFull(r ray.Ray, minDist, maxDist float64, ch chan<- primitive.Collision) {
-	a, b, hit := kd.GetBound().Cross(r.From, r.Dir, maxDist)
-	if !hit {
-		return
-	}
+type kdTranspFollower struct {
+	kdFollower
+	hitList   map[primitive.Primitive]bool
+	currPrims []primitive.Primitive
+}
 
-	invDir := r.Dir.Inverse()
-	enterStack := []followFrame{
-		{t: a, point: r.From},
+func (f *kdTranspFollower) Init(kd *kdtree.Tree) {
+	f.kdFollower.Init(kd)
+	f.hitList = make(map[primitive.Primitive]bool)
+	if f.currPrims == nil {
+		f.currPrims = make([]primitive.Primitive, 0, 10)
+	} else {
+		f.currPrims = f.currPrims[:0]
 	}
-	if a >= 0.0 {
-		enterStack[0].point = vector.Add(enterStack[0].point, vector.ScalarMul(r.Dir, a))
-	}
+}
 
-	exitStack := []followFrame{
-		enterStack[0],
-		{t: b, point: vector.Add(r.From, vector.ScalarMul(r.Dir, b))},
-	}
-
-	for currNode := kd.GetRoot(); currNode != nil; {
-		// Stop looping if we've passed the maximum distance
-		if enterStack[len(enterStack)-1].t > maxDist {
-			break
+func (f *kdTranspFollower) findMore() bool {
+	for f.currNode != nil && len(f.currPrims) == 0 {
+		if !f.findLeaf() {
+			return false
 		}
-		// Traverse to the leaves
-		for !currNode.Leaf() {
-			axis, pivot := currNode.Axis(), currNode.Pivot()
-
-			var farChild *kdtree.Node
-			if enterStack[len(enterStack)-1].point[axis] < pivot {
-				farChild = currNode.Right()
-				currNode = currNode.Left()
-				if exitStack[len(exitStack)-1].point[axis] < pivot {
-					continue
-				}
-			} else {
-				farChild = currNode.Left()
-				currNode = currNode.Right()
-				if exitStack[len(exitStack)-1].point[axis] >= pivot {
-					continue
-				}
-			}
-
-			t := (pivot - r.From[axis]) * invDir[axis]
-
-			// Set up the new exit point
-			var pt vector.Vector3D
-			prevAxis, nextAxis := (axis+1)%3, (axis+2)%3
-			pt[axis] = pivot
-			pt[nextAxis] = r.From[nextAxis] + t*r.Dir[nextAxis]
-			pt[prevAxis] = r.From[prevAxis] + t*r.Dir[prevAxis]
-			exitStack = append(exitStack, followFrame{farChild, t, pt})
-		}
-
-		// Okay, we've reached a leaf.
-		// Now check for any intersections.
-		prims := currNode.Values()
-		clist := make([]primitive.Collision, 0, len(prims))
-		for _, v := range prims {
+		vals := f.currNode.Values()
+		for _, v := range vals {
 			p := v.(primitive.Primitive)
-			if coll := p.Intersect(r); coll.Hit() && coll.RayDepth > minDist && coll.RayDepth < maxDist {
-				clist = append(clist, coll)
-				// Move new collision to proper location (insertion sort while inserting! :D)
-				var i int
-				for i = len(clist) - 1; i > 0 && coll.RayDepth < clist[i-1].RayDepth; i-- {
-					clist[i] = clist[i-1]
-				}
-				clist[i] = coll
+			if f.hitList[p] {
+				continue
+			}
+			f.currPrims = append(f.currPrims, p)
+			f.hitList[p] = true
+		}
+		f.pop()
+	}
+	return f.currNode != nil
+}
+
+func (f *kdTranspFollower) Next() (coll primitive.Collision) {
+	for f.findMore() {
+		for len(f.currPrims) > 0 {
+			p := f.currPrims[len(f.currPrims)-1]
+			f.currPrims = f.currPrims[:len(f.currPrims)-1]
+			if coll = p.Intersect(f.Ray); coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
+				return
 			}
 		}
-		// Yield the collisions in order.
-		for _, coll := range clist {
-			ch <- coll
-		}
-
-		// Update stack
-		if cap(enterStack) < len(exitStack) {
-			enterStack = make([]followFrame, len(exitStack))
-		} else {
-			enterStack = enterStack[:len(exitStack)]
-		}
-		copy(enterStack, exitStack)
-
-		currNode = exitStack[len(exitStack)-1].node
-		exitStack = exitStack[:len(exitStack)-1]
 	}
+	return
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
@@ -345,27 +305,22 @@ func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
 	return f.Hit()
 }
 
-func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
-	ch := make(chan primitive.Collision)
-	defer close(ch)
-
-	go kd.followRayFull(r, r.TMin, dist, ch)
+func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (hitOpaque bool) {
+	f := &kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
+	f.Init(kd.Tree)
 	depth := 0
-	hitList := make(map[primitive.Primitive]bool)
-	for coll := range ch {
-		mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
-		if !trans {
+	for coll := f.Next(); coll.Hit(); coll = f.Next() {
+		if depth >= maxDepth {
+			// Too much depth, just say it's opaque.
 			return true
 		}
-		if hit, _ := hitList[coll.Primitive]; !hit {
-			hitList[coll.Primitive] = true
-			if depth >= maxDepth {
-				return false
-			}
-			sp := coll.Primitive.GetSurface(coll)
-			*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
-			depth++
+		tmat, ok := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+		if !ok {
+			// Material is opaque
+			return true
 		}
+		*filt = color.Mul(*filt, tmat.GetTransparency(state, coll.GetSurface(), f.Ray.Dir))
+		depth++
 	}
-	return false
+	return
 }
