@@ -123,11 +123,12 @@ func NewRGBAFromColor(c Color, a float64) RGBA {
 }
 
 
-func (c RGBA) RGBA() (r, g, b, a uint32) {
-	r = quantizeComponent(c.R)
-	g = quantizeComponent(c.G)
-	b = quantizeComponent(c.B)
-	a = quantizeComponent(c.A)
+func (c1 RGBA) RGBA() (r, g, b, a uint32) {
+	c2 := c1.AlphaPremultiply()
+	r = quantizeComponent(c2.R)
+	g = quantizeComponent(c2.G)
+	b = quantizeComponent(c2.B)
+	a = quantizeComponent(c2.A)
 	return
 }
 
