@@ -127,7 +127,7 @@ func (c RGBA) RGBA() (r, g, b, a uint32) {
 	r = quantizeComponent(c.R)
 	g = quantizeComponent(c.G)
 	b = quantizeComponent(c.B)
-	a = math.MaxUint32
+	a = quantizeComponent(c.A)
 	return
 }
 
