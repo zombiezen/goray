@@ -16,7 +16,7 @@ type Result [4]float64
 func (r Result) Scalar() float64 { return r[0] }
 
 func (r Result) Color() color.AlphaColor {
-	return color.NewRGBA(r[0], r[1], r[2], r[3])
+	return color.RGBA{r[0], r[1], r[2], r[3]}
 }
 
 // Derivative calculates the (approximate) partial derivatives of df/dNU and

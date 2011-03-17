@@ -144,7 +144,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
-					col, alpha = color.Add(col, color.Mul(integ, rcol[1])), integ.GetA()
+					col, alpha = color.Add(col, color.Mul(integ, rcol[1])), integ.Alpha()
 				}
 			}
 		}
