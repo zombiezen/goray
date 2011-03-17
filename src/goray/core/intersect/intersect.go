@@ -45,7 +45,12 @@ type simple struct {
 // NewSimple creates a partitioner that doesn't split up the scene at all.
 // This should only be used for debugging code, the complexity is O(N).
 func NewSimple(prims []primitive.Primitive) Interface {
-	part := &simple{prims, prims[0].GetBound()}
+	part := &simple{prims: prims}
+	if len(prims) == 0 {
+		part.bound = bound.New(vector.Vector3D{}, vector.Vector3D{})
+		return part
+	}
+	part.bound = part.prims[0].GetBound()
 	for _, p := range part.prims[1:] {
 		part.bound = bound.Union(part.bound, p.GetBound())
 	}
@@ -88,7 +93,7 @@ func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth i
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
-				return false
+				return true
 			}
 		}
 	}
@@ -261,10 +266,10 @@ func (f *kdTranspFollower) Init(kd *kdtree.Tree) {
 	}
 }
 
-func (f *kdTranspFollower) findMore() bool {
+func (f *kdTranspFollower) findMore() {
 	for f.currNode != nil && len(f.currPrims) == 0 {
 		if !f.findLeaf() {
-			return false
+			break
 		}
 		vals := f.currNode.Values()
 		for _, v := range vals {
@@ -277,17 +282,14 @@ func (f *kdTranspFollower) findMore() bool {
 		}
 		f.pop()
 	}
-	return f.currNode != nil
 }
 
 func (f *kdTranspFollower) Next() (coll primitive.Collision) {
-	for f.findMore() {
-		for len(f.currPrims) > 0 {
-			p := f.currPrims[len(f.currPrims)-1]
-			f.currPrims = f.currPrims[:len(f.currPrims)-1]
-			if coll = p.Intersect(f.Ray); coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
-				return
-			}
+	for f.findMore(); len(f.currPrims) > 0; f.findMore() {
+		p := f.currPrims[len(f.currPrims)-1]
+		f.currPrims = f.currPrims[:len(f.currPrims)-1]
+		if coll = p.Intersect(f.Ray); coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
+			return
 		}
 	}
 	return
