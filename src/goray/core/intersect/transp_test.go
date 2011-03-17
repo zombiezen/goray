@@ -18,7 +18,9 @@ type TestMat struct {
 	Transp color.Color
 }
 
-func (mat TestMat) InitBSDF(state *render.State, sp surface.Point) material.BSDF { return material.BSDFNone }
+func (mat TestMat) InitBSDF(state *render.State, sp surface.Point) material.BSDF {
+	return material.BSDFNone
+}
 
 func (mat TestMat) GetFlags() material.BSDF { return material.BSDFNone }
 
@@ -30,7 +32,9 @@ func (mat TestMat) Sample(state *render.State, sp surface.Point, wo vector.Vecto
 	return color.Black, vector.Vector3D{0, 0, 0}
 }
 
-func (mat TestMat) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float64 { return 0 }
+func (mat TestMat) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) float64 {
+	return 0
+}
 
 func (mat TestMat) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	return
@@ -47,7 +51,9 @@ func (mat TestMat) GetAlpha(state *render.State, sp surface.Point, wo vector.Vec
 	return 0
 }
 
-func (mat TestMat) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) { return }
+func (mat TestMat) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
+	return
+}
 
 func (mat TestMat) GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
 	if mat.Transp == nil {
@@ -57,21 +63,21 @@ func (mat TestMat) GetTransparency(state *render.State, sp surface.Point, wo vec
 }
 
 func TestTransparentShadow(t *testing.T) {
-	type tsTestCase struct{
-		Name string
+	type tsTestCase struct {
+		Name    string
 		Filters []color.Color
-		Depth int
+		Depth   int
 
-		Expected color.Color
+		Expected  color.Color
 		ShouldHit bool
 	}
 
 	cases := []tsTestCase{
 		{
-			Name: "Pass-through",
-			Filters: []color.Color{},
-			Depth: 3,
-			Expected: color.NewRGB(1.0, 1.0, 1.0),
+			Name:      "Pass-through",
+			Filters:   []color.Color{},
+			Depth:     3,
+			Expected:  color.NewRGB(1.0, 1.0, 1.0),
 			ShouldHit: false,
 		},
 		{
@@ -79,8 +85,8 @@ func TestTransparentShadow(t *testing.T) {
 			Filters: []color.Color{
 				color.NewRGB(1.0, 0.0, 0.0),
 			},
-			Depth: 3,
-			Expected: color.NewRGB(1.0, 0.0, 0.0),
+			Depth:     3,
+			Expected:  color.NewRGB(1.0, 0.0, 0.0),
 			ShouldHit: false,
 		},
 		{
@@ -88,8 +94,8 @@ func TestTransparentShadow(t *testing.T) {
 			Filters: []color.Color{
 				color.NewRGB(0.0, 0.0, 1.0),
 			},
-			Depth: 1,
-			Expected: color.NewRGB(0.0, 0.0, 1.0),
+			Depth:     1,
+			Expected:  color.NewRGB(0.0, 0.0, 1.0),
 			ShouldHit: false,
 		},
 		{
@@ -98,8 +104,8 @@ func TestTransparentShadow(t *testing.T) {
 				color.NewRGB(1.0, 0.0, 0.0),
 				color.NewRGB(1.0, 0.0, 0.0),
 			},
-			Depth: 1,
-			Expected: nil,
+			Depth:     1,
+			Expected:  nil,
 			ShouldHit: true,
 		},
 		{
@@ -109,8 +115,8 @@ func TestTransparentShadow(t *testing.T) {
 				color.NewRGB(0.5, 1.0, 0.5),
 				color.NewRGB(0.5, 0.5, 1.0),
 			},
-			Depth: 5,
-			Expected: color.NewRGB(0.25, 0.25, 0.25),
+			Depth:     5,
+			Expected:  color.NewRGB(0.25, 0.25, 0.25),
 			ShouldHit: false,
 		},
 	}
@@ -124,7 +130,7 @@ func TestTransparentShadow(t *testing.T) {
 		var col color.Color = color.Gray(1.0)
 		r := ray.Ray{
 			From: vector.Vector3D{0, 0, 0},
-			Dir: vector.Vector3D{1, 0, 0},
+			Dir:  vector.Vector3D{1, 0, 0},
 			TMin: 0,
 			TMax: math.Inf(1),
 		}
