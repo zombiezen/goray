@@ -27,14 +27,14 @@ func TestDepth(t *testing.T) {
 	sphereC := sphere.New(vector.Vector3D{-1, 0, 0}, 0.25, nil)
 
 	cases := []depthTestCase{
-		depthTestCase{"Simple", NewSimple(
+		{"Simple", NewSimple(
 			[]primitive.Primitive{sphereB, sphereC, sphereA},
 		)},
-		depthTestCase{"kd-tree", NewKD(
+		{"kd-tree", NewKD(
 			[]primitive.Primitive{sphereB, sphereC, sphereA},
 			nil,
 		)},
-		depthTestCase{"kd-tree leaf", NewKD(
+		{"kd-tree leaf", NewKD(
 			[]primitive.Primitive{sphereB, sphereA},
 			nil,
 		)},
