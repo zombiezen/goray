@@ -32,14 +32,14 @@ func quantizeComponent(f float64) uint32 {
 
 // Alpha defines anything that has an alpha channel.
 type Alpha interface {
-	GetA() float64
+	Alpha() float64
 }
 
 // Color defines anything that has red, green, and blue channels.
 type Color interface {
-	GetR() float64
-	GetG() float64
-	GetB() float64
+	Red() float64
+	Green() float64
+	Blue() float64
 }
 
 // AlphaColor defines anything that has red, green, blue, and alpha channels.
@@ -51,9 +51,9 @@ type AlphaColor interface {
 // Gray defines a grayscale color.  It fulfills the Color interface.
 type Gray float64
 
-func (g Gray) GetR() float64 { return float64(g) }
-func (g Gray) GetG() float64 { return float64(g) }
-func (g Gray) GetB() float64 { return float64(g) }
+func (g Gray) Red() float64   { return float64(g) }
+func (g Gray) Green() float64 { return float64(g) }
+func (g Gray) Blue() float64  { return float64(g) }
 
 func (col Gray) RGBA() (r, g, b, a uint32) {
 	r = quantizeComponent(float64(col))
@@ -72,18 +72,16 @@ type RGB struct {
 	R, G, B float64
 }
 
-func NewRGB(r, g, b float64) RGB    { return RGB{r, g, b} }
-func DiscardAlpha(c Color) RGB      { return NewRGB(c.GetR(), c.GetG(), c.GetB()) }
-func (c *RGB) Init(r, g, b float64) { c.R = r; c.G = g; c.B = b }
+func DiscardAlpha(c Color) RGB { return RGB{c.Red(), c.Green(), c.Blue()} }
 func (c *RGB) Copy(src Color) {
-	c.R = src.GetR()
-	c.G = src.GetG()
-	c.B = src.GetB()
+	c.R = src.Red()
+	c.G = src.Green()
+	c.B = src.Blue()
 }
 
-func (c RGB) GetR() float64 { return c.R }
-func (c RGB) GetG() float64 { return c.G }
-func (c RGB) GetB() float64 { return c.B }
+func (c RGB) Red() float64   { return c.R }
+func (c RGB) Green() float64 { return c.G }
+func (c RGB) Blue() float64  { return c.B }
 
 func (c RGB) RGBA() (r, g, b, a uint32) {
 	r = quantizeComponent(c.R)
@@ -97,32 +95,39 @@ func (c RGB) String() string {
 	return fmt.Sprintf("RGB(%.3f, %.3f, %.3f)", c.R, c.G, c.B)
 }
 
+func (c RGB) GoString() string {
+	return fmt.Sprintf("color.RGB{%#v, %#v, %#v}", c.R, c.G, c.B)
+}
+
 // RGBA colors
 
 type RGBA struct {
-	RGB
-	A float64
+	R, G, B, A float64
 }
 
-func NewRGBA(r, g, b, a float64) RGBA   { return RGBA{NewRGB(r, g, b), a} }
-func (c *RGBA) Init(r, g, b, a float64) { c.RGB.Init(r, g, b); c.A = a }
 func (c *RGBA) Copy(src AlphaColor) {
-	c.RGB.Copy(src)
-	c.A = src.GetA()
+	c.R = src.Red()
+	c.G = src.Green()
+	c.B = src.Blue()
+	c.A = src.Alpha()
 }
+
+func (c RGBA) Red() float64   { return c.R }
+func (c RGBA) Green() float64 { return c.G }
+func (c RGBA) Blue() float64  { return c.B }
+func (c RGBA) Alpha() float64 { return c.A }
 
 // NewRGBAFromColor creates an RGBA value from a color and an alpha value.
 func NewRGBAFromColor(c Color, a float64) RGBA {
-	newColor := RGBA{A: a}
-	newColor.RGB.Copy(c)
-	return newColor
+	return RGBA{c.Red(), c.Green(), c.Blue(), a}
 }
 
-func (c RGBA) GetA() float64 { return c.A }
 
 func (c RGBA) RGBA() (r, g, b, a uint32) {
-	r, g, b, a = c.AlphaPremultiply().RGB.RGBA()
-	a = quantizeComponent(c.A)
+	r = quantizeComponent(c.R)
+	g = quantizeComponent(c.G)
+	b = quantizeComponent(c.B)
+	a = math.MaxUint32
 	return
 }
 
@@ -130,8 +135,12 @@ func (c RGBA) String() string {
 	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.R, c.G, c.B, c.A)
 }
 
+func (c RGBA) GoString() string {
+	return fmt.Sprintf("color.RGBA{%#v, %#v, %#v, %#v}", c.R, c.G, c.B, c.A)
+}
+
 func (c RGBA) AlphaPremultiply() RGBA {
-	return NewRGBA(c.R*c.A, c.G*c.A, c.B*c.A, c.A)
+	return RGBA{c.R * c.A, c.G * c.A, c.B * c.A, c.A}
 }
 
 // Predefined colors
@@ -156,12 +165,12 @@ func toGorayColor(col image.Color) image.Color {
 		return col
 	}
 	r, g, b, a := col.RGBA()
-	return NewRGBA(
-		float64(r)/math.MaxUint32,
-		float64(g)/math.MaxUint32,
-		float64(b)/math.MaxUint32,
-		float64(a)/math.MaxUint32,
-	)
+	return RGBA{
+		float64(r) / math.MaxUint32,
+		float64(g) / math.MaxUint32,
+		float64(b) / math.MaxUint32,
+		float64(a) / math.MaxUint32,
+	}
 }
 
 // Model is the color model for the renderer.
