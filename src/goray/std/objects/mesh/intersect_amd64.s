@@ -61,6 +61,8 @@
 // pvec/qvec: +-72(SP)
 // tvec: +-96(SP)
 //
+// X5: u
+// X6: v
 // X7: d
 TEXT ·intersect(SB),$96-144
     // Step 1: edge1, edge2 = b - a, c - a
@@ -82,8 +84,8 @@ TEXT ·intersect(SB),$96-144
     MOVUPD      X2, edge2YZ+-16(SP)
     // Step 2: pvec = rDir cross edge2
     // X
-    MOVHPD      rDirY+80(FP), X0
-    MOVLPD      rDirZ+88(FP), X0
+    MOVUPD      rDirYZ+80(FP), X0
+    SHUFPD      $1, X0, X0
     MOVUPD      edge2YZ+-16(SP), X1
     MULPD       X1, X0
     SHUFPD      $0, X0, X1
@@ -99,8 +101,8 @@ TEXT ·intersect(SB),$96-144
     SUBPD       X1, X0
     MOVHPD      X0, pvecY+-64(SP)
     // Z
-    MOVHPD      rDirX+72(FP), X0
-    MOVLPD      rDirY+80(FP), X0
+    MOVUPD      rDirXY+72(FP), X0
+    SHUFPD      $1, X0, X0
     MOVUPD      edge2XY+-24(SP), X1
     MULPD       X1, X0
     SHUFPD      $0, X0, X1
@@ -136,30 +138,28 @@ TEXT ·intersect(SB),$96-144
     SUBSD       X3, X1
     MOVSD       X1, tvecZ+-80(SP)
     // Step 7: u = (pvec dot tvec) * d
-    MOVUPD      pvecXY+-72(SP), X0
+    MOVUPD      pvecXY+-72(SP), X5
     MOVUPD      tvecXY+-96(SP), X2
-    MULPD       X2, X0
-    MOVUPD      X0, X2
+    MULPD       X2, X5
+    MOVUPD      X5, X2
     SHUFPD      $1, X2, X2
     MOVSD       pvecZ+-56(SP), X1
     MOVSD       tvecZ+-80(SP), X3
     MULSD       X3, X1
-    ADDSD       X2, X0
-    ADDSD       X1, X0
-    MULSD       X7, X0
-    MOVSD       X0, u+128(FP)
+    ADDSD       X2, X5
+    ADDSD       X1, X5
+    MULSD       X7, X5
     // Step 8: if u < 0 || u > 1 { return }
-    // (u is already in register X0)
     MOVSD       $0.0, X1
-    UCOMISD     X1, X0
+    UCOMISD     X1, X5
     JB          NoCollision
     MOVSD       $1.0, X1
-    UCOMISD     X1, X0
+    UCOMISD     X1, X5
     JA          NoCollision
     // Step 9: qvec = tvec cross edge1
     // X
-    MOVHPD      tvecY+-88(SP), X0
-    MOVLPD      tvecZ+-80(SP), X0
+    MOVUPD      tvecYZ+-88(SP), X0
+    SHUFPD      $1, X0, X0
     MOVUPD      edge1Y+-40(SP), X1
     MULPD       X1, X0
     SHUFPD      $0, X0, X1
@@ -175,33 +175,32 @@ TEXT ·intersect(SB),$96-144
     SUBPD       X1, X0
     MOVHPD      X0, qvecY+-64(SP)
     // Z
-    MOVHPD      tvecX+-96(SP), X0
-    MOVLPD      tvecY+-88(SP), X0
+    MOVUPD      tvecXY+-96(SP), X0
+    SHUFPD      $1, X0, X0
     MOVUPD      edge1XY+-48(SP), X1
     MULPD       X1, X0
     SHUFPD      $0, X0, X1
     SUBPD       X1, X0
     MOVHPD      X0, qvecZ+-56(SP)
     // Step 10: v = (rDir dot qvec) * d
-    MOVUPD      rDirXY+72(FP), X0
+    MOVUPD      rDirXY+72(FP), X6
     MOVUPD      qvecXY+-72(SP), X2
-    MULPD       X2, X0
-    MOVUPD      X0, X2
+    MULPD       X2, X6
+    MOVUPD      X6, X2
     SHUFPD      $1, X2, X2
     MOVSD       rDirZ+88(FP), X1
     MOVSD       qvecZ+-56(SP), X3
     MULSD       X3, X1
-    ADDSD       X2, X0
-    ADDSD       X1, X0
-    MULSD       X7, X0
-    MOVSD       X0, v+136(FP)
+    ADDSD       X2, X6
+    ADDSD       X1, X6
+    MULSD       X7, X6
     // Step 11: if v < 0 || u + v > 1 { return }
     // (v is already in register X0)
     MOVSD       $0.0, X1
-    UCOMISD     X1, X0
+    UCOMISD     X1, X6
     JB          NoCollision
-    MOVSD       u+128(FP), X1
-    ADDSD       X1, X0
+    MOVSD       X5, X0
+    ADDSD       X6, X0
     MOVSD       $1.0, X1
     UCOMISD     X1, X0
     JA          NoCollision
@@ -219,6 +218,8 @@ TEXT ·intersect(SB),$96-144
     MULSD       X7, X0
     MOVSD       X0, rayDepth+120(FP)
     // Step 13: return
+    MOVSD       X5, u+128(FP)
+    MOVSD       X6, v+136(FP)
     RET
     // No collision return
 NoCollision:
