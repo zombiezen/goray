@@ -29,12 +29,12 @@ import (
 type Interface interface {
 	// Intersect determines the primitive that a ray collides with.
 	Intersect(r ray.Ray, dist float64) primitive.Collision
-	// IsShadowed checks whether a ray collides with any primitives (for shadow-detection).
-	IsShadowed(r ray.Ray, dist float64) bool
-	// DoTransparentShadows computes the color of a transparent shadow after bouncing around.
-	DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool
-	// GetBound returns a bounding box that contains all of the primitives that the intersecter knows about.
-	GetBound() *bound.Bound
+	// Shadowed checks whether a ray collides with any primitives (for shadow-detection).
+	Shadowed(r ray.Ray, dist float64) bool
+	// TransparentShadow computes the color of a transparent shadow after bouncing around.
+	TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (opaque bool)
+	// Bound returns a bounding box that contains all of the primitives that the intersecter knows about.
+	Bound() *bound.Bound
 }
 
 type simple struct {
@@ -50,14 +50,14 @@ func NewSimple(prims []primitive.Primitive) Interface {
 		part.bound = bound.New(vector.Vector3D{}, vector.Vector3D{})
 		return part
 	}
-	part.bound = part.prims[0].GetBound()
+	part.bound = part.prims[0].Bound()
 	for _, p := range part.prims[1:] {
-		part.bound = bound.Union(part.bound, p.GetBound())
+		part.bound = bound.Union(part.bound, p.Bound())
 	}
 	return part
 }
 
-func (s *simple) GetBound() *bound.Bound { return s.bound }
+func (s *simple) Bound() *bound.Bound { return s.bound }
 
 func (s *simple) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	for _, p := range s.prims {
@@ -105,7 +105,7 @@ type kdPartition struct {
 }
 
 func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
-	bd := v.(primitive.Primitive).GetBound()
+	bd := v.(primitive.Primitive).Bound()
 	return bd.GetMin()[axis], bd.GetMax()[axis]
 }
 
@@ -134,7 +134,7 @@ type kdFollower struct {
 }
 
 func (f *kdFollower) Init(kd *kdtree.Tree) {
-	a, b, hit := kd.GetBound().Cross(f.Ray.From, f.Ray.Dir, f.MaxDist)
+	a, b, hit := kd.Bound().Cross(f.Ray.From, f.Ray.Dir, f.MaxDist)
 	if !hit {
 		f.currNode = nil
 		return

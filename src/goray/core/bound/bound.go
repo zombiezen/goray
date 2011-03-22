@@ -51,15 +51,15 @@ func (b *Bound) Get() (a, g vector.Vector3D) { return b.a, b.g }
 // Set changes the minimum and maximum points that define the box.
 func (b *Bound) Set(a, g vector.Vector3D) { b.a = a; b.g = g }
 
-func (b *Bound) GetMin() vector.Vector3D { return b.a }
-func (b *Bound) GetMax() vector.Vector3D { return b.g }
+func (b *Bound) Min() vector.Vector3D { return b.a }
+func (b *Bound) Max() vector.Vector3D { return b.g }
 
-func (b *Bound) GetMinX() float64 { return b.a[vector.X] }
-func (b *Bound) GetMinY() float64 { return b.a[vector.Y] }
-func (b *Bound) GetMinZ() float64 { return b.a[vector.Z] }
-func (b *Bound) GetMaxX() float64 { return b.g[vector.X] }
-func (b *Bound) GetMaxY() float64 { return b.g[vector.Y] }
-func (b *Bound) GetMaxZ() float64 { return b.g[vector.Z] }
+func (b *Bound) MinX() float64 { return b.a[vector.X] }
+func (b *Bound) MinY() float64 { return b.a[vector.Y] }
+func (b *Bound) MinZ() float64 { return b.a[vector.Z] }
+func (b *Bound) MaxX() float64 { return b.g[vector.X] }
+func (b *Bound) MaxY() float64 { return b.g[vector.Y] }
+func (b *Bound) MaxZ() float64 { return b.g[vector.Z] }
 
 func (b *Bound) SetMinX(x float64) { b.a[vector.X] = x }
 func (b *Bound) SetMinY(y float64) { b.a[vector.Y] = y }
@@ -102,18 +102,18 @@ func (b *Bound) Cross(from, ray vector.Vector3D, dist float64) (lmin, lmax float
 	return
 }
 
-// GetVolume calculates the volume of the bounding box
-func (b *Bound) GetVolume() float64 {
+// Volume calculates the volume of the bounding box
+func (b *Bound) Volume() float64 {
 	return (b.g[vector.Y] - b.a[vector.Y]) * (b.g[vector.X] - b.a[vector.X]) * (b.g[vector.Z] - b.a[vector.Z])
 }
 
-func (b *Bound) GetSize() [3]float64 { return [3]float64(vector.Sub(b.g, b.a)) }
-func (b *Bound) GetXLength() float64 { return b.g[vector.X] - b.a[vector.X] }
-func (b *Bound) GetYLength() float64 { return b.g[vector.Y] - b.a[vector.Y] }
-func (b *Bound) GetZLength() float64 { return b.g[vector.Z] - b.a[vector.Z] }
+func (b *Bound) Size() [3]float64 { return [3]float64(vector.Sub(b.g, b.a)) }
+func (b *Bound) LengthX() float64 { return b.g[vector.X] - b.a[vector.X] }
+func (b *Bound) LengthY() float64 { return b.g[vector.Y] - b.a[vector.Y] }
+func (b *Bound) LengthZ() float64 { return b.g[vector.Z] - b.a[vector.Z] }
 
-func (b *Bound) GetLargestAxis() vector.Axis {
-	x, y, z := b.GetXLength(), b.GetYLength(), b.GetZLength()
+func (b *Bound) LargestAxis() vector.Axis {
+	x, y, z := b.LengthX(), b.LengthY(), b.LengthZ()
 	switch {
 	case z > y && z > x:
 		return vector.Z
@@ -123,8 +123,8 @@ func (b *Bound) GetLargestAxis() vector.Axis {
 	return vector.X
 }
 
-func (b *Bound) GetHalfSize() [3]float64 {
-	return [3]float64{b.GetXLength() * 0.5, b.GetYLength() * 0.5, b.GetZLength() * 0.5}
+func (b *Bound) HalfSize() [3]float64 {
+	return [3]float64{b.LengthX() * 0.5, b.LengthY() * 0.5, b.LengthZ() * 0.5}
 }
 
 // Include modifies the bounding box so that it contains the specified point.
@@ -145,13 +145,13 @@ func (b *Bound) Includes(p vector.Vector3D) bool {
 	return true
 }
 
-func (b *Bound) GetCenter() vector.Vector3D {
+func (b *Bound) Center() vector.Vector3D {
 	return vector.ScalarMul(vector.Add(b.g, b.a), 0.5)
 }
 
-func (b *Bound) GetCenterX() float64 { return (b.g[vector.X] + b.a[vector.X]) * 0.5 }
-func (b *Bound) GetCenterY() float64 { return (b.g[vector.Y] + b.a[vector.Y]) * 0.5 }
-func (b *Bound) GetCenterZ() float64 { return (b.g[vector.Z] + b.a[vector.Z]) * 0.5 }
+func (b *Bound) CenterX() float64 { return (b.g[vector.X] + b.a[vector.X]) * 0.5 }
+func (b *Bound) CenterY() float64 { return (b.g[vector.Y] + b.a[vector.Y]) * 0.5 }
+func (b *Bound) CenterZ() float64 { return (b.g[vector.Z] + b.a[vector.Z]) * 0.5 }
 
 // Grow increases the size of the bounding box by d on all sides.  The center will remain the same.
 func (b *Bound) Grow(d float64) {

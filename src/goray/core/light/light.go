@@ -36,8 +36,8 @@ type Sample struct {
 
 // An entity that illuminates a scene.
 type Light interface {
-	// GetFlags returns the type of light the light is.
-	GetFlags() uint
+	// LightFlags returns the type of light the light is.
+	LightFlags() uint
 	// SetScene sets up a light for use with a scene.
 	SetScene(scene interface{})
 	// NumSamples returns the preferred number of samples for direct lighting.

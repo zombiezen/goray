@@ -293,8 +293,8 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 	return
 }
 
-// GetRoot returns the root of the kd-tree.
-func (tree *Tree) GetRoot() *Node { return tree.root }
+// Root returns the root of the kd-tree.
+func (tree *Tree) Root() *Node { return tree.root }
 
-// GetBound returns a bounding box that encloses all objects in the tree.
-func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }
+// Bound returns a bounding box that encloses all objects in the tree.
+func (tree *Tree) Bound() *bound.Bound { return bound.New(tree.bound.Get()) }
