@@ -78,7 +78,7 @@ func (loader *TemplateLoader) RenderResponse(rw http.ResponseWriter, name string
 		return
 	}
 	// Write to response
-	rw.SetHeader("Content-Length", strconv.Itoa(buf.Len()))
+	rw.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	_, err = io.Copy(rw, buf)
 	return
 }

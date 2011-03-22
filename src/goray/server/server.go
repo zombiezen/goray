@@ -53,7 +53,7 @@ func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args []string) {
-	w.SetHeader("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
 		"Jobs": server.JobManager.List(),
 	})
@@ -62,7 +62,7 @@ func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args
 func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, args []string) {
 	switch req.Method {
 	case "GET":
-		w.SetHeader("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		server.templates.RenderResponse(w, "submit.html", nil)
 	case "POST":
 		j, err := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
@@ -79,7 +79,7 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, 
 func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, args []string) {
 	j, ok := server.JobManager.Get(args[0])
 	if ok {
-		w.SetHeader("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		// Check to see whether the job is done
 		status := j.Status()
 		// Render appropriate template
@@ -126,7 +126,7 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request, args []string) {
 	j, ok := server.JobManager.Get(args[0])
 	if ok && j.Status().Code == job.StatusDone {
-		w.SetHeader("Content-Type", "image/png; charset=utf-8")
+		w.Header().Set("Content-Type", "image/png; charset=utf-8")
 		r, err := server.JobManager.Storage.OpenReader(j)
 		if err != nil {
 			http.Error(w, err.String(), http.StatusInternalServerError)
@@ -135,7 +135,7 @@ func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request, arg
 		if seeker, ok := r.(io.Seeker); ok {
 			size, err := seeker.Seek(0, 2)
 			if err == nil {
-				w.SetHeader("Content-Length", strconv.Itoa64(size))
+				w.Header().Set("Content-Length", strconv.Itoa64(size))
 			}
 			seeker.Seek(0, 0)
 		}
