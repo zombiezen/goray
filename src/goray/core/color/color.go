@@ -8,7 +8,7 @@
 /*
 	The color package provides abstracted color.
 
-	This interface specifically differes from the image.Color interfaces because
+	This interface specifically differs from the image.Color interfaces because
 	the render uses floating point math.  Also, colors in this package are not
 	clamped to [0, 1], they are clamped to [0, Inf).
 */
@@ -67,12 +67,18 @@ func (g Gray) String() string {
 	return fmt.Sprintf("Gray(%.3f)", float64(g))
 }
 
+func (g Gray) GoString() string {
+	return fmt.Sprintf("color.Gray(%#v)", float64(g))
+}
+
 // RGB defines a color that has red, green, and blue channels.  It fulfills the Color interface.
 type RGB struct {
 	R, G, B float64
 }
 
+// DiscardAlpha returns a new RGB with the red, green, and blue components of another color.
 func DiscardAlpha(c Color) RGB { return RGB{c.Red(), c.Green(), c.Blue()} }
+
 func (c *RGB) Copy(src Color) {
 	c.R = src.Red()
 	c.G = src.Green()
@@ -101,6 +107,7 @@ func (c RGB) GoString() string {
 
 // RGBA colors
 
+// RGBA defines a color with red, green, blue, and alpha channels.  It fulfills the AlphaColor interface.
 type RGBA struct {
 	R, G, B, A float64
 }
@@ -122,7 +129,6 @@ func NewRGBAFromColor(c Color, a float64) RGBA {
 	return RGBA{c.Red(), c.Green(), c.Blue(), a}
 }
 
-
 func (c1 RGBA) RGBA() (r, g, b, a uint32) {
 	c2 := c1.AlphaPremultiply()
 	r = quantizeComponent(c2.R)
@@ -132,16 +138,17 @@ func (c1 RGBA) RGBA() (r, g, b, a uint32) {
 	return
 }
 
+// AlphaPremultiply multiplies the color channels by the alpha channel and then returns the resulting color.
+func (c RGBA) AlphaPremultiply() RGBA {
+	return RGBA{c.R * c.A, c.G * c.A, c.B * c.A, c.A}
+}
+
 func (c RGBA) String() string {
 	return fmt.Sprintf("RGBA(%.3f, %.3f, %.3f, %.3f)", c.R, c.G, c.B, c.A)
 }
 
 func (c RGBA) GoString() string {
 	return fmt.Sprintf("color.RGBA{%#v, %#v, %#v, %#v}", c.R, c.G, c.B, c.A)
-}
-
-func (c RGBA) AlphaPremultiply() RGBA {
-	return RGBA{c.R * c.A, c.G * c.A, c.B * c.A, c.A}
 }
 
 // Predefined colors
@@ -158,7 +165,8 @@ var (
 	Magenta Color = RGB{1, 0, 1}
 )
 
-// Operations
+// Model is the color model for the renderer.
+var Model image.ColorModel = image.ColorModelFunc(toGorayColor)
 
 func toGorayColor(col image.Color) image.Color {
 	switch col.(type) {
@@ -173,6 +181,3 @@ func toGorayColor(col image.Color) image.Color {
 		float64(a) / math.MaxUint32,
 	}
 }
-
-// Model is the color model for the renderer.
-var Model image.ColorModel = image.ColorModelFunc(toGorayColor)
