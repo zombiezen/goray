@@ -10,11 +10,14 @@ package point
 import (
 	"math"
 	"os"
+
 	"goray/core/color"
 	"goray/core/light"
 	"goray/core/ray"
 	"goray/core/surface"
 	"goray/core/vector"
+	"goray/sampleutil"
+
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -22,19 +25,6 @@ type pointLight struct {
 	position  vector.Vector3D
 	color     color.Color
 	intensity float64
-}
-
-func sampleSphere(s1, s2 float64) (dir vector.Vector3D) {
-	dir[vector.Z] = 1.0 - 2.0*s1
-	r := 1.0 - dir[vector.Z]*dir[vector.Z]
-	if r > 0.0 {
-		r = math.Sqrt(r)
-		a := 2 * math.Pi * s2
-		dir[vector.X], dir[vector.Y] = math.Cos(a)*r, math.Sin(a)*r
-	} else {
-		dir[vector.X], dir[vector.Y] = 0.0, 0.0
-	}
-	return
 }
 
 func New(pos vector.Vector3D, col color.Color, intensity float64) light.Light {
@@ -55,7 +45,7 @@ func (l *pointLight) TotalEnergy() color.Color {
 func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r ray.Ray, ipdf float64) {
 	r = ray.Ray{
 		From: l.position,
-		Dir:  sampleSphere(s1, s2),
+		Dir:  sampleutil.Sphere(s1, s2),
 	}
 	ipdf = 4.0 * math.Pi
 	col = l.color
@@ -66,7 +56,7 @@ func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.
 	s.Point.Position = l.position
 	s.Flags = l.LightFlags()
 	s.DirPdf, s.AreaPdf = 0.25, 1.0
-	wo = sampleSphere(s.S1, s.S2)
+	wo = sampleutil.Sphere(s.S1, s.S2)
 	col = l.color
 	return
 }
