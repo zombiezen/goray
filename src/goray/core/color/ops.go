@@ -18,7 +18,7 @@ func IsBlack(c Color) bool {
 
 // GetEnergy calculates the overall brightness of a color.
 func GetEnergy(c Color) float64 {
-	return (c.Red() + c.Green() + c.Blue()) * 0.33333333333333
+	return (c.Red() + c.Green() + c.Blue()) / 3.0
 }
 
 // Invert computes the inverse of the color.  However, black will always be black.
