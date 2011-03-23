@@ -133,3 +133,37 @@ func TestMul(t *testing.T) {
 		c.Do(t, "Mul", Mul)
 	}
 }
+
+type binaryAlphaTest struct {
+	C1, C2   AlphaColor
+	Expected AlphaColor
+}
+
+func alphaColorEq(c1, c2 AlphaColor) bool {
+	return c1.Alpha() == c2.Alpha() && colorEq(c1, c2)
+}
+
+func (bt binaryAlphaTest) Do(t *testing.T, name string, f func(c1, c2 AlphaColor) AlphaColor) {
+	result := f(bt.C1, bt.C2)
+	if !alphaColorEq(result, bt.Expected) {
+		t.Errorf("%s(%#v, %#v) -> %#v (expected %#v)", name, bt.C1, bt.C2, result, bt.Expected)
+	}
+}
+
+func TestAddAlpha(t *testing.T) {
+	cases := []binaryAlphaTest{
+		{RGBA{0, 0, 0, 0}, RGBA{0, 0, 0, 0}, RGBA{0, 0, 0, 0}},
+		{RGBA{0, 0, 0, 0}, RGBA{1, 1, 1, 1}, RGBA{1, 1, 1, 1}},
+		{RGBA{1, 1, 1, 1}, RGBA{0, 0, 0, 0}, RGBA{1, 1, 1, 1}},
+		{RGBA{2, 2, 2, 2}, RGBA{2, 2, 2, 2}, RGBA{4, 4, 4, 4}},
+		{RGBA{1, 0, 0, 1}, RGBA{0, 1, 0, 1}, RGBA{1, 1, 0, 2}},
+		{RGBA{1, 0, 0, 1}, RGBA{0, 0, 1, 1}, RGBA{1, 0, 1, 2}},
+		{RGBA{0, 1, 0, 1}, RGBA{0, 0, 1, 1}, RGBA{0, 1, 1, 2}},
+		{RGBA{1, 0, 0, 1}, RGBA{0, 1, 1, 1}, RGBA{1, 1, 1, 2}},
+		{RGBA{1, 1, 0, 1}, RGBA{0, 0, 1, 1}, RGBA{1, 1, 1, 2}},
+		{RGBA{0, 1, 0, 1}, RGBA{1, 0, 1, 1}, RGBA{1, 1, 1, 2}},
+	}
+	for _, c := range cases {
+		c.Do(t, "AddAlpha", AddAlpha)
+	}
+}
