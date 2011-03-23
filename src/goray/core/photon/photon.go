@@ -133,7 +133,7 @@ func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherR
 	resultHeap := make(gatherHeap, 0, nLookup)
 
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	go lookup(p, ch, distCh, pm.tree.Root())
 	distCh <- maxDist
 
 	for gresult := range ch {
@@ -144,11 +144,11 @@ func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherR
 
 func (pm *Map) FindNearest(p, n vector.Vector3D, dist float64) (nearest *Photon) {
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	go lookup(p, ch, distCh, pm.tree.Root())
 	distCh <- dist
 
 	for gresult := range ch {
-		if vector.Dot(gresult.Photon.GetDirection(), n) > 0 {
+		if vector.Dot(gresult.Photon.Direction(), n) > 0 {
 			nearest, dist = gresult.Photon, gresult.Distance
 		}
 		distCh <- dist

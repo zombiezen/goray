@@ -70,7 +70,7 @@ func (s *simple) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	return
 }
 
-func (s *simple) IsShadowed(r ray.Ray, dist float64) bool {
+func (s *simple) Shadowed(r ray.Ray, dist float64) bool {
 	for _, p := range s.prims {
 		if newColl := p.Intersect(r); newColl.Hit() {
 			return true
@@ -79,17 +79,16 @@ func (s *simple) IsShadowed(r ray.Ray, dist float64) bool {
 	return false
 }
 
-func (s *simple) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
+func (s *simple) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
 	depth := 0
 	for _, p := range s.prims {
 		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin {
-			mat, trans := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+			mat, trans := coll.Primitive.Material().(material.TransparentMaterial)
 			if !trans {
 				return true
 			}
 			if depth < maxDepth {
-				sp := coll.Primitive.GetSurface(coll)
-				*filt = color.Mul(*filt, mat.GetTransparency(state, sp, r.Dir))
+				*filt = color.Mul(*filt, mat.Transparency(state, coll.Surface(), r.Dir))
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
@@ -106,7 +105,7 @@ type kdPartition struct {
 
 func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
 	bd := v.(primitive.Primitive).Bound()
-	return bd.GetMin()[axis], bd.GetMax()[axis]
+	return bd.Min()[axis], bd.Max()[axis]
 }
 
 func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
@@ -162,7 +161,7 @@ func (f *kdFollower) Init(kd *kdtree.Tree) {
 		followFrame{t: b, point: vector.Add(f.Ray.From, vector.ScalarMul(f.Ray.Dir, b))},
 	)
 
-	f.currNode = kd.GetRoot()
+	f.currNode = kd.Root()
 }
 
 func (f *kdFollower) findLeaf() bool {
@@ -301,13 +300,13 @@ func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collis
 	return f.First()
 }
 
-func (kd *kdPartition) IsShadowed(r ray.Ray, dist float64) bool {
+func (kd *kdPartition) Shadowed(r ray.Ray, dist float64) bool {
 	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
 	f.Init(kd.Tree)
 	return f.Hit()
 }
 
-func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (hitOpaque bool) {
+func (kd *kdPartition) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (hitOpaque bool) {
 	f := &kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
 	f.Init(kd.Tree)
 	depth := 0
@@ -316,12 +315,12 @@ func (kd *kdPartition) DoTransparentShadows(state *render.State, r ray.Ray, maxD
 			// Too much depth, just say it's opaque.
 			return true
 		}
-		tmat, ok := coll.Primitive.GetMaterial().(material.TransparentMaterial)
+		tmat, ok := coll.Primitive.Material().(material.TransparentMaterial)
 		if !ok {
 			// Material is opaque
 			return true
 		}
-		*filt = color.Mul(*filt, tmat.GetTransparency(state, coll.GetSurface(), f.Ray.Dir))
+		*filt = color.Mul(*filt, tmat.Transparency(state, coll.Surface(), f.Ray.Dir))
 		depth++
 	}
 	return

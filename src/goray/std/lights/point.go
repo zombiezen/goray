@@ -43,8 +43,8 @@ func New(pos vector.Vector3D, col color.Color, intensity float64) light.Light {
 	return &pl
 }
 
-func (l *pointLight) NumSamples() int { return 1 }
-func (l *pointLight) GetFlags() uint  { return light.TypeSingular }
+func (l *pointLight) NumSamples() int  { return 1 }
+func (l *pointLight) LightFlags() uint { return light.TypeSingular }
 
 func (l *pointLight) SetScene(scene interface{}) {}
 
@@ -64,7 +64,7 @@ func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r ray.
 
 func (l *pointLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.Color) {
 	s.Point.Position = l.position
-	s.Flags = l.GetFlags()
+	s.Flags = l.LightFlags()
 	s.DirPdf, s.AreaPdf = 0.25, 1.0
 	wo = sampleSphere(s.S1, s.S2)
 	col = l.color
@@ -76,7 +76,7 @@ func (l *pointLight) CanIlluminate(pt vector.Vector3D) bool { return true }
 func (l *pointLight) IlluminateSample(sp surface.Point, wi ray.Ray, s *light.Sample) (wo ray.Ray, ok bool) {
 	_, wo, ok = l.Illuminate(sp, wi)
 	if ok {
-		s.Flags = l.GetFlags()
+		s.Flags = l.LightFlags()
 		s.Color = l.color
 		s.Pdf = vector.Sub(l.position, sp.Position).LengthSqr()
 	}

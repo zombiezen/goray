@@ -22,7 +22,7 @@ func (mat TestMat) InitBSDF(state *render.State, sp surface.Point) material.BSDF
 	return material.BSDFNone
 }
 
-func (mat TestMat) GetFlags() material.BSDF { return material.BSDFNone }
+func (mat TestMat) MaterialFlags() material.BSDF { return material.BSDFNone }
 
 func (mat TestMat) Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types material.BSDF) color.Color {
 	return color.Black
@@ -36,15 +36,15 @@ func (mat TestMat) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vect
 	return 0
 }
 
-func (mat TestMat) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (mat TestMat) Specular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	return
 }
 
-func (mat TestMat) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
+func (mat TestMat) Reflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
 	return color.Black
 }
 
-func (mat TestMat) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
+func (mat TestMat) Alpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	if mat.Transp == nil {
 		return 1.0
 	}
@@ -55,7 +55,7 @@ func (mat TestMat) ScatterPhoton(state *render.State, sp surface.Point, wi vecto
 	return
 }
 
-func (mat TestMat) GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
+func (mat TestMat) Transparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
 	if mat.Transp == nil {
 		return color.Black
 	}
@@ -134,7 +134,7 @@ func TestTransparentShadow(t *testing.T) {
 			TMin: 0,
 			TMax: math.Inf(1),
 		}
-		hit := intersect.DoTransparentShadows(nil, r, c.Depth, r.TMax, &col)
+		hit := intersect.TransparentShadow(nil, r, c.Depth, r.TMax, &col)
 		switch {
 		case hit != c.ShouldHit:
 			t.Errorf("%s intersect hit mismatch", c.Name)

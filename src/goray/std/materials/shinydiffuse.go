@@ -147,7 +147,7 @@ func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material
 	return sd.bsdfFlags
 }
 
-func (sd *ShinyDiffuse) GetFlags() material.BSDF {
+func (sd *ShinyDiffuse) MaterialFlags() material.BSDF {
 	return sd.bsdfFlags
 }
 
@@ -348,7 +348,7 @@ func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector
 	return pdf / sum
 }
 
-func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (sd *ShinyDiffuse) Specular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	data := state.MaterialData.(sdData)
 	backface := vector.Dot(sp.GeometricNormal, wo) < 0
 	n, ng := sp.Normal, sp.GeometricNormal
@@ -375,11 +375,11 @@ func (sd *ShinyDiffuse) GetSpecular(state *render.State, sp surface.Point, wo ve
 	return
 }
 
-func (sd *ShinyDiffuse) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
+func (sd *ShinyDiffuse) Reflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
 	return common.GetReflectivity(sd, state, sp, flags)
 }
 
-func (sd *ShinyDiffuse) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
+func (sd *ShinyDiffuse) Alpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	if sd.isTransp {
 		data := state.MaterialData.(sdData)
 		n := sp.Normal

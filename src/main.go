@@ -134,7 +134,7 @@ func main() {
 	sc := scene.New()
 
 	logging.MainLog.Info("Setting up scene...")
-	sc.GetLog().AddHandler(logging.NewFormatFilter(
+	sc.Log().AddHandler(logging.NewFormatFilter(
 		logging.MainLog,
 		func(rec logging.Record) string {
 			return "  SCENE: " + rec.String()

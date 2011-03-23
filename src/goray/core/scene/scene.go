@@ -190,7 +190,7 @@ func (s *Scene) Shadowed(r ray.Ray, dist float64) bool {
 	if r.TMax >= 0 {
 		dist = r.TMax - 2*r.TMin
 	}
-	return s.intersect.IsShadowed(r, dist)
+	return s.intersect.Shadowed(r, dist)
 }
 
 // Update causes the scene state to prepare for rendering.
@@ -206,16 +206,16 @@ func (s *Scene) Update() (err os.Error) {
 		// We've changed the scene's geometry.  We need to rebuild the intersection scheme.
 		s.intersect = nil
 		// Collect primitives
-		prims := make([]primitive.Primitive, 0)
+		prims := make([]primitive.Primitive, 0, len(s.objects))
 		for _, obj := range s.objects {
-			prims = append(prims, obj.GetPrimitives()...)
+			prims = append(prims, obj.Primitives()...)
 		}
 		s.log.Debug("Geometry collected, %d primitives", len(prims))
 		// Do partition building
 		if len(prims) > 0 {
 			s.log.Debug("Building kd-tree...")
 			s.intersect = intersect.NewKD(prims, s.log)
-			s.sceneBound = s.intersect.GetBound()
+			s.sceneBound = s.intersect.Bound()
 			s.log.Debug("Built kd-tree")
 		}
 	}
@@ -225,7 +225,7 @@ func (s *Scene) Update() (err os.Error) {
 	}
 
 	if s.background != nil {
-		bgLight := s.background.GetLight()
+		bgLight := s.background.Light()
 		if bgLight != nil {
 			bgLight.SetScene(s)
 		}
