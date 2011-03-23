@@ -77,32 +77,32 @@ func TestTransparentShadow(t *testing.T) {
 			Name:      "Pass-through",
 			Filters:   []color.Color{},
 			Depth:     3,
-			Expected:  color.NewRGB(1.0, 1.0, 1.0),
+			Expected:  color.RGB{1.0, 1.0, 1.0},
 			ShouldHit: false,
 		},
 		{
 			Name: "Red filter",
 			Filters: []color.Color{
-				color.NewRGB(1.0, 0.0, 0.0),
+				color.RGB{1.0, 0.0, 0.0},
 			},
 			Depth:     3,
-			Expected:  color.NewRGB(1.0, 0.0, 0.0),
+			Expected:  color.RGB{1.0, 0.0, 0.0},
 			ShouldHit: false,
 		},
 		{
 			Name: "Depth boundary",
 			Filters: []color.Color{
-				color.NewRGB(0.0, 0.0, 1.0),
+				color.RGB{0.0, 0.0, 1.0},
 			},
 			Depth:     1,
-			Expected:  color.NewRGB(0.0, 0.0, 1.0),
+			Expected:  color.RGB{0.0, 0.0, 1.0},
 			ShouldHit: false,
 		},
 		{
 			Name: "Depth clamp",
 			Filters: []color.Color{
-				color.NewRGB(1.0, 0.0, 0.0),
-				color.NewRGB(1.0, 0.0, 0.0),
+				color.RGB{1.0, 0.0, 0.0},
+				color.RGB{1.0, 0.0, 0.0},
 			},
 			Depth:     1,
 			Expected:  nil,
@@ -111,12 +111,12 @@ func TestTransparentShadow(t *testing.T) {
 		{
 			Name: "3-Filter",
 			Filters: []color.Color{
-				color.NewRGB(1.0, 0.5, 0.5),
-				color.NewRGB(0.5, 1.0, 0.5),
-				color.NewRGB(0.5, 0.5, 1.0),
+				color.RGB{1.0, 0.5, 0.5},
+				color.RGB{0.5, 1.0, 0.5},
+				color.RGB{0.5, 0.5, 1.0},
 			},
 			Depth:     5,
-			Expected:  color.NewRGB(0.25, 0.25, 0.25),
+			Expected:  color.RGB{0.25, 0.25, 0.25},
 			ShouldHit: false,
 		},
 	}
@@ -138,7 +138,7 @@ func TestTransparentShadow(t *testing.T) {
 		switch {
 		case hit != c.ShouldHit:
 			t.Errorf("%s intersect hit mismatch", c.Name)
-		case !c.ShouldHit && (col.GetR() != c.Expected.GetR() || col.GetG() != c.Expected.GetG() || col.GetB() != c.Expected.GetB()):
+		case !c.ShouldHit && (col.Red() != c.Expected.Red() || col.Green() != c.Expected.Green() || col.Blue() != c.Expected.Blue()):
 			t.Errorf("%s intersect got %v (wanted %v)", c.Name, col, c.Expected)
 		}
 	}

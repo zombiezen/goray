@@ -53,8 +53,8 @@ func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector
 		return
 	}
 	cnew := color.ScalarMul(color.Mul(s.LastColor, color.Mul(s.Alpha, scol)), math.Fabs(vector.Dot(wo, sp.Normal))/s.Pdf)
-	newMax := math.Fmax(math.Fmax(cnew.GetR(), cnew.GetG()), cnew.GetB())
-	oldMax := math.Fmax(math.Fmax(s.LastColor.GetR(), s.LastColor.GetG()), s.LastColor.GetB())
+	newMax := math.Fmax(math.Fmax(cnew.Red(), cnew.Green()), cnew.Blue())
+	oldMax := math.Fmax(math.Fmax(s.LastColor.Red(), s.LastColor.Green()), s.LastColor.Blue())
 	prob := math.Fmin(1.0, newMax/oldMax)
 	if s.S3 <= prob {
 		scattered = true

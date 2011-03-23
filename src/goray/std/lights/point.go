@@ -39,7 +39,7 @@ func sampleSphere(s1, s2 float64) (dir vector.Vector3D) {
 
 func New(pos vector.Vector3D, col color.Color, intensity float64) light.Light {
 	pl := pointLight{position: pos, color: color.ScalarMul(col, intensity)}
-	pl.intensity = color.GetEnergy(pl.color)
+	pl.intensity = color.Energy(pl.color)
 	return &pl
 }
 
