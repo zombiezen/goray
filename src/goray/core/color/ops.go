@@ -16,8 +16,8 @@ func IsBlack(c Color) bool {
 	return c.Red() == 0 && c.Green() == 0 && c.Blue() == 0
 }
 
-// GetEnergy calculates the overall brightness of a color.
-func GetEnergy(c Color) float64 {
+// Energy calculates the overall brightness of a color.
+func Energy(c Color) float64 {
 	return (c.Red() + c.Green() + c.Blue()) / 3.0
 }
 

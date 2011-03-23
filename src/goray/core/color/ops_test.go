@@ -38,7 +38,7 @@ func TestEnergy(t *testing.T) {
 		{RGB{0.25, 0.70, 0.55}, 0.5},
 	}
 	for _, c := range cases {
-		result := GetEnergy(c.Color)
+		result := Energy(c.Color)
 		if result != c.Expected {
 			t.Errorf("%v energy is %#v (expected %#v)", c.Color, result, c.Expected)
 		}
