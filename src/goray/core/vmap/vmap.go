@@ -22,8 +22,8 @@ func New(dimension, triCount int) (vm *VMap) {
 	}
 }
 
-// GetDimension returns the number of values for each vertex.
-func (vm *VMap) GetDimension() int { return vm.dim }
+// Dimension returns the number of values for each vertex.
+func (vm *VMap) Dimension() int { return vm.dim }
 
 // Len returns the number of vertices stored in the map.
 func (vm *VMap) Len() int { return len(vm.fmap) / vm.dim }

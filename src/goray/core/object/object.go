@@ -15,10 +15,10 @@ import (
 
 // Object3D is a collection of primitives.
 type Object3D interface {
-	// GetPrimitives retrieves all of the primitives for this object.
-	GetPrimitives() []primitive.Primitive
-	// IsVisible indicates whether the object is shown in the scene.
-	IsVisible() bool
+	// Primitives retrieves all of the primitives for this object.
+	Primitives() []primitive.Primitive
+	// Visible indicates whether the object is shown in the scene.
+	Visible() bool
 }
 
 // Samplable defines an interface for sampling a surface.
@@ -40,8 +40,8 @@ type PrimitiveObject struct {
 	Primitive primitive.Primitive
 }
 
-func (o PrimitiveObject) GetPrimitives() []primitive.Primitive {
+func (o PrimitiveObject) Primitives() []primitive.Primitive {
 	return []primitive.Primitive{o.Primitive}
 }
 
-func (o PrimitiveObject) IsVisible() bool { return true }
+func (o PrimitiveObject) Visible() bool { return true }

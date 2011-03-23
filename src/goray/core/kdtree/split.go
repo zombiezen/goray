@@ -33,7 +33,7 @@ func (a float64array) Less(i1, i2 int) bool { return a[i1] < a[i2] }
 func (a float64array) Swap(i1, i2 int)      { a[i1], a[i2] = a[i2], a[i1] }
 
 func SimpleSplit(vals []Value, bd *bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float64) {
-	axis = bd.GetLargestAxis()
+	axis = bd.LargestAxis()
 	data := make([]float64, 0, len(vals)*2)
 	for i, v := range vals {
 		min, max := state.getClippedDimension(i, v, axis)
@@ -58,7 +58,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 	}
 
 	var bins [numBins + 1]pigeonBin
-	d := [3]float64{bd.GetXLength(), bd.GetYLength(), bd.GetZLength()}
+	d := [3]float64{bd.LengthX(), bd.LengthY(), bd.LengthZ()}
 	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
@@ -68,7 +68,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		s := numBins / d[axis]
-		min := bd.GetMin()[axis]
+		min := bd.Min()[axis]
 
 		for i, v := range vals {
 			tLow, tHigh := state.getClippedDimension(i, v, axis)
@@ -129,7 +129,7 @@ func PigeonSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vect
 				nAbove -= b.right
 				// Cost:
 				edget := b.t
-				if edget > bd.GetMin()[axis] && edget < bd.GetMax()[axis] {
+				if edget > bd.Min()[axis] && edget < bd.Max()[axis] {
 					cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nBelow, nAbove, edget)
 					if cost < bestCost {
 						bestAxis, bestPivot, bestCost = axis, edget, cost
@@ -160,11 +160,11 @@ func computeCost(axis vector.Axis, bd *bound.Bound, capArea, capPerim, invTotalS
 	const emptyBonus = 0.33
 	const costRatio = 0.35
 
-	l1, l2 := edget-bd.GetMin()[axis], bd.GetMax()[axis]-edget
+	l1, l2 := edget-bd.Min()[axis], bd.Max()[axis]-edget
 	belowSA, aboveSA := capArea+l1*capPerim, capArea+l2*capPerim
 	rawCosts := belowSA*float64(nBelow) + aboveSA*float64(nAbove)
 
-	d := bd.GetSize()[axis]
+	d := bd.Size()[axis]
 
 	var eb float64
 	if nAbove == 0 {
@@ -206,7 +206,7 @@ const (
 )
 
 func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
-	d := bd.GetSize()
+	d := bd.Size()
 	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
@@ -235,7 +235,7 @@ func MinimalSplit(vals []Value, bd *bound.Bound, state BuildState) (bestAxis vec
 				nAbove--
 			}
 
-			if e.position > bd.GetMin()[axis] && e.position < bd.GetMax()[axis] {
+			if e.position > bd.Min()[axis] && e.position < bd.Max()[axis] {
 				cost := computeCost(axis, bd, capArea, capPerim, invTotalSA, nAbove, nBelow, e.position)
 				if cost < bestCost {
 					bestAxis, bestPivot, bestCost = axis, e.position, cost

@@ -107,7 +107,7 @@ func checkShadow(params directParams, r ray.Ray) bool {
 	if params.TrShad {
 		// TODO
 	}
-	return params.Scene.IsShadowed(r, math.Inf(1))
+	return params.Scene.Shadowed(r, math.Inf(1))
 }
 
 func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
@@ -268,11 +268,11 @@ func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo ve
 		mat := sp.Material.(material.Material)
 		for _, gResult := range gathered {
 			phot := gResult.Photon
-			surfCol := mat.Eval(state, sp, wo, phot.GetDirection(), material.BSDFAll)
+			surfCol := mat.Eval(state, sp, wo, phot.Direction(), material.BSDFAll)
 			k := kernel(gResult.Distance, radius)
-			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.GetColor(), k)))
+			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.Color(), k)))
 		}
-		sum = color.ScalarMul(sum, 1.0/float64(m.GetNumPaths()))
+		sum = color.ScalarMul(sum, 1.0/float64(m.NumPaths()))
 	}
 	return
 }
@@ -319,7 +319,7 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 		surfCol, dir := mat.Sample(state, sp, wo, &s)
 		lightRay.Dir = dir
 
-		if s.Pdf <= pdfCutoff || sc.IsShadowed(lightRay, math.Inf(1)) {
+		if s.Pdf <= pdfCutoff || sc.Shadowed(lightRay, math.Inf(1)) {
 			return color.Black
 		}
 		cos := math.Fabs(vector.Dot(sp.Normal, lightRay.Dir))

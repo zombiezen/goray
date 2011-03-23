@@ -92,7 +92,7 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	return
 }
 
-func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
+func (tri *Triangle) Surface(coll primitive.Collision) (sp surface.Point) {
 	sp.GeometricNormal = tri.normal
 	vert := tri.getVertices()
 	dat := coll.UserData.([2]float64)
@@ -113,7 +113,7 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 		sp.OrcoPosition = vector.Add(vector.ScalarMul(vert[0], u), vector.ScalarMul(vert[1], v), vector.ScalarMul(vert[2], w))
 		sp.OrcoNormal = vector.Cross(vector.Sub(vert[1], vert[0]), vector.Sub(vert[2], vert[0])).Normalize()
 	} else {
-		sp.OrcoPosition = coll.GetPoint()
+		sp.OrcoPosition = coll.Point()
 		sp.OrcoNormal = sp.GeometricNormal
 	}
 
@@ -148,7 +148,7 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 
 	sp.SurfaceU, sp.SurfaceV = u, v
 	sp.PrimitiveNumber = tri.index
-	sp.Position = coll.GetPoint()
+	sp.Position = coll.Point()
 
 	sp.NormalU, sp.NormalV = vector.CreateCS(sp.Normal)
 	sp.ShadingU[vector.X] = vector.Dot(sp.NormalU, sp.WorldU)
@@ -161,7 +161,7 @@ func (tri *Triangle) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	return
 }
 
-func (tri *Triangle) GetBound() *bound.Bound {
+func (tri *Triangle) Bound() *bound.Bound {
 	var minPt, maxPt vector.Vector3D
 	v := tri.getVertices()
 	for axis := vector.X; axis <= vector.Z; axis++ {
@@ -180,11 +180,11 @@ func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
 		}
 	}
 
-	ctr := bd.GetCenter()
-	return triBoxOverlap([3]float64(ctr), bd.GetHalfSize(), points)
+	ctr := bd.Center()
+	return triBoxOverlap([3]float64(ctr), bd.HalfSize(), points)
 }
 
-func (tri *Triangle) GetMaterial() material.Material { return tri.material }
+func (tri *Triangle) Material() material.Material { return tri.material }
 
 func (tri *Triangle) Clip(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
 	if axis >= 0 {
@@ -211,9 +211,9 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis vector.Axis, lower bool,
 
 	var split float64
 	if lower {
-		split = bound.GetMin()[axis]
+		split = bound.Min()[axis]
 	} else {
-		split = bound.GetMax()[axis]
+		split = bound.Max()[axis]
 	}
 
 	newData, clipped = triPlaneClip(axis, split, lower, poly)
@@ -230,7 +230,7 @@ func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData 
 
 	v := tri.getVertices()
 	poly := []vector.Vector3D{v[0], v[1], v[2], v[0]}
-	newData, clipped = triBoxClip([3]float64(bound.GetMin()), [3]float64(bound.GetMax()), poly)
+	newData, clipped = triBoxClip([3]float64(bound.Min()), [3]float64(bound.Max()), poly)
 	return
 }
 
@@ -248,7 +248,7 @@ func (tri *Triangle) CalculateNormal() {
 	tri.normal = vector.Cross(vector.Sub(v[1], v[0]), vector.Sub(v[2], v[0])).Normalize()
 }
 
-func (tri *Triangle) GetSurfaceArea() float64 {
+func (tri *Triangle) SurfaceArea() float64 {
 	v := tri.getVertices()
 	edge1, edge2 := vector.Sub(v[1], v[0]), vector.Sub(v[2], v[0])
 	return vector.Cross(edge1, edge2).Length() * 0.5

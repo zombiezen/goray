@@ -88,7 +88,7 @@ func New() (s *Scene) {
 	return s
 }
 
-func (s *Scene) GetLog() *logging.Logger { return s.log }
+func (s *Scene) Log() *logging.Logger { return s.log }
 
 // AddLight adds a light to the scene.
 func (s *Scene) AddLight(l light.Light) (err os.Error) {
@@ -100,8 +100,8 @@ func (s *Scene) AddLight(l light.Light) (err os.Error) {
 	return
 }
 
-// GetLights returns all of the lights added to the scene.
-func (s *Scene) GetLights() []light.Light { return s.lights }
+// Lights returns all of the lights added to the scene.
+func (s *Scene) Lights() []light.Light { return s.lights }
 
 // AddMaterial adds a material to the scene.
 func (s *Scene) AddMaterial(name string, m material.Material) (err os.Error) {
@@ -131,14 +131,14 @@ func (s *Scene) GetObject(id ObjectID) (obj object.Object3D, found bool) {
 // AddVolumeRegion adds a volumetric effect to the scene.
 func (s *Scene) AddVolumeRegion(vr volume.Region) { s.volumes = append(s.volumes, vr) }
 
-// GetCamera returns the scene's current camera.
-func (s *Scene) GetCamera() camera.Camera { return s.camera }
+// Camera returns the scene's current camera.
+func (s *Scene) Camera() camera.Camera { return s.camera }
 
 // SetCamera changes the scene's current camera.
 func (s *Scene) SetCamera(cam camera.Camera) { s.camera = cam }
 
-// GetBackground returns the scene's current background.
-func (s *Scene) GetBackground() background.Background { return s.background }
+// Background returns the scene's current background.
+func (s *Scene) Background() background.Background { return s.background }
 
 // SetBackground changes the scene's current background.
 func (s *Scene) SetBackground(bg background.Background) { s.background = bg }
@@ -158,10 +158,10 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 	s.aaThreshold = threshold
 }
 
-// GetBound returns a bounding box that contains every object in the scene.
-func (s *Scene) GetBound() *bound.Bound { return s.sceneBound }
+// Bound returns a bounding box that contains every object in the scene.
+func (s *Scene) Bound() *bound.Bound { return s.sceneBound }
 
-func (s *Scene) GetDoDepth() bool { return s.doDepth }
+func (s *Scene) DoDepth() bool { return s.doDepth }
 
 // Intersect returns the surface point that intersects with the given ray.
 func (s *Scene) Intersect(r ray.Ray, dist float64) primitive.Collision {
@@ -180,17 +180,17 @@ func (s *Scene) Intersect(r ray.Ray, dist float64) primitive.Collision {
 	return s.intersect.Intersect(r, dist)
 }
 
-// IsShadowed returns whether a ray will cast a shadow.
-func (s *Scene) IsShadowed(r ray.Ray, dist float64) bool {
+// Shadowed returns whether a ray will cast a shadow.
+func (s *Scene) Shadowed(r ray.Ray, dist float64) bool {
 	if s.intersect == nil {
-		s.log.Warning("IsShadowed called without an Update")
+		s.log.Warning("Shadowed called without an Update")
 		return false
 	}
 	r.From = vector.Add(r.From, vector.ScalarMul(r.Dir, r.TMin))
 	if r.TMax >= 0 {
 		dist = r.TMax - 2*r.TMin
 	}
-	return s.intersect.IsShadowed(r, dist)
+	return s.intersect.Shadowed(r, dist)
 }
 
 // Update causes the scene state to prepare for rendering.
@@ -206,16 +206,16 @@ func (s *Scene) Update() (err os.Error) {
 		// We've changed the scene's geometry.  We need to rebuild the intersection scheme.
 		s.intersect = nil
 		// Collect primitives
-		prims := make([]primitive.Primitive, 0)
+		prims := make([]primitive.Primitive, 0, len(s.objects))
 		for _, obj := range s.objects {
-			prims = append(prims, obj.GetPrimitives()...)
+			prims = append(prims, obj.Primitives()...)
 		}
 		s.log.Debug("Geometry collected, %d primitives", len(prims))
 		// Do partition building
 		if len(prims) > 0 {
 			s.log.Debug("Building kd-tree...")
 			s.intersect = intersect.NewKD(prims, s.log)
-			s.sceneBound = s.intersect.GetBound()
+			s.sceneBound = s.intersect.Bound()
 			s.log.Debug("Built kd-tree")
 		}
 	}
@@ -225,7 +225,7 @@ func (s *Scene) Update() (err os.Error) {
 	}
 
 	if s.background != nil {
-		bgLight := s.background.GetLight()
+		bgLight := s.background.Light()
 		if bgLight != nil {
 			bgLight.SetScene(s)
 		}

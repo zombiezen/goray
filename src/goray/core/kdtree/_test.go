@@ -13,7 +13,7 @@ func dim(v Value, axis vector.Axis) (min, max float64) {
 		comp := val[axis]
 		return comp, comp
 	case *bound.Bound:
-		return val.GetMin()[axis], val.GetMax()[axis]
+		return val.Min()[axis], val.Max()[axis]
 	}
 	return
 }
@@ -47,27 +47,27 @@ func TestBound(t *testing.T) {
 	ptA, ptB := vector.Vector3D{1, 2, 3}, vector.Vector3D{4, 5, 6}
 
 	opts := MakeOptions(dim, nil)
-	b := newBoxTree([]*bound.Bound{bound.New(ptA, ptB)}, opts).GetBound()
+	b := newBoxTree([]*bound.Bound{bound.New(ptA, ptB)}, opts).Bound()
 	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.GetMin()[axis] != ptA[axis] {
-			t.Errorf("Box tree %v minimum expects %.2f, got %.2f", b.GetMin()[axis], ptA[axis])
+		if b.Min()[axis] != ptA[axis] {
+			t.Errorf("Box tree %v minimum expects %.2f, got %.2f", b.Min()[axis], ptA[axis])
 		}
 	}
 	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.GetMin()[axis] != ptA[axis] {
-			t.Errorf("Box tree %v maximum expects %.2f, got %.2f", b.GetMax()[axis], ptB[axis])
+		if b.Min()[axis] != ptA[axis] {
+			t.Errorf("Box tree %v maximum expects %.2f, got %.2f", b.Max()[axis], ptB[axis])
 		}
 	}
 
-	b = newPointTree([]vector.Vector3D{ptA, ptB}, opts).GetBound()
+	b = newPointTree([]vector.Vector3D{ptA, ptB}, opts).Bound()
 	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.GetMin()[axis] != ptA[axis] {
-			t.Errorf("Point tree %v minimum expects %.2f, got %.2f", b.GetMin()[axis], ptA[axis])
+		if b.Min()[axis] != ptA[axis] {
+			t.Errorf("Point tree %v minimum expects %.2f, got %.2f", b.Min()[axis], ptA[axis])
 		}
 	}
 	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.GetMin()[axis] != ptA[axis] {
-			t.Errorf("Point tree %v maximum expects %.2f, got %.2f", b.GetMax()[axis], ptB[axis])
+		if b.Min()[axis] != ptA[axis] {
+			t.Errorf("Point tree %v maximum expects %.2f, got %.2f", b.Max()[axis], ptB[axis])
 		}
 	}
 }

@@ -44,7 +44,7 @@ func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 
 type Sampler interface {
 	Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (color.Color, vector.Vector3D)
-	GetFlags() material.BSDF
+	MaterialFlags() material.BSDF
 }
 
 func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
@@ -67,7 +67,7 @@ func GetReflectivity(mat Sampler, state *render.State, sp surface.Point, flags m
 	const N = 16
 
 	col = color.Black
-	if flags&(material.BSDFTransmit|material.BSDFReflect)&mat.GetFlags() == 0 {
+	if flags&(material.BSDFTransmit|material.BSDFReflect)&mat.MaterialFlags() == 0 {
 		return
 	}
 

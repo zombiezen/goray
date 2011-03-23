@@ -86,7 +86,7 @@ func (state BuildState) getBound(v Value) *bound.Bound {
 
 func (state BuildState) getClippedDimension(i int, v Value, axis vector.Axis) (min, max float64) {
 	if info := state.getClipInfo(i); info.Bound != nil {
-		return info.Bound.GetMin()[axis], info.Bound.GetMax()[axis]
+		return info.Bound.Min()[axis], info.Bound.Max()[axis]
 	}
 	return state.GetDimension(v, axis)
 }
@@ -239,12 +239,12 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 
 	var bExt [2][3]float64
 	for axis := 0; axis < 3; axis++ {
-		treeSize := state.TreeBound.GetMax()[axis] - state.TreeBound.GetMin()[axis]
-		nodeSize := nodeBound.GetMax()[axis] - nodeBound.GetMin()[axis]
+		treeSize := state.TreeBound.Max()[axis] - state.TreeBound.Min()[axis]
+		nodeSize := nodeBound.Max()[axis] - nodeBound.Min()[axis]
 		delta := treeSize*treeSizeWeight + nodeSize*nodeSizeWeight
 
-		bExt[0][axis] = nodeBound.GetMin()[axis] - delta
-		bExt[1][axis] = nodeBound.GetMax()[axis] + delta
+		bExt[0][axis] = nodeBound.Min()[axis] - delta
+		bExt[1][axis] = nodeBound.Max()[axis] + delta
 	}
 
 	bd := bound.New(vector.Vector3D(bExt[0]), vector.Vector3D(bExt[1]))
@@ -293,8 +293,8 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 	return
 }
 
-// GetRoot returns the root of the kd-tree.
-func (tree *Tree) GetRoot() *Node { return tree.root }
+// Root returns the root of the kd-tree.
+func (tree *Tree) Root() *Node { return tree.root }
 
-// GetBound returns a bounding box that encloses all objects in the tree.
-func (tree *Tree) GetBound() *bound.Bound { return bound.New(tree.bound.Get()) }
+// Bound returns a bounding box that encloses all objects in the tree.
+func (tree *Tree) Bound() *bound.Bound { return bound.New(tree.bound.Get()) }

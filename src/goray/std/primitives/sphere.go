@@ -29,13 +29,13 @@ func New(center vector.Vector3D, radius float64, material material.Material) pri
 	return &sphere{center, radius, material}
 }
 
-func (s *sphere) GetBound() *bound.Bound {
+func (s *sphere) Bound() *bound.Bound {
 	r := vector.Vector3D{s.radius * 1.0001, s.radius * 1.0001, s.radius * 1.0001}
 	return bound.New(vector.Sub(s.center, r), vector.Add(s.center, r))
 }
 
 func (s *sphere) IntersectsBound(b *bound.Bound) bool { return true }
-func (s *sphere) GetMaterial() material.Material      { return s.material }
+func (s *sphere) Material() material.Material         { return s.material }
 
 func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	coll.Ray = r
@@ -63,8 +63,8 @@ func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	return
 }
 
-func (s *sphere) GetSurface(coll primitive.Collision) (sp surface.Point) {
-	normal := vector.Sub(coll.GetPoint(), s.center)
+func (s *sphere) Surface(coll primitive.Collision) (sp surface.Point) {
+	normal := vector.Sub(coll.Point(), s.center)
 	sp.HasOrco = true
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()
@@ -72,7 +72,7 @@ func (s *sphere) GetSurface(coll primitive.Collision) (sp surface.Point) {
 	sp.Material = s.material
 	sp.Primitive = s
 
-	sp.Position = coll.GetPoint()
+	sp.Position = coll.Point()
 	sp.Normal = normal
 	sp.GeometricNormal = normal
 	sp.U = math.Atan2(normal[vector.Y], normal[vector.X])*(1.0/math.Pi) + 1
