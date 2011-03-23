@@ -2,9 +2,6 @@ package color
 
 import "testing"
 
-import (
-)
-
 func TestBlack(t *testing.T) {
 	if !IsBlack(Black) {
 		t.Error("Black constant is not black")
@@ -24,7 +21,7 @@ func TestBlack(t *testing.T) {
 }
 
 type energyTest struct {
-	Color Color
+	Color    Color
 	Expected float64
 }
 
@@ -32,9 +29,9 @@ func TestEnergy(t *testing.T) {
 	cases := []energyTest{
 		{Black, 0},
 		{White, 1},
-		{Red, 1/3.0},
-		{Green, 1/3.0},
-		{Blue, 1/3.0},
+		{Red, 1 / 3.0},
+		{Green, 1 / 3.0},
+		{Blue, 1 / 3.0},
 		{RGB{0.25, 0.70, 0.55}, 0.5},
 	}
 	for _, c := range cases {
@@ -61,7 +58,7 @@ func TestInvert(t *testing.T) {
 		{Green, Green},
 		{Blue, Blue},
 		{RGB{2.0, 2.0, 2.0}, RGB{0.5, 0.5, 0.5}},
-		{RGB{1.0/3.0, 0.5, 10.0}, RGB{3.0, 2.0, 0.1}},
+		{RGB{1.0 / 3.0, 0.5, 10.0}, RGB{3.0, 2.0, 0.1}},
 	}
 	for _, c := range cases {
 		result := Invert(c.Input)
@@ -72,7 +69,7 @@ func TestInvert(t *testing.T) {
 }
 
 type binaryTest struct {
-	C1, C2 Color
+	C1, C2   Color
 	Expected Color
 }
 
