@@ -118,7 +118,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	}
 	mat := sp.Material.(material.Material)
 
-	lcol, lightRay, ok := l.Illuminate(sp, lightRay)
+	lcol, ok := l.Illuminate(sp, &lightRay)
 	if ok {
 		if shadowed := checkShadow(params, lightRay); !shadowed {
 			if params.TrShad {
@@ -189,8 +189,7 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 		From: sp.Position,
 		TMax: -1.0,
 	}
-	lightRay, ok := l.IlluminateSample(sp, lightRay, &lightSamp)
-	if ok {
+	if ok := l.IlluminateSample(sp, &lightRay, &lightSamp); ok {
 		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
 			// TODO: if trShad
 			// TODO: transmitCol
