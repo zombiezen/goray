@@ -56,7 +56,7 @@ type Light interface {
 	//
 	// The Sample passed in will be filled with the proper sample values.
 	// The returned ray will be the ray that casted the light.
-	IlluminateSample(sp surface.Point, wi ray.Ray, s *Sample) (wo ray.Ray, illuminated bool)
+	IlluminateSample(sp surface.Point, wi *ray.Ray, s *Sample) (illuminated bool)
 	// IlluminatePdf returns the PDF for sampling with IllumSample.
 	IlluminatePdf(sp, spLight surface.Point) float64
 }
@@ -70,5 +70,5 @@ type DiracLight interface {
 	Light
 
 	// Illuminate computes the amount of light to add to a given surface point.
-	Illuminate(sp surface.Point, wi ray.Ray) (col color.Color, wo ray.Ray, ok bool)
+	Illuminate(sp surface.Point, wi *ray.Ray) (col color.Color, ok bool)
 }
