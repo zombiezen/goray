@@ -33,6 +33,8 @@ type spotLight struct {
 	interv1, interv2 float64
 }
 
+var _ light.DiracLight = &spotLight{}
+
 func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) light.Light {
 	newSpot := &spotLight{
 		position:  from,

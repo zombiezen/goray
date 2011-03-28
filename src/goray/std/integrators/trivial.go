@@ -17,11 +17,13 @@ import (
 
 type trivial struct{}
 
-func New() integrator.SurfaceIntegrator        { return new(trivial) }
-func (ti *trivial) SurfaceIntegrator()         {}
-func (ti *trivial) Preprocess(sc *scene.Scene) {}
+var _ integrator.SurfaceIntegrator = trivial{}
 
-func (ti *trivial) Integrate(sc *scene.Scene, s *render.State, r ray.DifferentialRay) color.AlphaColor {
+func New() integrator.SurfaceIntegrator       { return trivial{} }
+func (ti trivial) SurfaceIntegrator()         {}
+func (ti trivial) Preprocess(sc *scene.Scene) {}
+
+func (ti trivial) Integrate(sc *scene.Scene, s *render.State, r ray.DifferentialRay) color.AlphaColor {
 	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
 		return color.NewRGBAFromColor(color.White, 1.0)
 	}

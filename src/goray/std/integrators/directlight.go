@@ -39,6 +39,8 @@ type directLighting struct {
 	lights []light.Light
 }
 
+var _ integrator.SurfaceIntegrator = &directLighting{}
+
 func New(transparentShadows bool, shadowDepth, rayDepth int) integrator.SurfaceIntegrator {
 	return &directLighting{
 		transparentShadows: transparentShadows,

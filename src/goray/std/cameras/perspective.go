@@ -10,6 +10,7 @@ package perspective
 import (
 	"math"
 	"os"
+	"goray/core/camera"
 	"goray/core/ray"
 	"goray/core/vector"
 	yamldata "goyaml.googlecode.com/hg/data"
@@ -92,6 +93,8 @@ type Camera struct {
 	bokehBias BokehBias
 	lens      []float64
 }
+
+var _ camera.Camera = &Camera{}
 
 func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float64, bokeh Bokeh, bias BokehBias, bokehRot float64) (cam *Camera) {
 	cam = new(Camera)

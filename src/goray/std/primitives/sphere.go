@@ -24,6 +24,8 @@ type sphere struct {
 	material material.Material
 }
 
+var _ primitive.Primitive = &sphere{}
+
 // New creates a spherical primitive.
 func New(center vector.Vector3D, radius float64, material material.Material) primitive.Primitive {
 	return &sphere{center, radius, material}

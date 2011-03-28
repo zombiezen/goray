@@ -27,6 +27,8 @@ type pointLight struct {
 	intensity float64
 }
 
+var _ light.DiracLight = &pointLight{}
+
 func New(pos vector.Vector3D, col color.Color, intensity float64) light.Light {
 	pl := pointLight{position: pos, color: color.ScalarMul(col, intensity)}
 	pl.intensity = color.Energy(pl.color)

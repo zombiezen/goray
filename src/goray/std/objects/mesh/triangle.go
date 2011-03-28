@@ -30,6 +30,8 @@ type Triangle struct {
 	mesh     *Mesh
 }
 
+var _ primitive.Primitive = &Triangle{}
+
 // NewTriangle creates a new triangle.
 func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
 	tri = &Triangle{

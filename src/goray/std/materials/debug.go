@@ -22,6 +22,8 @@ type debugMaterial struct {
 	Color color.Color
 }
 
+var _ material.Material = &debugMaterial{}
+
 func New(col color.Color) material.Material { return &debugMaterial{col} }
 
 func (mat *debugMaterial) InitBSDF(state *render.State, sp surface.Point) material.BSDF {

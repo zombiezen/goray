@@ -17,6 +17,7 @@ import (
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/matrix"
+	"goray/core/object"
 	"goray/core/primitive"
 	"goray/core/vector"
 	yamldata "goyaml.googlecode.com/hg/data"
@@ -36,6 +37,8 @@ type Mesh struct {
 	world2obj *matrix.Matrix
 	hidden    bool
 }
+
+var _ object.Object3D = &Mesh{}
 
 // New creates an empty mesh.
 func New(ntris int, hasOrco bool) (mesh *Mesh) {

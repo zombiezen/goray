@@ -45,6 +45,9 @@ type ShinyDiffuse struct {
 	bsdfFlags     material.BSDF
 }
 
+var _ material.Material = &ShinyDiffuse{}
+var _ material.EmitMaterial = &ShinyDiffuse{}
+
 func (sd *ShinyDiffuse) Init() {
 	const threshold = 1e-5
 
