@@ -109,6 +109,15 @@ func TestTransparentShadow(t *testing.T) {
 			ShouldHit: true,
 		},
 		{
+			Name: "Opaque",
+			Filters: []color.Color{
+				color.Black,
+			},
+			Depth:     3,
+			Expected:  nil,
+			ShouldHit: true,
+		},
+		{
 			Name: "3-Filter",
 			Filters: []color.Color{
 				color.RGB{1.0, 0.5, 0.5},
@@ -127,19 +136,20 @@ func TestTransparentShadow(t *testing.T) {
 			primitives = append(primitives, sphere.New(vector.Vector3D{float64(i + 1), 0, 0}, 0.5, TestMat{f}))
 		}
 		intersect := NewKD(primitives, nil)
-		var col color.Color = color.Gray(1.0)
 		r := ray.Ray{
 			From: vector.Vector3D{0, 0, 0},
 			Dir:  vector.Vector3D{1, 0, 0},
 			TMin: 0,
 			TMax: math.Inf(1),
 		}
-		hit := intersect.TransparentShadow(nil, r, c.Depth, r.TMax, &col)
+		col, hit := intersect.TransparentShadow(nil, r, c.Depth, r.TMax)
 		switch {
 		case hit != c.ShouldHit:
 			t.Errorf("%s intersect hit mismatch", c.Name)
 		case !c.ShouldHit && (col.Red() != c.Expected.Red() || col.Green() != c.Expected.Green() || col.Blue() != c.Expected.Blue()):
 			t.Errorf("%s intersect got %v (wanted %v)", c.Name, col, c.Expected)
+		case c.ShouldHit && !color.IsBlack(col):
+			t.Errorf("%s intersect got %v (wanted black)", c.Name, col)
 		}
 	}
 }

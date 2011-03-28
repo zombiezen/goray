@@ -111,7 +111,8 @@ type Material interface {
 // TransparentMaterial defines a material that can allow light to pass through it.
 type TransparentMaterial interface {
 	Material
-	// Transparency is used when computing transparent shadows.
+	// Transparency returns the color that the light is multiplied by when
+	// passing through it.  If the color is black, then the material is opaque.
 	Transparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
 }
 

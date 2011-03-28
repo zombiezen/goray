@@ -31,8 +31,12 @@ type Interface interface {
 	Intersect(r ray.Ray, dist float64) primitive.Collision
 	// Shadowed checks whether a ray collides with any primitives (for shadow-detection).
 	Shadowed(r ray.Ray, dist float64) bool
-	// TransparentShadow computes the color of a transparent shadow after bouncing around.
-	TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (opaque bool)
+	// TransparentShadow computes the color of a transparent shadow after being
+	// filtered by the objects in the scene.  The resulting color can be
+	// multiplied by the light color to determine the color of the shadow.  The
+	// hit return value is set when an opaque material is encountered or the
+	// maximum depth is exceeded.
+	TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool)
 	// Bound returns a bounding box that contains all of the primitives that the intersecter knows about.
 	Bound() *bound.Bound
 }
@@ -79,24 +83,25 @@ func (s *simple) Shadowed(r ray.Ray, dist float64) bool {
 	return false
 }
 
-func (s *simple) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) bool {
+func (s *simple) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool) {
 	depth := 0
+	filt = color.White
 	for _, p := range s.prims {
 		if coll := p.Intersect(r); coll.Hit() && coll.RayDepth < dist && coll.RayDepth > r.TMin {
 			mat, trans := coll.Primitive.Material().(material.TransparentMaterial)
 			if !trans {
-				return true
+				return color.Black, true
 			}
 			if depth < maxDepth {
-				*filt = color.Mul(*filt, mat.Transparency(state, coll.Surface(), r.Dir))
+				filt = color.Mul(filt, mat.Transparency(state, coll.Surface(), r.Dir))
 				depth++
 			} else {
 				// We've hit the depth limit.  Cut it off.
-				return true
+				return color.Black, true
 			}
 		}
 	}
-	return false
+	return
 }
 
 type kdPartition struct {
@@ -306,21 +311,26 @@ func (kd *kdPartition) Shadowed(r ray.Ray, dist float64) bool {
 	return f.Hit()
 }
 
-func (kd *kdPartition) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64, filt *color.Color) (hitOpaque bool) {
+func (kd *kdPartition) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool) {
 	f := &kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
 	f.Init(kd.Tree)
 	depth := 0
+	filt = color.White
 	for coll := f.Next(); coll.Hit(); coll = f.Next() {
 		if depth >= maxDepth {
 			// Too much depth, just say it's opaque.
-			return true
+			return color.Black, true
 		}
 		tmat, ok := coll.Primitive.Material().(material.TransparentMaterial)
 		if !ok {
-			// Material is opaque
-			return true
+			// Material does not have transparency.
+			return color.Black, true
 		}
-		*filt = color.Mul(*filt, tmat.Transparency(state, coll.Surface(), f.Ray.Dir))
+		filt = color.Mul(filt, tmat.Transparency(state, coll.Surface(), f.Ray.Dir))
+		if color.IsBlack(filt) {
+			// Material is opaque.
+			return color.Black, true
+		}
 		depth++
 	}
 	return
