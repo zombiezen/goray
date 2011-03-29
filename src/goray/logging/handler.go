@@ -10,7 +10,7 @@ package logging
 import (
 	"fmt"
 	"io"
-	"os"
+	"sync"
 	"time"
 )
 
@@ -20,8 +20,9 @@ type Handler interface {
 }
 
 func shortcut(level Level, log Handler, format string, args ...interface{}) {
+	now := time.UTC()
 	if log != nil {
-		log.Handle(BasicRecord{fmt.Sprintf(format, args...), level, time.UTC()})
+		log.Handle(BasicRecord{fmt.Sprintf(format, args...), level, now})
 	}
 }
 
@@ -51,36 +52,17 @@ func Critical(log Handler, format string, args ...interface{}) {
 }
 
 type writerHandler struct {
+	mu     sync.Mutex
 	writer io.Writer
-	ch     chan Record
-	done   chan bool
 }
 
 // NewWriterHandler creates a logging handler that outputs to an io.Writer.
 func NewWriterHandler(w io.Writer) Handler {
-	handler := &writerHandler{w, make(chan Record, 10), make(chan bool)}
-	go handler.writerTask()
-	return handler
-}
-
-func (handler *writerHandler) writerTask() {
-	for rec := range handler.ch {
-		io.WriteString(handler.writer, rec.String()+"\n")
-	}
-	handler.done <- true
+	return &writerHandler{writer: w}
 }
 
 func (handler *writerHandler) Handle(rec Record) {
-	if handler.ch != nil {
-		handler.ch <- rec
-	}
-}
-
-func (handler *writerHandler) Close() os.Error {
-	if handler.ch != nil {
-		close(handler.ch)
-		<-handler.done
-		handler.ch = nil
-	}
-	return nil
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	io.WriteString(handler.writer, rec.String()+"\n")
 }

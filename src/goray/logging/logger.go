@@ -21,11 +21,6 @@
 */
 package logging
 
-import (
-	"io"
-	"os"
-)
-
 // MainLog is the global logger object for the program.
 // You do not have to use it if you don't want to.
 var MainLog = NewLogger()
@@ -86,16 +81,4 @@ func (log *Logger) Handle(rec Record) {
 	for _, h := range log.handlers {
 		h.Handle(rec)
 	}
-}
-
-// Close tells all of the logger's handlers to close.
-func (log *Logger) Close() os.Error {
-	for _, h := range log.handlers {
-		closer, ok := h.(io.Closer)
-		if ok {
-			closer.Close()
-		}
-	}
-	// TODO: Collect all errors
-	return nil
 }

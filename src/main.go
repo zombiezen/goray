@@ -114,7 +114,6 @@ func main() {
 		writeHandler := logging.NewWriterHandler(os.Stdout)
 		logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
 	}
-	defer logging.MainLog.Close()
 
 	// Change the number of processors to use
 	runtime.GOMAXPROCS(*maxProcs)
