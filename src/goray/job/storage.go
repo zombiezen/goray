@@ -1,5 +1,5 @@
 //
-//  goray/server/job/storage.go
+//  goray/job/storage.go
 //  goray
 //
 //  Created by Ross Light on 2011-03-14.

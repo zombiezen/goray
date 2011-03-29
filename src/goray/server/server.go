@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"websocket"
 
-	"goray/server/job"
+	"goray/job"
 	"goray/server/urls"
 )
 

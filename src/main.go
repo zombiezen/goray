@@ -15,18 +15,19 @@ import (
 	"image/png"
 	"runtime"
 	"syscall"
-)
 
-import (
 	"buildversion"
+
+	"goray/job"
 	"goray/logging"
 	"goray/time"
 	"goray/server"
-	"goray/server/job"
 	"goray/version"
+
 	"goray/core/integrator"
 	"goray/core/render"
 	"goray/core/scene"
+
 	"goray/std/yamlscene"
 )
 

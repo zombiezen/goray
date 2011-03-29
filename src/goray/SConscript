@@ -3,6 +3,7 @@
 Import('env')
 
 root_packages = [
+    env.Go('job', Glob('job/*.go')),
     env.Go('logging', Glob('logging/*.go')),
     env.Go('montecarlo.go'),
     env.Go('sampleutil.go'),
