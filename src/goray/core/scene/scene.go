@@ -196,10 +196,13 @@ func (s *Scene) Shadowed(r ray.Ray, dist float64) bool {
 // Update causes the scene state to prepare for rendering.
 // This is a potentially expensive operation.  It will be called automatically before a Render.
 func (s *Scene) Update() (err os.Error) {
+	if s.changes.IsClear() {
+		// Already up-to-date.
+		return
+	}
 	if s.camera == nil {
 		return os.NewError("Scene has no camera")
 	}
-
 	s.log.Debug("Performing scene update...")
 
 	if s.changes.Has(objectsChanged) {
@@ -220,18 +223,18 @@ func (s *Scene) Update() (err os.Error) {
 		}
 	}
 
-	for _, li := range s.lights {
-		li.SetScene(s)
-	}
-
-	if s.background != nil {
-		bgLight := s.background.Light()
-		if bgLight != nil {
-			bgLight.SetScene(s)
+	if s.changes.Has(lightsChanged) {
+		for _, li := range s.lights {
+			li.SetScene(s)
 		}
+		if s.background != nil {
+			bgLight := s.background.Light()
+			if bgLight != nil {
+				bgLight.SetScene(s)
+			}
+		}
+		s.log.Debug("Set up lights")
 	}
-
-	s.log.Debug("Set up lights")
 
 	s.changes.Clear()
 	return
