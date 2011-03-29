@@ -43,20 +43,32 @@ func (status Status) Finished() bool { return status.Code.Finished() }
 type StatusCode int
 
 const (
-	StatusNew       StatusCode = 0
-	StatusDone      = 200
+	StatusNew StatusCode = 0
+
 	StatusRendering = 100
-	StatusError     = 500
+	StatusReading   = 101
+	StatusUpdating  = 102
+	StatusWriting   = 103
+
+	StatusDone = 200
+
+	StatusError = 500
 )
 
 func (code StatusCode) String() string {
 	switch code {
 	case StatusNew:
 		return "New"
-	case StatusDone:
-		return "Done"
 	case StatusRendering:
 		return "Rendering"
+	case StatusReading:
+		return "Reading"
+	case StatusUpdating:
+		return "Updating"
+	case StatusWriting:
+		return "Writing"
+	case StatusDone:
+		return "Done"
 	case StatusError:
 		return "Failed"
 	}
@@ -67,10 +79,16 @@ func (code StatusCode) GoString() string {
 	switch code {
 	case StatusNew:
 		return "job.StatusNew"
-	case StatusDone:
-		return "job.StatusDone"
 	case StatusRendering:
 		return "job.StatusRendering"
+	case StatusReading:
+		return "job.StatusReading"
+	case StatusUpdating:
+		return "job.StatusUpdating"
+	case StatusWriting:
+		return "job.StatusWriting"
+	case StatusDone:
+		return "job.StatusDone"
 	case StatusError:
 		return "job.StatusError"
 	}

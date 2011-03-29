@@ -28,15 +28,28 @@
                     feed.onCode = function(stat)
                     {
                         code = stat;
+                        window.console.log(code);
                         switch (stat)
                         {
                             case 0:
                                 // New
-                                $("#viewport").html("<p><img src=\"/static/load.gif\"> In queue, please wait...</p>");
+                                loadMessage("In queue, please wait...");
                                 break;
                             case 100:
                                 // Render In Progress
-                                $("#viewport").html("<p><img src=\"/static/load.gif\"> Rendering, please wait...</p>");
+                                loadMessage("Rendering...");
+                                break;
+                            case 101:
+                                // Reading
+                                loadMessage("Loading scene...");
+                                break;
+                            case 102:
+                                // Updating
+                                loadMessage("Preparing scene...");
+                                break;
+                            case 103:
+                                // Writing
+                                loadMessage("Writing to disk...");
                                 break;
                             case 200:
                                 // Done
@@ -52,6 +65,7 @@
                                 break;
                             case 500:
                                 // Error
+                                // We fill in the render message in onData when we receive it.
                                 $("#viewport")
                                     .empty()
                                     .append("<pre id=\"render_error\"></pre>")
@@ -72,6 +86,15 @@
                                 break;
                         }
                     };
+                    function loadMessage(msg)
+                    {
+                        $("#viewport")
+                            .html("<p><img src=\"/static/load.gif\"> <span id=\"load_message\"></span></p>")
+                            .find("#load_message")
+                                .text(msg)
+                            .end()
+                        ;
+                    }
                 }
             });
         </script>

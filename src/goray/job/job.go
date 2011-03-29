@@ -74,8 +74,6 @@ func (job *Job) ChangeStatus(stat Status) {
 
 func (job *Job) Render(w io.Writer) (err os.Error) {
 	var status Status
-	status.Code = StatusRendering
-	job.ChangeStatus(status)
 	defer func() {
 		if err != nil {
 			status.Code, status.Error = StatusError, err
@@ -86,6 +84,9 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 		}
 	}()
 
+	// 1. Read
+	status.Code = StatusReading
+	job.ChangeStatus(status)
 	sc := scene.New()
 	var integ integrator.Integrator
 	status.ReadTime = time.Stopwatch(func() {
@@ -94,13 +95,22 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	if err != nil {
 		return
 	}
+	// 2. Update
+	status.Code = StatusUpdating
+	job.ChangeStatus(status)
 	status.UpdateTime = time.Stopwatch(func() {
 		sc.Update()
 	})
+	// 3. Render
 	var outputImage *render.Image
+	status.Code = StatusRendering
+	job.ChangeStatus(status)
 	status.RenderTime = time.Stopwatch(func() {
 		outputImage = integrator.Render(sc, integ, nil)
 	})
+	// 4. Write
+	status.Code = StatusWriting
+	job.ChangeStatus(status)
 	status.WriteTime = time.Stopwatch(func() {
 		err = png.Encode(w, outputImage)
 	})
