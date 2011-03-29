@@ -52,8 +52,8 @@ func Critical(log Handler, format string, args ...interface{}) {
 }
 
 type writerHandler struct {
-	mu     sync.Mutex
 	writer io.Writer
+	mu     sync.Mutex
 }
 
 // NewWriterHandler creates a logging handler that outputs to an io.Writer.
@@ -65,4 +65,78 @@ func (handler *writerHandler) Handle(rec Record) {
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
 	io.WriteString(handler.writer, rec.String()+"\n")
+}
+
+// A CircularHandler keeps an in-memory rotating log.
+type CircularHandler struct {
+	records       []Record
+	tail          int
+	started, full bool
+	mu            sync.RWMutex
+}
+
+func NewCircularHandler(n int) *CircularHandler {
+	return &CircularHandler{records: make([]Record, n)}
+}
+
+func (handler *CircularHandler) Init(n int) {
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	// TODO: Reuse memory?
+	handler.records = make([]Record, n)
+	handler.tail = 0
+	handler.started, handler.full = false, false
+}
+
+func (handler *CircularHandler) Len() int {
+	handler.mu.RLock()
+	defer handler.mu.RUnlock()
+	switch {
+	case !handler.started:
+		return 0
+	case handler.full:
+		return len(handler.records)
+	}
+	return handler.tail
+}
+
+func (handler *CircularHandler) Cap() int {
+	handler.mu.RLock()
+	defer handler.mu.RUnlock()
+	return len(handler.records)
+}
+
+func (handler *CircularHandler) Handle(rec Record) {
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	handler.started = true
+	handler.records[handler.tail] = rec
+	handler.tail = (handler.tail + 1) % len(handler.records)
+	if handler.tail == 0 {
+		handler.full = true
+	}
+}
+
+func (handler *CircularHandler) Full() bool {
+	handler.mu.RLock()
+	defer handler.mu.RUnlock()
+	return handler.full
+}
+
+func (handler *CircularHandler) Records() (recs []Record) {
+	handler.mu.RLock()
+	defer handler.mu.RUnlock()
+	switch {
+	case !handler.started:
+		recs = []Record{}
+	case handler.full:
+		n := len(handler.records)
+		recs = make([]Record, n)
+		copy(recs, handler.records[handler.tail:])
+		copy(recs[n-handler.tail:], handler.records[:handler.tail])
+	default:
+		recs = make([]Record, handler.tail)
+		copy(recs, handler.records[:handler.tail])
+	}
+	return
 }
