@@ -16,6 +16,7 @@ import (
 	perspectivecam "goray/std/cameras/perspective"
 	directlight    "goray/std/integrators/directlight"
 	pointlight     "goray/std/lights/point"
+	spotlight      "goray/std/lights/spot"
 	debugmaterial  "goray/std/materials/debug"
 	shinydiffuse   "goray/std/materials/shinydiffuse"
 	mesh           "goray/std/objects/mesh"
@@ -44,6 +45,7 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	StdPrefix + "cameras/perspective":     MapConstruct(perspectivecam.Construct),
 	StdPrefix + "integrators/directlight": MapConstruct(directlight.Construct),
 	StdPrefix + "lights/point":            MapConstruct(pointlight.Construct),
+	StdPrefix + "lights/spot":             MapConstruct(spotlight.Construct),
 	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),
 	StdPrefix + "materials/shinydiffuse":  MapConstruct(shinydiffuse.Construct),
 	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
@@ -82,7 +84,7 @@ func constructRGB(n parser.Node) (data interface{}, err os.Error) {
 		err = os.NewError("RGB must be a sequence of 3 floats")
 		return
 	}
-	return color.NewRGB(comps[0], comps[1], comps[2]), nil
+	return color.RGB{comps[0], comps[1], comps[2]}, nil
 }
 
 func constructRGBA(n parser.Node) (data interface{}, err os.Error) {
@@ -91,7 +93,7 @@ func constructRGBA(n parser.Node) (data interface{}, err os.Error) {
 		err = os.NewError("RGBA must be a sequence of 4 floats")
 		return
 	}
-	return color.NewRGBA(comps[0], comps[1], comps[2], comps[3]), nil
+	return color.RGBA{comps[0], comps[1], comps[2], comps[3]}, nil
 }
 
 func constructVector(n parser.Node) (data interface{}, err os.Error) {

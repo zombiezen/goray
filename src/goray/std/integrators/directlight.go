@@ -39,6 +39,8 @@ type directLighting struct {
 	lights []light.Light
 }
 
+var _ integrator.SurfaceIntegrator = &directLighting{}
+
 func New(transparentShadows bool, shadowDepth, rayDepth int) integrator.SurfaceIntegrator {
 	return &directLighting{
 		transparentShadows: transparentShadows,
@@ -55,13 +57,13 @@ func (dl *directLighting) SurfaceIntegrator() {}
 
 func (dl *directLighting) Preprocess(sc *scene.Scene) {
 	// Add lights
-	sceneLights := sc.GetLights()
+	sceneLights := sc.Lights()
 	dl.lights = make([]light.Light, len(sceneLights), len(sceneLights)+1)
 	copy(dl.lights, sceneLights)
 	// Set up background
-	dl.background = sc.GetBackground()
+	dl.background = sc.Background()
 	if dl.background != nil {
-		if bgLight := dl.background.GetLight(); bgLight != nil {
+		if bgLight := dl.background.Light(); bgLight != nil {
 			dl.lights = append(dl.lights, bgLight)
 		}
 	}
@@ -76,7 +78,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 	}(state.IncludeLights)
 
 	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
-		sp := coll.GetSurface()
+		sp := coll.Surface()
 		// Camera ray
 		if state.RayLevel == 0 {
 			state.IncludeLights = true
@@ -117,7 +119,7 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 			{
 				state.IncludeLights = true
 
-				reflect, refract, dir, rcol := mat.GetSpecular(state, sp, wo)
+				reflect, refract, dir, rcol := mat.Specular(state, sp, wo)
 				if reflect {
 					refRay := ray.DifferentialRay{
 						Ray: ray.Ray{
@@ -144,18 +146,18 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 					integ := dl.Integrate(sc, state, refRay)
 					// TODO: Multiply by volume integrator result
-					col, alpha = color.Add(col, color.Mul(integ, rcol[1])), integ.GetA()
+					col, alpha = color.Add(col, color.Mul(integ, rcol[1])), integ.Alpha()
 				}
 			}
 		}
 		state.RayLevel--
 
-		matAlpha := mat.GetAlpha(state, sp, wo)
+		matAlpha := mat.Alpha(state, sp, wo)
 		alpha = matAlpha + (1-matAlpha)*alpha
 	} else {
 		// Nothing was hit, use the background.
 		if dl.background != nil {
-			col = color.Add(col, dl.background.GetColor(r.Ray, state, false))
+			col = color.Add(col, dl.background.Color(r.Ray, state, false))
 		}
 	}
 	return color.NewRGBAFromColor(col, alpha)

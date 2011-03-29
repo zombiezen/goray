@@ -44,7 +44,7 @@ func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 
 type Sampler interface {
 	Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (color.Color, vector.Vector3D)
-	GetFlags() material.BSDF
+	MaterialFlags() material.BSDF
 }
 
 func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
@@ -53,8 +53,8 @@ func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector
 		return
 	}
 	cnew := color.ScalarMul(color.Mul(s.LastColor, color.Mul(s.Alpha, scol)), math.Fabs(vector.Dot(wo, sp.Normal))/s.Pdf)
-	newMax := math.Fmax(math.Fmax(cnew.GetR(), cnew.GetG()), cnew.GetB())
-	oldMax := math.Fmax(math.Fmax(s.LastColor.GetR(), s.LastColor.GetG()), s.LastColor.GetB())
+	newMax := math.Fmax(math.Fmax(cnew.Red(), cnew.Green()), cnew.Blue())
+	oldMax := math.Fmax(math.Fmax(s.LastColor.Red(), s.LastColor.Green()), s.LastColor.Blue())
 	prob := math.Fmin(1.0, newMax/oldMax)
 	if s.S3 <= prob {
 		scattered = true
@@ -67,7 +67,7 @@ func GetReflectivity(mat Sampler, state *render.State, sp surface.Point, flags m
 	const N = 16
 
 	col = color.Black
-	if flags&(material.BSDFTransmit|material.BSDFReflect)&mat.GetFlags() == 0 {
+	if flags&(material.BSDFTransmit|material.BSDFReflect)&mat.MaterialFlags() == 0 {
 		return
 	}
 

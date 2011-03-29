@@ -22,6 +22,8 @@ type debugMaterial struct {
 	Color color.Color
 }
 
+var _ material.Material = &debugMaterial{}
+
 func New(col color.Color) material.Material { return &debugMaterial{col} }
 
 func (mat *debugMaterial) InitBSDF(state *render.State, sp surface.Point) material.BSDF {
@@ -41,15 +43,15 @@ func (mat *debugMaterial) Pdf(state *render.State, sp surface.Point, wo, wi vect
 	return 0.0
 }
 
-func (mat *debugMaterial) GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (mat *debugMaterial) Specular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	return
 }
 
-func (mat *debugMaterial) GetReflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
+func (mat *debugMaterial) Reflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
 	return common.GetReflectivity(mat, state, sp, flags)
 }
 
-func (mat *debugMaterial) GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
+func (mat *debugMaterial) Alpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
 	return 1.0
 }
 
@@ -57,7 +59,7 @@ func (mat *debugMaterial) ScatterPhoton(state *render.State, sp surface.Point, w
 	return common.ScatterPhoton(mat, state, sp, wi, s)
 }
 
-func (mat *debugMaterial) GetFlags() material.BSDF {
+func (mat *debugMaterial) MaterialFlags() material.BSDF {
 	return material.BSDFDiffuse
 }
 

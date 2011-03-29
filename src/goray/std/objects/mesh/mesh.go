@@ -17,6 +17,7 @@ import (
 	"goray/core/light"
 	"goray/core/material"
 	"goray/core/matrix"
+	"goray/core/object"
 	"goray/core/primitive"
 	"goray/core/vector"
 	yamldata "goyaml.googlecode.com/hg/data"
@@ -37,6 +38,8 @@ type Mesh struct {
 	hidden    bool
 }
 
+var _ object.Object3D = &Mesh{}
+
 // New creates an empty mesh.
 func New(ntris int, hasOrco bool) (mesh *Mesh) {
 	mesh = new(Mesh)
@@ -48,7 +51,7 @@ func New(ntris int, hasOrco bool) (mesh *Mesh) {
 	return
 }
 
-func (mesh *Mesh) GetPrimitives() (prims []primitive.Primitive) {
+func (mesh *Mesh) Primitives() (prims []primitive.Primitive) {
 	prims = make([]primitive.Primitive, len(mesh.triangles))
 	for i, _ := range prims {
 		prims[i] = mesh.triangles[i]
@@ -56,7 +59,7 @@ func (mesh *Mesh) GetPrimitives() (prims []primitive.Primitive) {
 	return
 }
 
-func (mesh *Mesh) IsVisible() bool   { return !mesh.hidden }
+func (mesh *Mesh) Visible() bool     { return !mesh.hidden }
 func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
 
 //func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }

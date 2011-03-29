@@ -24,9 +24,9 @@ func New(position, direction vector.Vector3D, col color.Color) *Photon {
 	return &Photon{position, direction, col}
 }
 
-func (p *Photon) GetPosition() vector.Vector3D  { return p.position }
-func (p *Photon) GetDirection() vector.Vector3D { return p.direction }
-func (p *Photon) GetColor() color.Color         { return p.color }
+func (p *Photon) Position() vector.Vector3D  { return p.position }
+func (p *Photon) Direction() vector.Vector3D { return p.direction }
+func (p *Photon) Color() color.Color         { return p.color }
 
 func (p *Photon) SetPosition(v vector.Vector3D) { p.position = v }
 
@@ -46,7 +46,7 @@ func NewMap() *Map {
 	return &Map{photons: make([]*Photon, 0), searchRadius: 1.0}
 }
 
-func (pm *Map) GetNumPaths() int   { return pm.paths }
+func (pm *Map) NumPaths() int      { return pm.paths }
 func (pm *Map) SetNumPaths(np int) { pm.paths = np }
 
 func (pm *Map) AddPhoton(p *Photon) {
@@ -133,7 +133,7 @@ func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherR
 	resultHeap := make(gatherHeap, 0, nLookup)
 
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	go lookup(p, ch, distCh, pm.tree.Root())
 	distCh <- maxDist
 
 	for gresult := range ch {
@@ -144,11 +144,11 @@ func (pm *Map) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherR
 
 func (pm *Map) FindNearest(p, n vector.Vector3D, dist float64) (nearest *Photon) {
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.GetRoot())
+	go lookup(p, ch, distCh, pm.tree.Root())
 	distCh <- dist
 
 	for gresult := range ch {
-		if vector.Dot(gresult.Photon.GetDirection(), n) > 0 {
+		if vector.Dot(gresult.Photon.Direction(), n) > 0 {
 			nearest, dist = gresult.Photon, gresult.Distance
 		}
 		distCh <- dist

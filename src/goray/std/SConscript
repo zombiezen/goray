@@ -9,6 +9,7 @@ packages = [
     env.Go('integrators/trivial'),
     env.Go('integrators/util'),
     env.Go('lights/point'),
+    env.Go('lights/spot'),
     env.Go('materials/common'),
     env.Go('materials/debug'),
     env.Go('materials/shinydiffuse'),

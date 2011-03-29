@@ -17,9 +17,9 @@ import (
 
 // A rendering background
 type Background interface {
-	// GetColor returns the background color for a given ray.
-	GetColor(r ray.Ray, state *render.State, filtered bool) color.Color
-	// GetLight returns the light source representing background lighting.
+	// Color returns the background color for a given ray.
+	Color(r ray.Ray, state *render.State, filtered bool) color.Color
+	// Light returns the light source representing background lighting.
 	// This may be nil if the background should only be sampled from BSDFs.
-	GetLight() light.Light
+	Light() light.Light
 }

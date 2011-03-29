@@ -23,6 +23,8 @@ type orthoCam struct {
 	vlook, vup, vright vector.Vector3D
 }
 
+var _ camera.Camera = &orthoCam{}
+
 // NewOrtho creates a new orthographic camera.
 func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) camera.Camera {
 	c := new(orthoCam)

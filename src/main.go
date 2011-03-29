@@ -55,7 +55,6 @@ func main() {
 	default:
 		exitCode = singleFile()
 	}
-	logging.MainLog.Close()
 	os.Exit(exitCode)
 }
 

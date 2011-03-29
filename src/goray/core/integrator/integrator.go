@@ -44,7 +44,7 @@ type VolumeIntegrator interface {
 // integration functions to write to the image.
 func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Image) {
 	s.Update()
-	img = render.NewImage(s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY())
+	img = render.NewImage(s.Camera().ResolutionX(), s.Camera().ResolutionY())
 	i.Preprocess(s)
 	ch := BlockIntegrate(s, i, log)
 	img.Acquire(ch)
@@ -53,7 +53,7 @@ func Render(s *scene.Scene, i Integrator, log logging.Handler) (img *render.Imag
 
 // RenderPixel creates a fragment for a position in the image.
 func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
-	cam := s.GetCamera()
+	cam := s.Camera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
 	// Set up state
 	state := new(render.State)
@@ -81,7 +81,7 @@ func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 	ch := make(chan render.Fragment, 200)
 	go func() {
 		defer close(ch)
-		w, h := s.GetCamera().ResolutionX(), s.GetCamera().ResolutionY()
+		w, h := s.Camera().ResolutionX(), s.Camera().ResolutionY()
 		for x := 0; x < w; x++ {
 			for y := 0; y < h; y++ {
 				ch <- RenderPixel(s, in, x, y)
@@ -95,7 +95,7 @@ func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
 	const blockDim = 32
 	numWorkers := runtime.GOMAXPROCS(0)
-	cam := s.GetCamera()
+	cam := s.Camera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
 	ch := make(chan render.Fragment, 100)
 	// Separate goroutine manages block locations
@@ -135,7 +135,7 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 // WorkerIntegrate integrates an image using a set number of jobs.
 func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
 	numWorkers := runtime.GOMAXPROCS(0)
-	cam := s.GetCamera()
+	cam := s.Camera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
 	if h < numWorkers {
 		return SimpleIntegrate(s, in, log)

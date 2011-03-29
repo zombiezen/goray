@@ -94,7 +94,7 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	job.ChangeStatus(status)
 	sc := scene.New()
 	if job.SceneLog != nil {
-		sc.GetLog().AddHandler(job.SceneLog)
+		sc.Log().AddHandler(job.SceneLog)
 	}
 	var integ integrator.Integrator
 	status.ReadTime = time.Stopwatch(func() {

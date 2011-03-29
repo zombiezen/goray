@@ -9,8 +9,6 @@ package logging
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"time"
 )
 
@@ -33,13 +31,6 @@ func (filter Filter) Handle(rec Record) {
 	if newRecord != nil {
 		filter.Handler.Handle(newRecord)
 	}
-}
-
-func (filter Filter) Close() os.Error {
-	if closer, ok := filter.Handler.(io.Closer); ok {
-		return closer.Close()
-	}
-	return nil
 }
 
 // NewMinLevelFilter creates a new Filter that removes records that are below a certain level.

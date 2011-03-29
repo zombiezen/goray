@@ -88,22 +88,22 @@ func NewPhotonSample(s1, s2, s3 float64, flags BSDF, lCol color.Color) (s Photon
 type Material interface {
 	// InitBSDF initializes the BSDF of a material.  You must call this with
 	// the current surface point first before any other methods (except
-	// IsTransparent/GetTransparency).
+	// Transparency).
 	InitBSDF(state *render.State, sp surface.Point) BSDF
-	// GetFlags returns the attributes of a material.
-	GetFlags() BSDF
+	// MaterialFlags returns the attributes of a material.
+	MaterialFlags() BSDF
 	// Eval evaluates the BSDF for the given components.
 	Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types BSDF) color.Color
 	// Sample takes a sample from the BSDF.  The sample pointer will be filled in with the computed values.
 	Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *Sample) (color.Color, vector.Vector3D)
 	// Pdf returns the PDF for sampling the BSDF.
 	Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs BSDF) float64
-	// GetSpecular evaluates the specular components of a material for a given direction.
-	GetSpecular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color)
-	// GetReflectivity returns the overal reflectivity of a material.
-	GetReflectivity(state *render.State, sp surface.Point, flags BSDF) color.Color
-	// GetAlpha returns the alpha value of a material.
-	GetAlpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64
+	// Specular evaluates the specular components of a material for a given direction.
+	Specular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color)
+	// Reflectivity returns the overal reflectivity of a material.
+	Reflectivity(state *render.State, sp surface.Point, flags BSDF) color.Color
+	// Alpha returns the alpha value of a material.
+	Alpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64
 	// ScatterPhoton performs photon mapping.  The sample pointer will be filled in with the computed values.
 	ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *PhotonSample) (wo vector.Vector3D, scattered bool)
 }
@@ -111,8 +111,9 @@ type Material interface {
 // TransparentMaterial defines a material that can allow light to pass through it.
 type TransparentMaterial interface {
 	Material
-	// GetTransparency is used when computing transparent shadows.
-	GetTransparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
+	// Transparency returns the color that the light is multiplied by when
+	// passing through it.  If the color is black, then the material is opaque.
+	Transparency(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color
 }
 
 // EmitMaterial defines a material that contributes light to the scene.
@@ -127,6 +128,6 @@ type VolumetricMaterial interface {
 	Material
 	// VolumeTransmittance allows attenuation due to intra-object volumetric effects.
 	VolumeTransmittance(state *render.State, sp surface.Point, r ray.Ray) (color.Color, bool)
-	// GetVolumeHandler returns the volumetric handler for the space on a given side.
-	GetVolumeHandler(inside bool) VolumeHandler
+	// VolumeHandler returns the volumetric handler for the space on a given side.
+	VolumeHandler(inside bool) VolumeHandler
 }
