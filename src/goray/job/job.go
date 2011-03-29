@@ -13,16 +13,21 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"goray/logging"
+	"goray/time"
+
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/integrator"
 	"goray/std/yamlscene"
-	"goray/time"
 )
 
 type Job struct {
-	Name   string
-	Source io.Reader
+	Name      string
+	Source    io.Reader
+	SceneLog  logging.Handler
+	RenderLog logging.Handler
 
 	status Status
 	lock   sync.RWMutex
@@ -88,6 +93,9 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	status.Code = StatusReading
 	job.ChangeStatus(status)
 	sc := scene.New()
+	if job.SceneLog != nil {
+		sc.GetLog().AddHandler(job.SceneLog)
+	}
 	var integ integrator.Integrator
 	status.ReadTime = time.Stopwatch(func() {
 		integ, err = yamlscene.Load(job.Source, sc)
@@ -106,7 +114,7 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	status.Code = StatusRendering
 	job.ChangeStatus(status)
 	status.RenderTime = time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, integ, nil)
+		outputImage = integrator.Render(sc, integ, job.RenderLog)
 	})
 	// 4. Write
 	status.Code = StatusWriting
