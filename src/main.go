@@ -143,7 +143,7 @@ func singleFile() int {
 	for stat := range ch {
 		switch stat.Code {
 		case job.StatusReading:
-			logging.MainLog.Info("Setting up scene...")
+			logging.MainLog.Info("Reading scene file...")
 		case job.StatusUpdating:
 			logging.MainLog.Info("Preparing scene...")
 		case job.StatusRendering:
@@ -151,6 +151,7 @@ func singleFile() int {
 			logging.MainLog.Info("Rendering...")
 		case job.StatusWriting:
 			logging.MainLog.Info("Render finished in %v", stat.RenderTime)
+			logging.MainLog.Info("Writing...")
 		case job.StatusDone:
 			logging.MainLog.Info("TOTAL TIME: %v", stat.TotalTime())
 		case job.StatusError:
