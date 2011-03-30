@@ -11,6 +11,7 @@ bl_addon_info = {
     'category': "Import-Export",
 }
 
+import math
 import os
 
 import bpy
@@ -89,12 +90,26 @@ def write_lights(f, scene):
             continue
         if obj.data.type == 'POINT':
             write_point_light(f, obj)
+        elif obj.data.type == 'SPOT':
+            write_spot_light(f, obj)
 
 def write_point_light(f, obj):
     print(indent + "- !std!lights/point", file=f)
     print(indent * 2 + "position: !goray!vec [%f, %f, %f]" % (obj.location.x, obj.location.y, obj.location.z), file=f)
     print(indent * 2 + "color: !goray!rgb [%f, %f, %f]" % (obj.data.color.r, obj.data.color.g, obj.data.color.b), file=f)
     print(indent * 2 + "intensity: %f" % (obj.data.energy), file=f)
+
+def write_spot_light(f, obj):
+    position = obj.matrix_world[3].xyz
+    direction = obj.matrix_world[2].xyz
+    look = position - direction
+    print(indent + "- !std!lights/spot", file=f)
+    print(indent * 2 + "position: !goray!vec [%f, %f, %f]" % (position.x, position.y, position.z), file=f)
+    print(indent * 2 + "look: !goray!vec [%f, %f, %f]" % (look.x, look.y, look.z), file=f)
+    print(indent * 2 + "color: !goray!rgb [%f, %f, %f]" % (obj.data.color.r, obj.data.color.g, obj.data.color.b), file=f)
+    print(indent * 2 + "intensity: %f" % (obj.data.energy), file=f)
+    print(indent * 2 + "coneAngle: %f" % (math.degrees(obj.data.spot_size)), file=f)
+    print(indent * 2 + "falloff: %f" % (obj.data.spot_blend), file=f)
 
 def write_camera(f, scene):
     obj = scene.camera
