@@ -180,6 +180,7 @@ func httpServer() int {
 	}
 
 	s := server.New(job.NewManager(storage, 5), "data")
+	logging.MainLog.Info("Starting HTTP server")
 	err = http.ListenAndServe(httpAddress, s)
 	if err != nil {
 		logging.MainLog.Critical("ListenAndServe: %v", err)

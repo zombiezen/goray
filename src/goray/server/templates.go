@@ -16,14 +16,8 @@ import (
 	"strconv"
 	"sync"
 	"template"
+	"time"
 )
-
-var fmap = template.FormatterMap{
-	"":     template.HTMLFormatter,
-	"str":  template.StringFormatter,
-	"safe":  template.StringFormatter,
-	"html": template.HTMLFormatter,
-}
 
 type TemplateLoader struct {
 	Root  string
@@ -82,4 +76,20 @@ func (loader *TemplateLoader) RenderResponse(rw http.ResponseWriter, name string
 	rw.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	_, err = io.Copy(rw, buf)
 	return
+}
+
+var fmap = template.FormatterMap{
+	"":     template.HTMLFormatter,
+	"str":  template.StringFormatter,
+	"safe": template.StringFormatter,
+	"html": template.HTMLFormatter,
+	"date": dateFormatter,
+}
+
+func dateFormatter(w io.Writer, name string, data ...interface{}) {
+	t, ok := data[0].(*time.Time)
+	if !ok {
+		return
+	}
+	w.Write([]byte(t.Format(time.RFC3339)))
 }

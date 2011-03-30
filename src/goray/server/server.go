@@ -21,33 +21,37 @@ import (
 	"websocket"
 
 	"goray/job"
+	"goray/logging"
 	"goray/server/urls"
 )
 
 type Server struct {
-	Resolver   *urls.RegexResolver
-	DataRoot   string
-	JobManager *job.Manager
-	templates  *TemplateLoader
-	blocks map[string]string
+	Resolver    *urls.RegexResolver
+	DataRoot    string
+	JobManager  *job.Manager
+	templates   *TemplateLoader
+	blocks      map[string]string
+	logRecorder *logging.CircularHandler
 }
 
 func New(manager *job.Manager, data string) (s *Server) {
 	s = &Server{
-		DataRoot:   data,
-		JobManager: manager,
-		templates:  &TemplateLoader{Root: filepath.Join(data, "templates")},
+		DataRoot:    data,
+		JobManager:  manager,
+		templates:   &TemplateLoader{Root: filepath.Join(data, "templates")},
+		logRecorder: logging.NewCircularHandler(100),
 	}
 	s.Resolver = urls.Patterns(``,
 		urls.New(`^$`, serverView{s, (*Server).handleIndex}, "index"),
 		urls.New(`^job/([0-9]+)$`, serverView{s, (*Server).handleViewJob}, "view"),
 		urls.New(`^submit$`, serverView{s, (*Server).handleSubmitJob}, "submit"),
+		urls.New(`^log$`, serverView{s, (*Server).handleLog}, "log"),
 		urls.New(`^status$`, urls.HandlerView{websocket.Handler(func(ws *websocket.Conn) { s.handleStatus(ws) })}, "status"),
 		urls.New(`^static/`, urls.HandlerView{http.FileServer(filepath.Join(data, "static"), "/static/")}, "static"),
 		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
 	)
 	s.blocks = map[string]string{
-		"Head": "blocks/head.html",
+		"Head":   "blocks/head.html",
 		"Header": "blocks/header.html",
 		"Footer": "blocks/footer.html",
 	}
@@ -56,6 +60,7 @@ func New(manager *job.Manager, data string) (s *Server) {
 		s.templates.Render(b, path, nil)
 		s.blocks[k] = strings.TrimSpace(b.String())
 	}
+	logging.MainLog.AddHandler(s.logRecorder)
 	go s.JobManager.RenderJobs()
 	return
 }
@@ -68,7 +73,7 @@ func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
 		"Blocks": server.blocks,
-		"Jobs": server.JobManager.List(),
+		"Jobs":   server.JobManager.List(),
 	})
 }
 
@@ -85,10 +90,19 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, 
 			http.Error(w, err.String(), http.StatusInternalServerError)
 			return
 		}
+		logging.MainLog.Info("Created job %s", j.Name)
 		http.Redirect(w, req, "/job/"+j.Name, http.StatusMovedPermanently)
 	default:
 		http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
 	}
+}
+
+func (server *Server) handleLog(w http.ResponseWriter, req *http.Request, args []string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	server.templates.RenderResponse(w, "log.html", map[string]interface{}{
+		"Blocks":  server.blocks,
+		"Records": server.logRecorder.Records(),
+	})
 }
 
 func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, args []string) {
@@ -102,17 +116,17 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, ar
 		case job.StatusDone:
 			server.templates.RenderResponse(w, "job.html", map[string]interface{}{
 				"Blocks": server.blocks,
-				"Job": j,
+				"Job":    j,
 			})
 		case job.StatusError:
 			server.templates.RenderResponse(w, "job-error.html", map[string]interface{}{
 				"Blocks": server.blocks,
-				"Job": j,
+				"Job":    j,
 			})
 		default:
 			server.templates.RenderResponse(w, "job-waiting.html", map[string]interface{}{
 				"Blocks": server.blocks,
-				"Job": j,
+				"Job":    j,
 			})
 		}
 	} else {
