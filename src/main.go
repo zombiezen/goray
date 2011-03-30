@@ -75,8 +75,8 @@ func printVersion() {
 	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
 	// Copyright notice
 	fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
-	fmt.Println("Copyright © 2011 Ross Light")
 	fmt.Println("Copyright © 2011 John Resig")
+	fmt.Println("Copyright © 2011 Ross Light")
 	fmt.Println()
 	fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
 	fmt.Println("Alfredo de Greef.")
