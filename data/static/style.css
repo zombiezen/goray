@@ -9,15 +9,10 @@ html, body
     background: #111;
 }
 
-#top
-{
-    background: #eee;
-}
-
 #top > header > h1
 {
     width: 128px;
-    background: transparent url(/static/logo.svg) no-repeat left;
+    background: transparent url(/static/logo-white.svg) no-repeat left;
     overflow: hidden;
     text-indent: -999em;
 }
@@ -127,7 +122,6 @@ footer
 {
     width: 64px;
     height: 32px;
-    vertical-align: text-bottom;
 }
 
 footer :visited
