@@ -21,6 +21,7 @@ import (
 var fmap = template.FormatterMap{
 	"":     template.HTMLFormatter,
 	"str":  template.StringFormatter,
+	"safe":  template.StringFormatter,
 	"html": template.HTMLFormatter,
 }
 

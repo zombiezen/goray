@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Goray - Job {{Name}}</title>
+        <title>Goray - Job {{Job.Name}}</title>
         <style type="text/css">
             #websocket_warning
             {
@@ -10,13 +10,17 @@
         </style>
     </head>
     <body>
-        <h1>Job #{{Name}}</h1>
-        <div id="viewport">&nbsp;</div>
-        <p id="websocket_warning">Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <h1>Job #{{Job.Name}}</h1>
+            <div id="viewport">&nbsp;</div>
+            <p id="websocket_warning">Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
+        </div>
+        {{Blocks.Footer|safe}}
         <script type="text/javascript" src="/static/jquery.js"></script>
         <script type="text/javascript" src="/static/job.js"></script>
         <script type="text/javascript">
-            var jobName = "{{Name}}";
+            var jobName = "{{Job.Name}}";
             $(function()
             {
                 if (!!window.WebSocket)

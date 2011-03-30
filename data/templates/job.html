@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Goray - Job {{Name}}</title>
+        <title>Goray - Job {{Job.Name}}</title>
     </head>
     <body>
-        <h1>Job #{{Name}}</h1>
-        <img src="/output/{{Name}}">
-        <p>Total Time: {{Status.TotalTime}}</p>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <h1>Job #{{Job.Name}}</h1>
+            <img src="/output/{{Job.Name}}">
+            <p>Total Time: {{Job.Status.TotalTime}}</p>
+        </div>
+        {{Blocks.Footer|safe}}
     </body>
 </html>

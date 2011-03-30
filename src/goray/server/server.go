@@ -17,6 +17,7 @@ import (
 	"net/textproto"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"websocket"
 
 	"goray/job"
@@ -28,6 +29,7 @@ type Server struct {
 	DataRoot   string
 	JobManager *job.Manager
 	templates  *TemplateLoader
+	blocks map[string]string
 }
 
 func New(manager *job.Manager, data string) (s *Server) {
@@ -44,6 +46,15 @@ func New(manager *job.Manager, data string) (s *Server) {
 		urls.New(`^static/`, urls.HandlerView{http.FileServer(filepath.Join(data, "static"), "/static/")}, "static"),
 		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
 	)
+	s.blocks = map[string]string{
+		"Header": "blocks/header.html",
+		"Footer": "blocks/footer.html",
+	}
+	for k, path := range s.blocks {
+		b := new(bytes.Buffer)
+		s.templates.Render(b, path, nil)
+		s.blocks[k] = strings.TrimSpace(b.String())
+	}
 	go s.JobManager.RenderJobs()
 	return
 }
@@ -55,6 +66,7 @@ func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args []string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
+		"Blocks": server.blocks,
 		"Jobs": server.JobManager.List(),
 	})
 }
@@ -63,7 +75,9 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, 
 	switch req.Method {
 	case "GET":
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		server.templates.RenderResponse(w, "submit.html", nil)
+		server.templates.RenderResponse(w, "submit.html", map[string]interface{}{
+			"Blocks": server.blocks,
+		})
 	case "POST":
 		j, err := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
 		if err != nil {
@@ -85,11 +99,20 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, ar
 		// Render appropriate template
 		switch status.Code {
 		case job.StatusDone:
-			server.templates.RenderResponse(w, "job.html", j)
+			server.templates.RenderResponse(w, "job.html", map[string]interface{}{
+				"Blocks": server.blocks,
+				"Job": j,
+			})
 		case job.StatusError:
-			server.templates.RenderResponse(w, "job-error.html", j)
+			server.templates.RenderResponse(w, "job-error.html", map[string]interface{}{
+				"Blocks": server.blocks,
+				"Job": j,
+			})
 		default:
-			server.templates.RenderResponse(w, "job-waiting.html", j)
+			server.templates.RenderResponse(w, "job-waiting.html", map[string]interface{}{
+				"Blocks": server.blocks,
+				"Job": j,
+			})
 		}
 	} else {
 		http.NotFound(w, req)

@@ -4,23 +4,26 @@
         <title>Goray</title>
     </head>
     <body>
-        <h1>Goray</h1>
-        <a href="/submit">Submit a Job</a>
-        <table>
-            <thead>
-                <tr>
-                    <th>Job</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{.repeated section Jobs}}
-                <tr>
-                    <td><a href="/job/{{Name}}">{{Name}}</a></td>
-                    <td>{{Status.Code}}</td>
-                </tr>
-                {{.end}}
-            </tbody>
-        </table>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <a href="/submit">Submit a Job</a>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{.repeated section Jobs}}
+                    <tr>
+                        <td><a href="/job/{{Name}}">{{Name}}</a></td>
+                        <td>{{Status.Code}}</td>
+                    </tr>
+                    {{.end}}
+                </tbody>
+            </table>
+        </div>
+        {{Blocks.Footer|safe}}
     </body>
 </html>
