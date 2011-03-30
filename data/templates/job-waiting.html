@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Goray - Job {{Job.Name}}</title>
+        {{Blocks.Head|safe}}
+    </head>
+    <body>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <h1>Job #{{Job.Name}}</h1>
+            <div id="viewport">&nbsp;</div>
+            <p id="websocket_warning">Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
+        </div>
+        {{Blocks.Footer|safe}}
+        <script type="text/javascript" src="/static/jquery.js"></script>
+        <script type="text/javascript" src="/static/job.js"></script>
+        <script type="text/javascript">
+            var jobName = "{{Job.Name}}";
+            $(function()
+            {
+                if (!!window.WebSocket)
+                {
+                    function loadMessage(msg)
+                    {
+                        $("#viewport")
+                            .html("<p id=\"load_message\"><img src=\"/static/load.gif\"> <span>&nbsp;</span></p>")
+                            .find("#load_message > span")
+                                .text(msg)
+                            .end()
+                        ;
+                    }
+
+                    $("#websocket_warning").hide();
+                    loadMessage("Contacting server...");
+                    var feed = new StatusFeed(document.location.host, jobName);
+                    var code = -1;
+                    feed.onCode = function(stat)
+                    {
+                        code = stat;
+                        window.console.log(code);
+                        switch (stat)
+                        {
+                            case 0:
+                                // New
+                                loadMessage("In queue, please wait...");
+                                break;
+                            case 100:
+                                // Render In Progress
+                                loadMessage("Rendering...");
+                                break;
+                            case 101:
+                                // Reading
+                                loadMessage("Loading scene...");
+                                break;
+                            case 102:
+                                // Updating
+                                loadMessage("Preparing scene...");
+                                break;
+                            case 103:
+                                // Writing
+                                loadMessage("Writing to disk...");
+                                break;
+                            case 200:
+                                // Done
+                                var img = $("<img/>", {src: "/output/" + jobName});
+                                $("#viewport")
+                                    .empty()
+                                    .append(img)
+                                ;
+                                break;
+                            case 404:
+                                // Not found
+                                $("#viewport").html("<p>Job not found</p>");
+                                break;
+                            case 500:
+                                // Error
+                                // We fill in the render message in onData when we receive it.
+                                $("#viewport")
+                                    .empty()
+                                    .append("<pre id=\"render_error\"></pre>")
+                                ;
+                                break;
+                        }
+                    };
+                    feed.onData = function(line)
+                    {
+                        switch (code)
+                        {
+                            case 200:
+                                $("#viewport").append("<p>Total Time: " + line + "</p>");
+                                break;
+                            case 500:
+                                var err = $("#render_error");
+                                err.text(err.text() + line + "\r\n");
+                                break;
+                        }
+                    };
+                }
+            });
+        </script>
+    </body>
+</html>

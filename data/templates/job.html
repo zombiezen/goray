@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Goray - Job {{Job.Name}}</title>
+        {{Blocks.Head|safe}}
+    </head>
+    <body>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <h1>Job #{{Job.Name}}</h1>
+            <img src="/output/{{Job.Name}}">
+            <p>Total Time: {{Job.Status.TotalTime}}</p>
+        </div>
+        {{Blocks.Footer|safe}}
+    </body>
+</html>

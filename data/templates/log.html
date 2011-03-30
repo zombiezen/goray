@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Goray Log</title>
+        {{Blocks.Head|safe}}
+    </head>
+    <body>
+        {{Blocks.Header|safe}}
+        <div id="main">
+            <h1>Log</h1>
+            <table id="log_table">
+                <thead>
+                    <tr>
+                        <th scope="col">Level</th>
+                        <th scope="col">Message</th>
+                        <th scope="col">Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{.repeated section Records}}
+                    <tr>
+                        <td>{{Level}}</td>
+                        <td>{{String}}</td>
+                        <td>{{.section Timestamp}}{{@|date|html}}{{.end}}</td>
+                    </tr>
+                    {{.or}}
+                    <tr class="nodata">
+                        <td colspan="3">No log records</td>
+                    </tr>
+                    {{.end}}
+                </tbody>
+            </table>
+        </div>
+        {{Blocks.Footer|safe}}
+    </body>
+</html>
