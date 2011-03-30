@@ -30,14 +30,10 @@ For further help::
 License
 =========
 
-Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef
-Copyright © 2011 John Resig
 Copyright © 2011 Ross Light
-
-Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and
-Alfredo de Greef.
-Go rewrite by Ross Light in 2010.
-Web frontend uses jQuery by John Resig
+Based on YafaRay: Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo
+de Greef
+jQuery: Copyright © 2011 John Resig
 
 goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are
 welcome to redistribute it under the conditions of the GNU Lesser General

@@ -43,6 +43,7 @@ func New(manager *job.Manager, data string) (s *Server) {
 	}
 	s.Resolver = urls.Patterns(``,
 		urls.New(`^$`, serverView{s, (*Server).handleIndex}, "index"),
+		urls.New(`^license$`, serverView{s, (*Server).handleLicense}, "license"),
 		urls.New(`^job/([0-9]+)$`, serverView{s, (*Server).handleViewJob}, "view"),
 		urls.New(`^submit$`, serverView{s, (*Server).handleSubmitJob}, "submit"),
 		urls.New(`^log$`, serverView{s, (*Server).handleLog}, "log"),
@@ -74,6 +75,13 @@ func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args
 	server.templates.RenderResponse(w, "index.html", map[string]interface{}{
 		"Blocks": server.blocks,
 		"Jobs":   server.JobManager.List(),
+	})
+}
+
+func (server *Server) handleLicense(w http.ResponseWriter, req *http.Request, args []string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	server.templates.RenderResponse(w, "license.html", map[string]interface{}{
+		"Blocks": server.blocks,
 	})
 }
 

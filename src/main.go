@@ -74,14 +74,10 @@ func printInstructions() {
 func printVersion() {
 	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
 	// Copyright notice
-	fmt.Println("Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef")
-	fmt.Println("Copyright © 2011 John Resig")
 	fmt.Println("Copyright © 2011 Ross Light")
-	fmt.Println()
-	fmt.Println("Based on the excellent YafaRay Ray-Tracer by Mathias Wein, Alejandro Conty, and")
-	fmt.Println("Alfredo de Greef.")
-	fmt.Println("Go rewrite by Ross Light in 2010.")
-	fmt.Println("Web frontend uses jQuery by John Resig")
+	fmt.Println("Based on YafaRay: Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo")
+	fmt.Println("de Greef")
+	fmt.Println("jQuery: Copyright © 2011 John Resig")
 	fmt.Println()
 	fmt.Println("goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are")
 	fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")

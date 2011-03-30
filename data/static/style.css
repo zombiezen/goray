@@ -118,8 +118,15 @@ footer
     font-size: 80%;
 }
 
-footer img
+#footer_logo
 {
+    text-align: center;
+}
+
+#footer_logo img
+{
+    width: 64px;
+    height: 32px;
     vertical-align: text-bottom;
 }
 
