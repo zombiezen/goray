@@ -53,7 +53,7 @@ html, body
 #main h5 { font-size: 100%; }
 #main h6 { font-size: 100%; }
 
-#main p
+p
 {
     margin-bottom: 1em;
 }
@@ -96,6 +96,7 @@ html, body
     -webkit-border-radius: 15px; 
     border-radius: 15px; 
 
+    font-size: 100%;
     font-weight: bold;
     text-align: center;
 }
@@ -109,12 +110,17 @@ html, body
 footer
 {
     width: 50%;
-    margin: 0 auto;
+    margin: 0 auto 2em;
     padding: 1em;
 
     color: black;
     background: #666;
     font-size: 80%;
+}
+
+footer img
+{
+    vertical-align: text-bottom;
 }
 
 footer :visited
@@ -154,4 +160,9 @@ footer :visited
 #websocket_warning
 {
     font-style: italic;
+}
+
+#job_submit textarea[name="data"]
+{
+    font-family: Menlo, "Courier New", Courier, monospace;
 }

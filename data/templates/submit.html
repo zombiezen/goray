@@ -9,9 +9,9 @@
         <div id="main">
             <h1>Submit a Job</h1>
             <p>Submit a render document below!</p>
-            <form action="/submit" method="POST">
+            <form id="job_submit" action="/submit" method="POST">
                 <p><textarea name="data" rows="30" cols="80"></textarea></p>
-                <p><input type="submit" value="Submit"></p>
+                <p><input type="submit" value="Submit" class="button"></p>
             </form>
         </div>
         {{Blocks.Footer|safe}}
