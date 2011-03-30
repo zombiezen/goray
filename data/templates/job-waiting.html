@@ -2,12 +2,7 @@
 <html>
     <head>
         <title>Goray - Job {{Job.Name}}</title>
-        <style type="text/css">
-            #websocket_warning
-            {
-                font-style: italic;
-            }
-        </style>
+        {{Blocks.Head|safe}}
     </head>
     <body>
         {{Blocks.Header|safe}}
@@ -25,8 +20,18 @@
             {
                 if (!!window.WebSocket)
                 {
+                    function loadMessage(msg)
+                    {
+                        $("#viewport")
+                            .html("<p id=\"load_message\"><img src=\"/static/load.gif\"> <span>&nbsp;</span></p>")
+                            .find("#load_message > span")
+                                .text(msg)
+                            .end()
+                        ;
+                    }
+
                     $("#websocket_warning").hide();
-                    $("#viewport").append("<p><img src=\"/static/load.gif\"> Contacting server...</p>");
+                    loadMessage("Contacting server...");
                     var feed = new StatusFeed(document.location.host, jobName);
                     var code = -1;
                     feed.onCode = function(stat)
@@ -90,15 +95,6 @@
                                 break;
                         }
                     };
-                    function loadMessage(msg)
-                    {
-                        $("#viewport")
-                            .html("<p><img src=\"/static/load.gif\"> <span id=\"load_message\"></span></p>")
-                            .find("#load_message")
-                                .text(msg)
-                            .end()
-                        ;
-                    }
                 }
             });
         </script>

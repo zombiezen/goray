@@ -47,6 +47,7 @@ func New(manager *job.Manager, data string) (s *Server) {
 		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
 	)
 	s.blocks = map[string]string{
+		"Head": "blocks/head.html",
 		"Header": "blocks/header.html",
 		"Footer": "blocks/footer.html",
 	}

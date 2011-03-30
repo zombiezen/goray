@@ -2,27 +2,33 @@
 <html>
     <head>
         <title>Goray</title>
+        {{Blocks.Head|safe}}
     </head>
     <body>
         {{Blocks.Header|safe}}
         <div id="main">
-            <a href="/submit">Submit a Job</a>
-            <table>
+            <h1>Render Queue</h1>
+            <table id="render_queue">
                 <thead>
                     <tr>
-                        <th>Job</th>
-                        <th>Status</th>
+                        <th scope="col" class="col_job">Job</th>
+                        <th scope="col" class="col_status">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{.repeated section Jobs}}
                     <tr>
-                        <td><a href="/job/{{Name}}">{{Name}}</a></td>
-                        <td>{{Status.Code}}</td>
+                        <td class="col_job"><a href="/job/{{Name}}">{{Name}}</a></td>
+                        <td class="col_status">{{Status.Code}}</td>
+                    </tr>
+                    {{.or}}
+                    <tr class="nodata">
+                        <td colspan="2">No jobs</td>
                     </tr>
                     {{.end}}
                 </tbody>
             </table>
+            <p><span class="button"><a href="/submit">Submit a Job</a></span></p>
         </div>
         {{Blocks.Footer|safe}}
     </body>
