@@ -89,9 +89,20 @@ type sdData struct {
 	DiffuseColor, MirrorColor         color.Color
 }
 
-func makeSdData(sd *ShinyDiffuse, use [4]bool) (data sdData) {
-	params := make(map[string]interface{})
-	results := shader.Eval(params, []shader.Node{sd.DiffuseColorShad, sd.TranspShad, sd.TranslShad, sd.SpecReflShad, sd.MirrorColorShad})
+func makeSdData(sd *ShinyDiffuse, state *render.State, sp surface.Point, use [4]bool) (data sdData) {
+	results := shader.Eval(
+		[]shader.Node{
+			sd.DiffuseColorShad,
+			sd.TranspShad,
+			sd.TranslShad,
+			sd.SpecReflShad,
+			sd.MirrorColorShad,
+		},
+		shader.Params{
+			"RenderState":  state,
+			"SurfacePoint": sp,
+		},
+	)
 	if sd.isReflective {
 		if use[0] {
 			data.SpecRefl = results[3].Scalar()
@@ -146,7 +157,7 @@ func (data sdData) accumulate(kr float64) (newData sdData) {
 }
 
 func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material.BSDF {
-	state.MaterialData = makeSdData(sd, [4]bool{false, false, false, false}) // TODO: viNodes...
+	state.MaterialData = makeSdData(sd, state, sp, [4]bool{false, false, false, false}) // TODO: viNodes...
 	return sd.bsdfFlags
 }
 

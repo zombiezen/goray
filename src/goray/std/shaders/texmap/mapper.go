@@ -82,7 +82,7 @@ func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D)
 	return
 }
 
-func (tmap *TextureMapper) Eval(params map[string]interface{}, inputs []shader.Result) (result shader.Result) {
+func (tmap *TextureMapper) Eval(inputs []shader.Result, params shader.Params) (result shader.Result) {
 	sp := params["SurfacePoint"].(surface.Point)
 	state := params["RenderState"].(*render.State)
 	p, n := sp.Position, sp.GeometricNormal
@@ -107,7 +107,7 @@ func (tmap *TextureMapper) Eval(params map[string]interface{}, inputs []shader.R
 	return
 }
 
-func (tmap *TextureMapper) EvalDerivative(params map[string]interface{}, inputs []shader.Result) shader.Result {
+func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.Params) shader.Result {
 	// TODO
 	return shader.Result{}
 }

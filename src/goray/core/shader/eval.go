@@ -70,14 +70,14 @@ func buildTree(targets []Node) (nodes []*evalNode) {
 	return
 }
 
-type evalFunc func(Node, map[string]interface{}, []Result) Result
+type evalFunc func(Node, []Result, Params) Result
 
-func evalTask(params map[string]interface{}, inputs []Result, node Node, f evalFunc, ch chan<- Result) {
+func evalTask(inputs []Result, params Params, node Node, f evalFunc, ch chan<- Result) {
 	defer close(ch)
-	ch <- f(node, params, inputs)
+	ch <- f(node, inputs, params)
 }
 
-func Eval(params map[string]interface{}, targets []Node) (final []Result) {
+func Eval(targets []Node, params Params) (final []Result) {
 	results := make(map[Node]Result)
 	nodes := buildTree(targets)
 
@@ -96,7 +96,7 @@ func Eval(params map[string]interface{}, targets []Node) (final []Result) {
 				// Start goroutine
 				ch := make(chan Result, 1)
 				channels[en] = ch
-				go evalTask(params, inputs, en.Node, Node.Eval, ch)
+				go evalTask(inputs, params, en.Node, Node.Eval, ch)
 			} else {
 				nextNodes = append(nextNodes, en)
 			}
