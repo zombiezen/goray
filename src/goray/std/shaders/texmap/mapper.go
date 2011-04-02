@@ -5,6 +5,7 @@
 //	Created by Ross Light on 2011-04-02.
 //
 
+// The texmap package provides a shader node that performs texture mapping with various options.
 package texmap
 
 import (
