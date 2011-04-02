@@ -43,6 +43,9 @@ type ShinyDiffuse struct {
 
 	fresnelEffect bool
 	bsdfFlags     material.BSDF
+
+	viewDependent bool
+	useShaders    [4]bool
 }
 
 var _ material.Material = &ShinyDiffuse{}
@@ -55,31 +58,48 @@ func (sd *ShinyDiffuse) Init() {
 	acc := 1.0
 	if sd.SpecRefl > threshold || sd.SpecReflShad != nil {
 		sd.isReflective = true
-		// TODO: viNodes?
-		if sd.SpecReflShad == nil && !sd.fresnelEffect {
+		if sd.SpecReflShad != nil {
+			if sd.SpecReflShad.ViewDependent() {
+				sd.viewDependent = true
+			}
+			sd.useShaders[0] = true
+		} else if !sd.fresnelEffect {
 			acc = 1.0 - sd.SpecRefl
 		}
 		sd.bsdfFlags |= material.BSDFSpecular | material.BSDFReflect
 	}
 	if sd.Transp*acc > threshold || sd.TranspShad != nil {
 		sd.isTransp = true
-		// TODO: viNodes?
-		if sd.TranspShad == nil && !sd.fresnelEffect {
+		if sd.TranspShad != nil {
+			if sd.TranspShad.ViewDependent() {
+				sd.viewDependent = true
+			}
+			sd.useShaders[1] = true
+		} else {
 			acc = 1.0 - sd.Transp
 		}
 		sd.bsdfFlags |= material.BSDFTransmit | material.BSDFFilter
 	}
 	if sd.Transl*acc > threshold || sd.TranslShad != nil {
 		sd.isTransl = true
-		// TODO: viNodes?
-		if sd.TranslShad == nil && !sd.fresnelEffect {
+		if sd.TranslShad != nil {
+			if sd.TranslShad.ViewDependent() {
+				sd.viewDependent = true
+			}
+			sd.useShaders[2] = true
+		} else {
 			acc = 1.0 - sd.Transl
 		}
 		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFTransmit
 	}
 	if sd.Diffuse*acc > threshold {
 		sd.isDiffuse = true
-		// TODO: viNodes?
+		if sd.DiffuseShad != nil {
+			if sd.DiffuseShad.ViewDependent() {
+				sd.viewDependent = true
+			}
+			sd.useShaders[3] = true
+		}
 		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFReflect
 	}
 }
@@ -89,7 +109,7 @@ type sdData struct {
 	DiffuseColor, MirrorColor         color.Color
 }
 
-func makeSdData(sd *ShinyDiffuse, state *render.State, sp surface.Point, use [4]bool) (data sdData) {
+func makeSdData(sd *ShinyDiffuse, state *render.State, sp surface.Point, use [4]bool, params shader.Params) (data sdData) {
 	results := shader.Eval(
 		[]shader.Node{
 			sd.DiffuseColorShad,
@@ -98,10 +118,7 @@ func makeSdData(sd *ShinyDiffuse, state *render.State, sp surface.Point, use [4]
 			sd.SpecReflShad,
 			sd.MirrorColorShad,
 		},
-		shader.Params{
-			"RenderState":  state,
-			"SurfacePoint": sp,
-		},
+		params,
 	)
 	if sd.isReflective {
 		if use[0] {
@@ -157,7 +174,16 @@ func (data sdData) accumulate(kr float64) (newData sdData) {
 }
 
 func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material.BSDF {
-	state.MaterialData = makeSdData(sd, state, sp, [4]bool{false, false, false, false}) // TODO: viNodes...
+	params := shader.Params{
+		"RenderState":  state,
+		"SurfacePoint": sp,
+	}
+	if !sd.viewDependent {
+		state.MaterialData = makeSdData(sd, state, sp, sd.useShaders, params)
+	} else {
+		// TODO: Allow view-dependent shaders
+		state.MaterialData = makeSdData(sd, state, sp, [4]bool{}, params)
+	}
 	return sd.bsdfFlags
 }
 
