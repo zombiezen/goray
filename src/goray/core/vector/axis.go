@@ -55,3 +55,14 @@ func (a Axis) Next() Axis {
 func (a Axis) Prev() Axis {
 	return (a + 2) % 3
 }
+
+// LargestAxis returns which parameter is the largest.
+func LargestAxis(x, y, z float64) Axis {
+	switch {
+	case z > x && z > y:
+		return Z
+	case y > x && y > z:
+		return Y
+	}
+	return X
+}
