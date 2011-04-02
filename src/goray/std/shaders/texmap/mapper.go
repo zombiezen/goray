@@ -18,7 +18,6 @@ import (
 // Coordinates specifies which coordinate system to use during texture mapping.
 type Coordinates int
 
-// 
 const (
 	UV        Coordinates = iota // UV-mapping
 	Global                       // Global coordinates
@@ -31,6 +30,7 @@ const (
 type TextureMapper struct {
 	Texture          Texture         // The 2D/3D texture to apply
 	Coordinates      Coordinates     // The coordinate system to use
+	Projector        Projector       // The 3D projection type to use
 	MapX, MapY, MapZ vector.Axis     // Axis re-mapping (use -1 to indicate zero)
 	Transform        matrix.Matrix   // Transformation matrix (if using Transform coordinates)
 	Scale, Offset    vector.Vector3D // Constant scale and offset for coordinates
@@ -38,6 +38,25 @@ type TextureMapper struct {
 }
 
 var _ shader.Node = &TextureMapper{}
+
+// New creates a new texture mapper with the given parameters.
+func New(tex Texture, coord Coordinates, scalar bool) (tmap *TextureMapper) {
+	tmap = new(TextureMapper)
+	tmap.Init(tex, coord, scalar)
+	return
+}
+
+// Init initializes the mapper with default values.  You do not *need* to call this method to use a texture mapper, but it does provide reasonable defaults.
+func (tmap *TextureMapper) Init(tex Texture, coord Coordinates, scalar bool) {
+	tmap.Texture = tex
+	tmap.Coordinates = coord
+	tmap.Projector = FlatMap
+	tmap.MapX, tmap.MapY, tmap.MapZ = vector.X, vector.Y, vector.Z
+	tmap.Transform = matrix.Identity
+	tmap.Scale = vector.Vector3D{1.0, 1.0, 1.0}
+	tmap.Offset = vector.Vector3D{}
+	tmap.Scalar = scalar
+}
 
 func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D) {
 	texPt = p
@@ -55,7 +74,8 @@ func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D)
 	texPt[vector.X] = m[tmap.MapX]
 	texPt[vector.Y] = m[tmap.MapY]
 	texPt[vector.Z] = m[tmap.MapZ]
-	// TODO: Texture coordinate mapping (tube, sphere, etc.)
+	// Texture coordinate mapping
+	texPt = tmap.Projector.Project(texPt, n)
 	// Scale and offset
 	texPt = vector.Add(vector.CompMul(texPt, tmap.Scale), tmap.Offset)
 	return
@@ -67,7 +87,7 @@ func (tmap *TextureMapper) Eval(params map[string]interface{}, inputs []shader.R
 	p, n := sp.Position, sp.GeometricNormal
 	switch tmap.Coordinates {
 	case UV:
-		// TODO: eval_uv
+		p = vector.Vector3D{sp.U, sp.V, 0}
 	case Orco:
 		p, n = sp.OrcoPosition, sp.OrcoNormal
 	case Transform:
