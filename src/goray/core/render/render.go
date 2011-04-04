@@ -77,6 +77,19 @@ func NewImage(w, h int) (img *Image) {
 	}
 }
 
+// NewGoImage creates a new image based on an image from the standard Go library.
+func NewGoImage(i image.Image) (img *Image) {
+	bd := i.Bounds()
+	img = &Image{Width: bd.Dx(), Height: bd.Dy(), Pix: make([]color.RGBA, bd.Dx()*bd.Dy())}
+	for y := 0; y < img.Height; y++ {
+		for x := 0; x < img.Width; x++ {
+			col := color.Model.Convert(img.At(bd.Min.X+x, bd.Min.Y+y)).(color.RGBA)
+			img.Pix[y*img.Width+x] = col
+		}
+	}
+	return
+}
+
 func (i *Image) ColorModel() image.ColorModel { return color.Model }
 func (i *Image) At(x, y int) image.Color      { return i.Pix[y*i.Width+x] }
 func (i *Image) Bounds() image.Rectangle      { return image.Rect(0, 0, i.Width, i.Height) }

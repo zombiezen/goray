@@ -80,3 +80,24 @@ func TestRGBA(t *testing.T) {
 		c.Do(t)
 	}
 }
+
+func TestModel(t *testing.T) {
+	c1 := image.NRGBA64Color{0x1234, 0x4321, 0x1111, 0x7fff}
+	c2 := Model.Convert(c1)
+	if c3, ok := c2.(AlphaColor); ok {
+		modelColorEq(t, "Red", c3.Red(), 0x1234)
+		modelColorEq(t, "Green", c3.Green(), 0x4321)
+		modelColorEq(t, "Blue", c3.Blue(), 0x1111)
+		modelColorEq(t, "Alpha", c3.Alpha(), 0x7fff)
+	} else {
+		t.Error("Model doesn't give back AlphaColor")
+	}
+}
+
+func modelColorEq(t *testing.T, name string, channel float64, val uint16) {
+	const threshold = 1e-4
+	expected := float64(val) / math.MaxUint16
+	if channel > expected+threshold || channel < expected-threshold {
+		t.Errorf("%s() -> %#v (expected %#v)", name, channel, expected)
+	}
+}
