@@ -94,8 +94,8 @@ func (sd *ShinyDiffuse) Init() {
 	}
 	if sd.Diffuse*acc > threshold {
 		sd.isDiffuse = true
-		if sd.DiffuseShad != nil {
-			if sd.DiffuseShad.ViewDependent() {
+		if sd.DiffuseColorShad != nil {
+			if sd.DiffuseColorShad.ViewDependent() {
 				sd.viewDependent = true
 			}
 			sd.useShaders[3] = true
