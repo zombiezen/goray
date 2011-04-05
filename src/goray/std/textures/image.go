@@ -150,12 +150,66 @@ func init() {
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	m = m.Copy()
+	m.SetDefault("interpolation", "none")
+	m.SetDefault("useAlpha", true)
+	m.SetDefault("clip", "extend")
+	m.SetDefault("repeatX", 1)
+	m.SetDefault("repeatY", 1)
+
+	// Image path
 	path, ok := m["path"].(string)
 	if !ok {
 		err = os.NewError("Image must contain path")
 		return
 	}
-	// TODO: Read more arguments
+	// Interpolation
+	intpName, ok := m["interpolation"].(string)
+	if !ok {
+		err = os.NewError("interpolation must be a string")
+		return
+	}
+	var intp Interpolation
+	switch intpName {
+	case "none":
+		intp = NoInterpolation
+	case "bilinear":
+		intp = Bilinear
+	case "bicubic":
+		intp = Bicubic
+	}
+	// Use Alpha
+	useAlpha, ok := yamldata.AsBool(m["useAlpha"])
+	if !ok {
+		err = os.NewError("useAlpha must be a boolean")
+		return
+	}
+	// Clipping Mode
+	clipName, ok := m["clip"].(string)
+	if !ok {
+		err = os.NewError("clip must be a string")
+		return
+	}
+	var clip ClipMode
+	switch clipName {
+	case "extend":
+		clip = ClipExtend
+	case "clip":
+		clip = Clip
+	case "cube":
+		clip = ClipCube
+	case "repeat":
+		clip = ClipRepeat
+	}
+	// Repeat X and Y
+	repeatX, ok := yamldata.AsUint(m["repeatX"])
+	if !ok {
+		err = os.NewError("repeatX must be an integer")
+	}
+	repeatY, ok := yamldata.AsUint(m["repeatY"])
+	if !ok {
+		err = os.NewError("repeatY must be an integer")
+	}
 
 	// Open image file
 	// XXX: Possible security issue
@@ -170,7 +224,12 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	}
 	// Construct texture
 	tex := &Texture{
-		Image: render.NewGoImage(img),
+		Image:         render.NewGoImage(img),
+		Interpolation: intp,
+		UseAlpha:      useAlpha,
+		ClipMode:      clip,
+		RepeatX:       int(repeatX),
+		RepeatY:       int(repeatY),
 	}
 	return tex, nil
 }
