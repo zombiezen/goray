@@ -12,8 +12,8 @@ import (
 	"os"
 
 	"image"
-	"image/jpeg"
-	"image/png"
+	_ "image/jpeg"
+	_ "image/png"
 
 	"goray/core/color"
 	"goray/core/render"
@@ -23,10 +23,6 @@ import (
 
 	yamldata "goyaml.googlecode.com/hg/data"
 )
-
-// Ensure that these packages get imported
-var _ = jpeg.Decode
-var _ = png.Decode
 
 type Interpolation int
 
