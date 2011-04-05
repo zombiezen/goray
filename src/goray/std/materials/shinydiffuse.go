@@ -481,15 +481,18 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		transmit = 0
 	}
 
+	diffuseColorShad, _ := m["diffuseColorShader"].(shader.Node)
+
 	mat := &ShinyDiffuse{
-		Color:          col,
-		SpecReflColor:  srcol,
-		EmitColor:      color.Black,
-		Diffuse:        diffuse,
-		SpecRefl:       specRefl,
-		Transp:         transp,
-		Transl:         transl,
-		TransmitFilter: transmit,
+		Color:            col,
+		SpecReflColor:    srcol,
+		EmitColor:        color.Black,
+		Diffuse:          diffuse,
+		SpecRefl:         specRefl,
+		Transp:           transp,
+		Transl:           transl,
+		TransmitFilter:   transmit,
+		DiffuseColorShad: diffuseColorShad,
 	}
 	mat.Init()
 	return mat, nil

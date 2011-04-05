@@ -9,11 +9,15 @@
 package texmap
 
 import (
+	"os"
+
 	"goray/core/matrix"
 	"goray/core/render"
 	"goray/core/shader"
 	"goray/core/surface"
 	"goray/core/vector"
+
+	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 // Coordinates specifies which coordinate system to use during texture mapping.
@@ -118,3 +122,34 @@ func (tmap *TextureMapper) ViewDependent() bool {
 }
 
 func (tmap *TextureMapper) Dependencies() []shader.Node { return []shader.Node{} }
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	tex, ok := m["texture"].(Texture)
+	if !ok {
+		err = os.NewError("Texture mapper must be given a texture")
+		return
+	}
+	var coord Coordinates
+	coordString, ok := m["coordinates"].(string)
+	if !ok {
+		err = os.NewError("Texture mapper must have coordinates key")
+		return
+	}
+	switch coordString {
+	case "uv":
+		coord = UV
+	case "global":
+		coord = Global
+	case "orco":
+		coord = Orco
+	case "transform":
+		coord = Transform
+	case "window":
+		coord = Window
+	default:
+		err = os.NewError("Unrecognized coordinate space: " + coordString)
+		return
+	}
+	scalar, _ := yamldata.AsBool(m["scalar"])
+	return New(tex, coord, scalar), nil
+}

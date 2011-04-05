@@ -78,13 +78,14 @@ func NewImage(w, h int) (img *Image) {
 }
 
 // NewGoImage creates a new image based on an image from the standard Go library.
-func NewGoImage(i image.Image) (img *Image) {
-	bd := i.Bounds()
-	img = &Image{Width: bd.Dx(), Height: bd.Dy(), Pix: make([]color.RGBA, bd.Dx()*bd.Dy())}
-	for y := 0; y < img.Height; y++ {
-		for x := 0; x < img.Width; x++ {
-			col := color.Model.Convert(img.At(bd.Min.X+x, bd.Min.Y+y)).(color.RGBA)
-			img.Pix[y*img.Width+x] = col
+func NewGoImage(oldImage image.Image) (newImage *Image) {
+	bd := oldImage.Bounds()
+	newImage = &Image{Width: bd.Dx(), Height: bd.Dy(), Pix: make([]color.RGBA, bd.Dx()*bd.Dy())}
+	model := newImage.ColorModel()
+	for y := 0; y < newImage.Height; y++ {
+		for x := 0; x < newImage.Width; x++ {
+			col := model.Convert(oldImage.At(bd.Min.X+x, bd.Min.Y+y)).(color.RGBA)
+			newImage.Pix[y*newImage.Width+x] = col
 		}
 	}
 	return

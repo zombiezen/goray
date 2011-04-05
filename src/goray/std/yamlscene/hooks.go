@@ -20,6 +20,8 @@ import (
 	debugmaterial  "goray/std/materials/debug"
 	shinydiffuse   "goray/std/materials/shinydiffuse"
 	mesh           "goray/std/objects/mesh"
+	texmap         "goray/std/shaders/texmap"
+	imagetexture   "goray/std/textures/image"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 	"goyaml.googlecode.com/hg/parser"
@@ -49,6 +51,8 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),
 	StdPrefix + "materials/shinydiffuse":  MapConstruct(shinydiffuse.Construct),
 	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
+	StdPrefix + "shaders/texmap":          MapConstruct(texmap.Construct),
+	StdPrefix + "textures/image":          MapConstruct(imagetexture.Construct),
 }
 
 func float64Sequence(n parser.Node) (data []float64, ok bool) {

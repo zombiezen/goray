@@ -9,13 +9,24 @@ package image
 
 import (
 	"math"
+	"os"
+
+	"image"
+	"image/jpeg"
+	"image/png"
 
 	"goray/core/color"
 	"goray/core/render"
 	"goray/core/vector"
 
 	"goray/std/shaders/texmap"
+
+	yamldata "goyaml.googlecode.com/hg/data"
 )
+
+// Ensure that these packages get imported
+var _ = jpeg.Decode
+var _ = png.Decode
 
 type Interpolation int
 
@@ -135,4 +146,30 @@ func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) 
 	c1 := img.Pix[y*img.Width+x]
 	// TODO: Add interpolation
 	return c1
+}
+
+func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	path, ok := m["path"].(string)
+	if !ok {
+		err = os.NewError("Image must contain path")
+		return
+	}
+	// TODO: Read more arguments
+
+	// Open image file
+	// XXX: Possible security issue
+	imageFile, err := os.Open(path, os.O_RDONLY, 0)
+	if err != nil {
+		return
+	}
+	defer imageFile.Close()
+	img, _, err := image.Decode(imageFile)
+	if err != nil {
+		return
+	}
+	// Construct texture
+	tex := &Texture{
+		Image: render.NewGoImage(img),
+	}
+	return tex, nil
 }
