@@ -8,33 +8,36 @@
 package yamlscene
 
 import (
+	"fmt"
 	"os"
 	"goray/core/color"
 	"goray/core/vector"
-
-	orthocam       "goray/std/cameras/ortho"
-	perspectivecam "goray/std/cameras/perspective"
-	directlight    "goray/std/integrators/directlight"
-	pointlight     "goray/std/lights/point"
-	spotlight      "goray/std/lights/spot"
-	debugmaterial  "goray/std/materials/debug"
-	shinydiffuse   "goray/std/materials/shinydiffuse"
-	mesh           "goray/std/objects/mesh"
-	texmap         "goray/std/shaders/texmap"
-	imagetexture   "goray/std/textures/image"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 	"goyaml.googlecode.com/hg/parser"
 )
 
+type ConstructError struct {
+	os.Error
+	Node parser.Node
+}
+
+func (err ConstructError) String() string {
+	return fmt.Sprintf("line %d: %s", err.Node.Start().Line, err.Error)
+}
+
 type MapConstruct func(yamldata.Map) (interface{}, os.Error)
 
 func (f MapConstruct) Construct(n parser.Node) (data interface{}, err os.Error) {
 	if node, ok := n.(*parser.Mapping); ok {
-		return f(node.Map())
+		data, err = f(node.Map())
+	} else {
+		err = os.NewError("Constructor requires a mapping")
 	}
 
-	err = os.NewError("Constructor requires a mapping")
+	if err != nil {
+		err = ConstructError{err, n}
+	}
 	return
 }
 
@@ -42,17 +45,6 @@ var Constructor yamldata.ConstructorMap = yamldata.ConstructorMap{
 	Prefix + "rgb":  yamldata.ConstructorFunc(constructRGB),
 	Prefix + "rgba": yamldata.ConstructorFunc(constructRGBA),
 	Prefix + "vec":  yamldata.ConstructorFunc(constructVector),
-
-	StdPrefix + "cameras/ortho":           MapConstruct(orthocam.Construct),
-	StdPrefix + "cameras/perspective":     MapConstruct(perspectivecam.Construct),
-	StdPrefix + "integrators/directlight": MapConstruct(directlight.Construct),
-	StdPrefix + "lights/point":            MapConstruct(pointlight.Construct),
-	StdPrefix + "lights/spot":             MapConstruct(spotlight.Construct),
-	StdPrefix + "materials/debug":         MapConstruct(debugmaterial.Construct),
-	StdPrefix + "materials/shinydiffuse":  MapConstruct(shinydiffuse.Construct),
-	StdPrefix + "objects/mesh":            MapConstruct(mesh.Construct),
-	StdPrefix + "shaders/texmap":          MapConstruct(texmap.Construct),
-	StdPrefix + "textures/image":          MapConstruct(imagetexture.Construct),
 }
 
 func float64Sequence(n parser.Node) (data []float64, ok bool) {

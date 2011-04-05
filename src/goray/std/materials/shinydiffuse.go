@@ -18,6 +18,7 @@ import (
 	"goray/core/surface"
 	"goray/core/vector"
 	"goray/std/materials/common"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -442,6 +443,10 @@ func (sd *ShinyDiffuse) Emit(state *render.State, sp surface.Point, wo vector.Ve
 		return color.ScalarMul(data.DiffuseColor, sd.EmitValue)
 	}
 	return sd.EmitColor
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"materials/shinydiffuse"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

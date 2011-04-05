@@ -17,6 +17,7 @@ import (
 	"goray/core/surface"
 	"goray/core/vector"
 	"goray/sampleutil"
+	"goray/std/yamlscene"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -179,6 +180,10 @@ func (spot *spotLight) CanIlluminate(pt vector.Vector3D) bool {
 	ldir = vector.ScalarDiv(ldir, dist) // normalize
 	cosa := vector.Dot(spot.direction.Negate(), ldir)
 	return cosa >= spot.cosEnd
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"lights/spot"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

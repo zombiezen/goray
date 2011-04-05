@@ -21,6 +21,8 @@ import (
 	"goray/logging"
 	"goray/server"
 	"goray/version"
+
+	_ "goray/std/all"
 )
 
 var showHelp, showVersion bool
@@ -155,7 +157,7 @@ func singleFile() int {
 		case job.StatusDone:
 			logging.MainLog.Info("TOTAL TIME: %v", stat.TotalTime())
 		case job.StatusError:
-			logging.MainLog.Critical("Error: %v", err)
+			logging.MainLog.Critical("Error: %v", stat.Error)
 			return 1
 		}
 	}

@@ -16,6 +16,7 @@ import (
 	"goray/core/shader"
 	"goray/core/surface"
 	"goray/core/vector"
+	"goray/std/yamlscene"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -122,6 +123,10 @@ func (tmap *TextureMapper) ViewDependent() bool {
 }
 
 func (tmap *TextureMapper) Dependencies() []shader.Node { return []shader.Node{} }
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"shaders/texmap"] = yamlscene.MapConstruct(Construct)
+}
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	tex, ok := m["texture"].(Texture)

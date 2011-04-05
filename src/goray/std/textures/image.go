@@ -20,6 +20,7 @@ import (
 	"goray/core/vector"
 
 	"goray/std/shaders/texmap"
+	"goray/std/yamlscene"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -142,6 +143,10 @@ func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) 
 	c1 := img.Pix[y*img.Width+x]
 	// TODO: Add interpolation
 	return c1
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"textures/image"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

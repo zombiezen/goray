@@ -15,6 +15,7 @@ import (
 	"goray/core/surface"
 	"goray/core/vector"
 	"goray/std/materials/common"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -61,6 +62,10 @@ func (mat *debugMaterial) ScatterPhoton(state *render.State, sp surface.Point, w
 
 func (mat *debugMaterial) MaterialFlags() material.BSDF {
 	return material.BSDFDiffuse
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"materials/debug"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
