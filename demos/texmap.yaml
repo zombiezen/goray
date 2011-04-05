@@ -28,60 +28,77 @@ objects:
          -  [0.5, 0.5, 0.5]
          -  [0.5, 1.5, 0.5]
          -  [-0.5, 1.5, 0.5]
+      uvs:
+         # Coordinates are from bottom-left
+         -  [0.0, 0.0]
+         -  [1.0, 0.0]
+         -  [1.0, 1.0]
+         -  [0.0, 1.0]
       faces:
          # Back
          -  vertices: [0, 3, 2]
+            uvs: [1, 2, 3]
             material: &mat !std!materials/shinydiffuse
                 color: !goray!rgb [1.0, 0.0, 0.0]
                 mirrorColor: !goray!rgb [1.0, 1.0, 1.0]
                 diffuseReflect: 1.0
                 specularReflect: 0.25
-                #diffuseColorShader: !std!shaders/texmap
-                #   texture: !std!textures/image {path: "..."}
-                #   coordinates: global
+                diffuseColorShader: !std!shaders/texmap
+                   texture: !std!textures/image {path: "demos/tree.jpg"}
+                   coordinates: uv
          -  vertices: [0, 2, 1]
+            uvs: [1, 3, 0]
             material: *mat
          # Top
          -  vertices: [3, 7, 2]
+            uvs: [3, 0, 2]
             material: *mat
          -  vertices: [6, 2, 7]
+            uvs: [1, 2, 0]
             material: *mat
          # Bottom
          -  vertices: [0, 1, 4]
+            uvs: [2, 3, 1]
             material: *mat
          -  vertices: [5, 4, 1]
+            uvs: [0, 1, 3]
             material: *mat
          # Left
          -  vertices: [7, 3, 4]
+            uvs: [2, 3, 1]
             material: *mat
          -  vertices: [0, 4, 3]
+            uvs: [0, 1, 3]
             material: *mat
          # Right
          -  vertices: [6, 5, 2]
+            uvs: [3, 0, 2]
             material: *mat
          -  vertices: [1, 2, 5]
+            uvs: [1, 2, 0]
             material: *mat
          # Front
          -  vertices: [4, 6, 7]
+            uvs: [0, 2, 3]
             material: *mat
          -  vertices: [5, 6, 4]
+            uvs: [1, 2, 0]
             material: *mat
 camera: !std!cameras/perspective
-   position: !goray!vec [1.5, 2.0, 5.0]
+   position: !goray!vec [1.5, 2.5, 5.0]
    look: !goray!vec [0.0, 0.5, 0.0]
    up: !goray!vec [1.5, 7.0, 5.0]
    width: 512
    height: 512
    focalDistance: 1.5
 lights:
-   -  !std!lights/point
-      position: !goray!vec [0.0, 5.0, 2.0]
+   -  !std!lights/spot
+      position: !goray!vec [1.0, 5.0, 2.0]
+      look: !goray!vec [0.0, 0.0, 0.0]
       color: !goray!rgb [1.0, 1.0, 1.0]
       intensity: 50.0
-   -  !std!lights/point
-      position: !goray!vec [0.0, 0.0, 5.0]
-      color: !goray!rgb [1.0, 1.0, 1.0]
-      intensity: 10.0
+      coneAngle: 20.0
+      falloff: 0.15
    -  !std!lights/point
       position: !goray!vec [0.0, 0.25, 0.0]
       color: !goray!rgb [1.0, 1.0, 1.0]
