@@ -18,6 +18,7 @@ import (
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/std/integrators/util"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -161,6 +162,10 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 		}
 	}
 	return color.NewRGBAFromColor(col, alpha)
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"integrators/directlight"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

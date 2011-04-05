@@ -13,6 +13,7 @@ import (
 	"goray/core/camera"
 	"goray/core/ray"
 	"goray/core/vector"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -203,6 +204,10 @@ func (cam *Camera) Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bo
 }
 
 func (cam *Camera) SampleLens() bool { return cam.aperture != 0 }
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/perspective"] = yamlscene.MapConstruct(Construct)
+}
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	m = m.Copy()

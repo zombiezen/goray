@@ -21,6 +21,8 @@ import (
 	"goray/logging"
 	"goray/server"
 	"goray/version"
+
+	_ "goray/std/all"
 )
 
 var showHelp, showVersion bool

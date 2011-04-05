@@ -17,6 +17,7 @@ import (
 	"goray/core/surface"
 	"goray/core/vector"
 	"goray/sampleutil"
+	"goray/std/yamlscene"
 
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -98,6 +99,10 @@ func (l *pointLight) IlluminatePdf(sp, spLight surface.Point) float64 { return 0
 
 func (l *pointLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
 	return 1.0, 0.25, 1.0
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"lights/point"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {

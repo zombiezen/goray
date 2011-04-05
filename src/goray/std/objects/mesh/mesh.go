@@ -20,6 +20,7 @@ import (
 	"goray/core/object"
 	"goray/core/primitive"
 	"goray/core/vector"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -88,6 +89,10 @@ func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D, uvs []UV) {
 func (mesh *Mesh) AddTriangle(t *Triangle) {
 	t.index = len(mesh.triangles)
 	mesh.triangles = append(mesh.triangles, t)
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"objects/mesh"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
