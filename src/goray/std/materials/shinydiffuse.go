@@ -487,6 +487,10 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	}
 
 	diffuseColorShad, _ := m["diffuseColorShader"].(shader.Node)
+	specReflShad, _ := m["specularReflectionShader"].(shader.Node)
+	mirrorColorShad, _ := m["mirrorColorShader"].(shader.Node)
+	transpShad, _ := m["transparencyShader"].(shader.Node)
+	translShad, _ := m["translucencyShader"].(shader.Node)
 
 	mat := &ShinyDiffuse{
 		Color:            col,
@@ -498,6 +502,10 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		Transl:           transl,
 		TransmitFilter:   transmit,
 		DiffuseColorShad: diffuseColorShad,
+		SpecReflShad:     specReflShad,
+		MirrorColorShad:  mirrorColorShad,
+		TranspShad:       transpShad,
+		TranslShad:       translShad,
 	}
 	mat.Init()
 	return mat, nil
