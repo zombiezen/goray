@@ -129,11 +129,19 @@ func init() {
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
+	// Defaults
+	m = m.Copy()
+	m.SetDefault("mapAxes", []interface{}{"x", "y", "z"})
+	m.SetDefault("scale", vector.Vector3D{1, 1, 1})
+	m.SetDefault("offset", vector.Vector3D{})
+	m.SetDefault("scalar", false)
+	// Texture
 	tex, ok := m["texture"].(Texture)
 	if !ok {
 		err = os.NewError("Texture mapper must be given a texture")
 		return
 	}
+	// Coordinates
 	var coord Coordinates
 	coordString, ok := m["coordinates"].(string)
 	if !ok {
@@ -155,6 +163,62 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Unrecognized coordinate space: " + coordString)
 		return
 	}
-	scalar, _ := yamldata.AsBool(m["scalar"])
-	return New(tex, coord, scalar), nil
+	// Scalar
+	scalar, ok := yamldata.AsBool(m["scalar"])
+	if !ok {
+		err = os.NewError("Scalar must be a boolean")
+		return
+	}
+	tmap := New(tex, coord, scalar)
+	// Axis mapping
+	axisMap, ok := yamldata.AsSequence(m["mapAxes"])
+	if !ok || len(axisMap) != 3 {
+		err = os.NewError("mapAxes must be a 3-sequence")
+		return
+	}
+	for i, axisItem := range axisMap {
+		a, ok := axisItem.(string)
+		// ^ heh.
+		if !ok {
+			err = os.NewError("Each item of mapAxes must be a string")
+			return
+		}
+		switch i {
+		case 0:
+			tmap.MapX = constructMapAxis(a)
+		case 1:
+			tmap.MapY = constructMapAxis(a)
+		case 2:
+			tmap.MapZ = constructMapAxis(a)
+		}
+	}
+	// Scale and offset
+	tmap.Scale, ok = m["scale"].(vector.Vector3D)
+	if !ok {
+		err = os.NewError("scale must be a vector")
+		return
+	}
+	tmap.Offset, ok = m["offset"].(vector.Vector3D)
+	if !ok {
+		err = os.NewError("offset must be a vector")
+		return
+	}
+	// Finish
+	return tmap, nil
+}
+
+func constructMapAxis(name string) (a vector.Axis) {
+	switch name {
+	case "x":
+		a = vector.X
+	case "y":
+		a = vector.Y
+	case "z":
+		a = vector.Z
+	case "none":
+		a = -1
+	default:
+		a = -1
+	}
+	return
 }
