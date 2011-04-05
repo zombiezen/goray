@@ -13,6 +13,7 @@ import (
 	"goray/core/camera"
 	"goray/core/ray"
 	"goray/core/vector"
+	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -64,6 +65,10 @@ func (c *orthoCam) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
 
 func (c *orthoCam) Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	return 0.0, false
+}
+
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/ortho"] = yamlscene.MapConstruct(Construct)
 }
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
