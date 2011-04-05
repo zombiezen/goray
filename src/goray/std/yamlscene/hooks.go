@@ -8,6 +8,7 @@
 package yamlscene
 
 import (
+	"fmt"
 	"os"
 	"goray/core/color"
 	"goray/core/vector"
@@ -16,14 +17,27 @@ import (
 	"goyaml.googlecode.com/hg/parser"
 )
 
+type ConstructError struct {
+	os.Error
+	Node parser.Node
+}
+
+func (err ConstructError) String() string {
+	return fmt.Sprintf("line %d: %s", err.Node.Start().Line, err.Error)
+}
+
 type MapConstruct func(yamldata.Map) (interface{}, os.Error)
 
 func (f MapConstruct) Construct(n parser.Node) (data interface{}, err os.Error) {
 	if node, ok := n.(*parser.Mapping); ok {
-		return f(node.Map())
+		data, err = f(node.Map())
+	} else {
+		err = os.NewError("Constructor requires a mapping")
 	}
 
-	err = os.NewError("Constructor requires a mapping")
+	if err != nil {
+		err = ConstructError{err, n}
+	}
 	return
 }
 
