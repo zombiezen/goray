@@ -53,6 +53,7 @@ func cubeMap(p, n vector.Vector3D) (res vector.Vector3D) {
 	return vector.Vector3D{p[axis.Next()], p[axis.Prev()], p[axis]}
 }
 
+// Built-in projection schemes
 var (
 	FlatMap   Projector = ProjectorFunc(flatMap)
 	TubeMap   Projector = ProjectorFunc(tubeMap)

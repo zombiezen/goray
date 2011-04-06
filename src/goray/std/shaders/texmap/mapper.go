@@ -118,7 +118,7 @@ func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.
 }
 
 func (tmap *TextureMapper) ViewDependent() bool {
-	// XXX: Shouldn't this occasionally be true?
+	// Texture mapping is view-independent. Window coordinates use render state.
 	return false
 }
 
@@ -131,7 +131,8 @@ func init() {
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	// Defaults
 	m = m.Copy()
-	m.SetDefault("mapAxes", []interface{}{"x", "y", "z"})
+	m.SetDefault("projection", "flat")
+	m.SetDefault("mapAxes", yamldata.Sequence{"x", "y", "z"})
 	m.SetDefault("scale", vector.Vector3D{1, 1, 1})
 	m.SetDefault("offset", vector.Vector3D{})
 	m.SetDefault("scalar", false)
@@ -170,6 +171,25 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		return
 	}
 	tmap := New(tex, coord, scalar)
+	// Projection
+	projString, ok := m["projection"].(string)
+	if !ok {
+		err = os.NewError("projection must be string")
+		return
+	}
+	switch projString {
+	case "flat":
+		tmap.Projector = FlatMap
+	case "tube":
+		tmap.Projector = TubeMap
+	case "sphere":
+		tmap.Projector = SphereMap
+	case "cube":
+		tmap.Projector = CubeMap
+	default:
+		err = os.NewError("Unrecognized projection: " + projString)
+		return
+	}
 	// Axis mapping
 	axisMap, ok := yamldata.AsSequence(m["mapAxes"])
 	if !ok || len(axisMap) != 3 {
