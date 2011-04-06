@@ -255,7 +255,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		bokehBias = EdgeBias
 	}
 
-	cam := New(pos, look, up, int(width), int(height), aspect, focalDistance, aperture, bokehType, bokehBias, bokehRot)
+	cam := New(pos, look, up, width, height, aspect, focalDistance, aperture, bokehType, bokehBias, bokehRot)
 	cam.dofDistance = dofDistance
 	return cam, nil
 }

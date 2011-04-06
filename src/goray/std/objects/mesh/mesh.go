@@ -134,7 +134,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		a, _ := yamldata.AsInt(vindices[0])
 		b, _ := yamldata.AsInt(vindices[1])
 		c, _ := yamldata.AsInt(vindices[2])
-		tri := NewTriangle(int(a), int(b), int(c), mesh)
+		tri := NewTriangle(a, b, c, mesh)
 		tri.SetMaterial(fmap["material"].(material.Material))
 		mesh.AddTriangle(tri)
 	}
