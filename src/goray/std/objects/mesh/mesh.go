@@ -156,7 +156,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		vb, _ := yamldata.AsInt(vindices[1])
 		vc, _ := yamldata.AsInt(vindices[2])
 		// UVs
-		var uva, uvb, uvc int64 = -1, -1, -1
+		uva, uvb, uvc := -1, -1, -1
 		if _, hasUVs := fmap["uvs"]; len(uvs) > 0 && hasUVs {
 			uvindices, _ := yamldata.AsSequence(fmap["uvs"])
 			uva, _ = yamldata.AsInt(uvindices[0])
@@ -164,8 +164,8 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 			uvc, _ = yamldata.AsInt(uvindices[2])
 		}
 		// Create triangle
-		tri := NewTriangle(int(va), int(vb), int(vc), mesh)
-		tri.SetUVs(int(uva), int(uvb), int(uvc))
+		tri := NewTriangle(va, vb, vc, mesh)
+		tri.SetUVs(uva, uvb, uvc)
 		tri.SetMaterial(fmap["material"].(material.Material))
 		mesh.AddTriangle(tri)
 	}
