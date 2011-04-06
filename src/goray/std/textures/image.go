@@ -120,6 +120,16 @@ func mapExtend(x float64) float64 {
 	return x
 }
 
+func cubicInterpolate(c1, c2, c3, c4 color.AlphaColor, x float64) (col color.AlphaColor) {
+	x2 := x * x
+	x3 := x2 * x
+	col = color.ScalarMulAlpha(c1, (-1/3)*x3+(4/5)*x2-(7/15)*x)
+	col = color.AddAlpha(col, color.ScalarMulAlpha(c2, x3-(9/5)*x2-(1/5)*x+(1/15)))
+	col = color.AddAlpha(col, color.ScalarMulAlpha(c3, -x3+(6/5)*x2+(4/5)*x))
+	col = color.AddAlpha(col, color.ScalarMulAlpha(c4, (1/3)*x3-(1/5)*x2-(2/15)*x))
+	return
+}
+
 func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) color.AlphaColor {
 	xf := float64(img.Width) * (p[vector.X] - math.Floor(p[vector.X]))
 	yf := float64(img.Width) * (p[vector.Y] - math.Floor(p[vector.Y]))
@@ -127,22 +137,65 @@ func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) 
 		xf -= 0.5
 		yf -= 0.5
 	}
-	x, y := int(xf), int(yf)
-	if x < 0 {
-		x = 0
-	}
-	if y < 0 {
-		y = 0
-	}
-	if x >= img.Width {
-		x = img.Width - 1
-	}
-	if y >= img.Height {
-		y = img.Height - 1
-	}
+	x, y := clampToRes(int(xf), int(yf), img.Width, img.Height)
 	c1 := img.Pix[y*img.Width+x]
-	// TODO: Add interpolation
-	return c1
+	if intp == NoInterpolation {
+		return c1
+	}
+	// Now for the fun stuff:
+	x2, y2 := clampToRes(x+1, y+1, img.Width, img.Height)
+	c2 := img.Pixel(x2, y)
+	c3 := img.Pixel(x, y2)
+	c4 := img.Pixel(x2, y2)
+	dx, dy := xf-math.Floor(xf), yf-math.Floor(yf)
+	if intp == Bilinear {
+		w0, w1, w2, w3 := (1-dx)*(1-dy), (1-dx)*dy, dx*(1-dy), dx*dy
+		return color.RGBA{
+			w0*c1.Red() + w1*c3.Red() + w2*c2.Red() + w3*c4.Red(),
+			w0*c1.Green() + w1*c3.Green() + w2*c2.Green() + w3*c4.Green(),
+			w0*c1.Blue() + w1*c3.Blue() + w2*c2.Blue() + w3*c4.Blue(),
+			w0*c1.Alpha() + w1*c3.Alpha() + w2*c2.Alpha() + w3*c4.Alpha(),
+		}
+	}
+	x0, y0 := clampToRes(x-1, y-1, img.Width, img.Height)
+	x3, y3 := clampToRes(x2+1, y2+1, img.Width, img.Height)
+	c0 := color.AlphaColor(img.Pixel(x0, y0))
+	c5 := color.AlphaColor(img.Pixel(x, y0))
+	c6 := color.AlphaColor(img.Pixel(x2, y0))
+	c7 := color.AlphaColor(img.Pixel(x3, y0))
+	c8 := color.AlphaColor(img.Pixel(x0, y))
+	c9 := color.AlphaColor(img.Pixel(x3, y))
+	cA := color.AlphaColor(img.Pixel(x0, y2))
+	cB := color.AlphaColor(img.Pixel(x3, y2))
+	cC := color.AlphaColor(img.Pixel(x0, y3))
+	cD := color.AlphaColor(img.Pixel(x, y3))
+	cE := color.AlphaColor(img.Pixel(x2, y3))
+	cF := color.AlphaColor(img.Pixel(x3, y3))
+	c0 = cubicInterpolate(c0, c5, c6, c7, dx)
+	c8 = cubicInterpolate(c8, c1, c2, c9, dx)
+	cA = cubicInterpolate(cA, c3, c4, cB, dx)
+	cC = cubicInterpolate(cC, cD, cE, cF, dx)
+	return cubicInterpolate(c0, c8, cA, cC, dy)
+}
+
+func clampToRes(x0, y0, w, h int) (x, y int) {
+	switch {
+	case x0 < 0:
+		x = 0
+	case x0 >= w:
+		x = w - 1
+	default:
+		x = x0
+	}
+	switch {
+	case y0 < 0:
+		y = 0
+	case y0 >= h:
+		y = h - 1
+	default:
+		y = y0
+	}
+	return
 }
 
 func init() {
@@ -177,6 +230,9 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		intp = Bilinear
 	case "bicubic":
 		intp = Bicubic
+	default:
+		err = os.NewError("Invalid interpolation method")
+		return
 	}
 	// Use Alpha
 	useAlpha, ok := yamldata.AsBool(m["useAlpha"])
@@ -200,6 +256,9 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		clip = ClipCube
 	case "repeat":
 		clip = ClipRepeat
+	default:
+		err = os.NewError("Invalid clipping mode")
+		return
 	}
 	// Repeat X and Y
 	repeatX, ok := yamldata.AsUint(m["repeatX"])
