@@ -76,9 +76,11 @@ func RenderPixel(s *scene.Scene, i Integrator, x, y int) render.Fragment {
 	return render.Fragment{X: x, Y: y, Color: color}
 }
 
+const fragBufferSize = 100
+
 // SimpleIntegrate integrates an image one pixel at a time.
 func SimpleIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan render.Fragment {
-	ch := make(chan render.Fragment, 200)
+	ch := make(chan render.Fragment, fragBufferSize)
 	go func() {
 		defer close(ch)
 		w, h := s.Camera().ResolutionX(), s.Camera().ResolutionY()
@@ -97,7 +99,7 @@ func BlockIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan r
 	numWorkers := runtime.GOMAXPROCS(0)
 	cam := s.Camera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
-	ch := make(chan render.Fragment, 100)
+	ch := make(chan render.Fragment, fragBufferSize)
 	// Separate goroutine manages block locations
 	locCh := make(chan [2]int)
 	go func() {
@@ -141,7 +143,7 @@ func WorkerIntegrate(s *scene.Scene, in Integrator, log logging.Handler) <-chan 
 		return SimpleIntegrate(s, in, log)
 	}
 
-	ch := make(chan render.Fragment, 100)
+	ch := make(chan render.Fragment, fragBufferSize)
 	go func() {
 		defer close(ch)
 		rowsPerWorker := h / numWorkers
