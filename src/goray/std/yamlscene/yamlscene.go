@@ -26,7 +26,7 @@ const (
 
 func Load(r io.Reader, sc *scene.Scene) (i integrator.Integrator, err os.Error) {
 	// Parse
-	p := parser.New(r, yamldata.CoreSchema, yamldata.ConstructorFunc(realConstructor))
+	p := parser.New(r, yamldata.CoreSchema, yamldata.ConstructorFunc(realConstructor), nil)
 	doc, err := p.ParseDocument()
 	if err != nil {
 		return
@@ -55,9 +55,9 @@ func Load(r io.Reader, sc *scene.Scene) (i integrator.Integrator, err os.Error) 
 	return
 }
 
-func realConstructor(n parser.Node) (interface{}, os.Error) {
+func realConstructor(n parser.Node, userData interface{}) (interface{}, os.Error) {
 	if _, ok := Constructor[n.Tag()]; ok {
-		return Constructor.Construct(n)
+		return Constructor.Construct(n, userData)
 	}
-	return yamldata.DefaultConstructor.Construct(n)
+	return yamldata.DefaultConstructor.Construct(n, userData)
 }

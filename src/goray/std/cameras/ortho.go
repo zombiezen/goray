@@ -97,6 +97,6 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		scale = 1.0
 	}
 	// Create camera (finally!)
-	data = New(pos, look, up, int(width), int(height), aspect, scale)
+	data = New(pos, look, up, width, height, aspect, scale)
 	return
 }

@@ -172,6 +172,6 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	trShad, _ := yamldata.AsBool(m["transparentShadows"])
 	shadowDepth, _ := yamldata.AsInt(m["shadowDepth"])
 	rayDepth, _ := yamldata.AsInt(m["rayDepth"])
-	data = New(trShad, int(shadowDepth), int(rayDepth))
+	data = New(trShad, shadowDepth, rayDepth)
 	return
 }
