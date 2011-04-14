@@ -41,11 +41,11 @@ func (fs fileStorage) path(j *Job) string {
 }
 
 func (fs fileStorage) OpenReader(j *Job) (rc io.ReadCloser, err os.Error) {
-	rc, err = os.Open(fs.path(j), os.O_RDONLY, 0)
+	rc, err = os.Open(fs.path(j))
 	return
 }
 
 func (fs fileStorage) OpenWriter(j *Job) (wc io.WriteCloser, err os.Error) {
-	wc, err = os.Open(fs.path(j), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	wc, err = os.Create(fs.path(j))
 	return
 }
