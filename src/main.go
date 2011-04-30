@@ -106,7 +106,7 @@ func singleFile() int {
 	}
 
 	// Open input file
-	inFile, err := os.Open(flag.Arg(0), os.O_RDONLY, 0)
+	inFile, err := os.Open(flag.Arg(0))
 	if err != nil {
 		logging.MainLog.Critical("Error opening input file: %v", err)
 		return 1
@@ -117,7 +117,7 @@ func singleFile() int {
 	if outputPath == "" {
 		outputPath = "goray.png"
 	}
-	outFile, err := os.Open(outputPath, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0644)
+	outFile, err := os.Create(outputPath)
 	if err != nil {
 		logging.MainLog.Critical("Error opening output file: %v", err)
 		return 1
