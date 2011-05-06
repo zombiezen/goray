@@ -44,7 +44,7 @@ objects:
                 diffuseReflect: 1.0
                 specularReflect: 0.25
                 diffuseColorShader: !std!shaders/texmap
-                   texture: !std!textures/image {path: "demos/tree.jpg", interpolation: bicubic}
+                   texture: !std!textures/image {name: "demos/tree.jpg", interpolation: bicubic}
                    coordinates: uv
          -  vertices: [0, 2, 1]
             uvs: [1, 3, 0]
