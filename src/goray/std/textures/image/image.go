@@ -284,7 +284,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 
 	// Open image file
 	// XXX: Possible security issue
-	imageFile, err := os.Open(path, os.O_RDONLY, 0)
+	imageFile, err := os.Open(path)
 	if err != nil {
 		return
 	}
