@@ -20,12 +20,14 @@ import (
 	"goray/core/render"
 	"goray/core/scene"
 	"goray/core/integrator"
+
 	"goray/std/yamlscene"
 )
 
 type Job struct {
 	Name      string
 	Source    io.Reader
+	Params    yamlscene.Params
 	SceneLog  logging.Handler
 	RenderLog logging.Handler
 
@@ -35,10 +37,11 @@ type Job struct {
 }
 
 // New returns a newly allocated job structure.
-func New(name string, source io.Reader) (job *Job) {
+func New(name string, source io.Reader, params yamlscene.Params) (job *Job) {
 	job = &Job{
 		Name:   name,
 		Source: source,
+		Params: params,
 	}
 	job.cond = sync.NewCond(job.lock.RLocker())
 	return
@@ -98,7 +101,7 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	}
 	var integ integrator.Integrator
 	status.ReadTime = time.Stopwatch(func() {
-		integ, err = yamlscene.Load(job.Source, sc)
+		integ, err = yamlscene.Load(job.Source, sc, job.Params)
 	})
 	if err != nil {
 		return

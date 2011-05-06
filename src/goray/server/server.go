@@ -23,12 +23,15 @@ import (
 	"goray/job"
 	"goray/logging"
 	"goray/server/urls"
+	"goray/std/yamlscene"
 )
 
 type Server struct {
-	Resolver    *urls.RegexResolver
-	DataRoot    string
-	JobManager  *job.Manager
+	Resolver   *urls.RegexResolver
+	DataRoot   string
+	JobManager *job.Manager
+	BaseParams yamlscene.Params
+
 	templates   *TemplateLoader
 	blocks      map[string]string
 	logRecorder *logging.CircularHandler
@@ -93,7 +96,7 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, 
 			"Blocks": server.blocks,
 		})
 	case "POST":
-		j, err := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")))
+		j, err := server.JobManager.New(bytes.NewBufferString(req.FormValue("data")), server.BaseParams)
 		if err != nil {
 			http.Error(w, err.String(), http.StatusInternalServerError)
 			return

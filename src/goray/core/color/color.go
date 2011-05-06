@@ -173,11 +173,11 @@ func toGorayColor(col image.Color) image.Color {
 	case RGB, RGBA, Gray:
 		return col
 	}
-	r, g, b, a := col.RGBA()
+	r, g, b, a := col.RGBA() // pre-multiplied
 	return RGBA{
-		float64(r) / math.MaxUint32,
-		float64(g) / math.MaxUint32,
-		float64(b) / math.MaxUint32,
-		float64(a) / math.MaxUint32,
+		float64(r*0xffff) / (float64(a) * math.MaxUint16),
+		float64(g*0xffff) / (float64(a) * math.MaxUint16),
+		float64(b*0xffff) / (float64(a) * math.MaxUint16),
+		float64(a) / math.MaxUint16,
 	}
 }

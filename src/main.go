@@ -23,11 +23,13 @@ import (
 	"goray/version"
 
 	_ "goray/std/all"
+	"goray/std/yamlscene"
+	"goray/std/textures/image/fileloader"
 )
 
 var showHelp, showVersion bool
 var httpAddress string
-var outputPath string
+var outputPath, imagePath string
 var debug int
 
 func main() {
@@ -36,6 +38,7 @@ func main() {
 	flag.StringVar(&httpAddress, "http", "", "start HTTP server")
 	flag.StringVar(&outputPath, "o", "", "path for the output")
 	flag.IntVar(&debug, "d", 0, "set debug verbosity level")
+	flag.StringVar(&imagePath, "t", ".", "texture directory (default: current directory)")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
 
 	flag.Usage = printInstructions
@@ -125,7 +128,9 @@ func singleFile() int {
 	defer outFile.Close()
 
 	// Create job
-	j := job.New("job", inFile)
+	j := job.New("job", inFile, yamlscene.Params{
+		"ImageLoader": fileloader.New(imagePath),
+	})
 	ch := j.StatusChan()
 	j.SceneLog = logging.NewFormatFilter(
 		logging.MainLog,
@@ -179,6 +184,9 @@ func httpServer() int {
 	}
 
 	s := server.New(job.NewManager(storage, 5), "data")
+	s.BaseParams = yamlscene.Params{
+		"ImageLoader": fileloader.New(imagePath),
+	}
 	logging.MainLog.Info("Starting HTTP server")
 	err = http.ListenAndServe(httpAddress, s)
 	if err != nil {

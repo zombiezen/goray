@@ -97,12 +97,19 @@ func init() {
 
 func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	m = m.Copy()
-	m.SetDefault("vertices", make(yamldata.Sequence, 0))
-	m.SetDefault("faces", make(yamldata.Sequence, 0))
+	m.SetDefault("vertices", []interface{}{})
+	m.SetDefault("uvs", []interface{}{})
+	m.SetDefault("faces", []interface{}{})
 
 	vertices, ok := yamldata.AsSequence(m["vertices"])
 	if !ok {
 		err = os.NewError("Vertices must be a sequence")
+		return
+	}
+
+	uvs, ok := yamldata.AsSequence(m["uvs"])
+	if !ok {
+		err = os.NewError("UVs must be a sequence")
 		return
 	}
 
@@ -114,9 +121,11 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 
 	mesh := New(len(faces), false)
 
+	var vertexData []vector.Vector3D
+	var uvData []UV
 	// Parse vertices
 	// TODO: Error handling
-	vertexData := make([]vector.Vector3D, len(vertices))
+	vertexData = make([]vector.Vector3D, len(vertices))
 	for i, _ := range vertices {
 		vseq, _ := yamldata.AsSequence(vertices[i])
 		x, _ := yamldata.AsFloat(vseq[0])
@@ -124,17 +133,39 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		z, _ := yamldata.AsFloat(vseq[2])
 		vertexData[i] = vector.Vector3D{x, y, z}
 	}
-	mesh.SetData(vertexData, nil, nil)
+	// Parse UVs
+	// TODO: Error handling
+	if len(uvs) > 0 {
+		uvData = make([]UV, len(uvs))
+		for i, _ := range uvs {
+			uvseq, _ := yamldata.AsSequence(uvs[i])
+			u, _ := yamldata.AsFloat(uvseq[0])
+			v, _ := yamldata.AsFloat(uvseq[1])
+			uvData[i] = UV{u, v}
+		}
+	}
+	mesh.SetData(vertexData, nil, uvData)
 
 	// Parse faces
 	// TODO: Error handling
 	for i, _ := range faces {
 		fmap, _ := yamldata.AsMap(faces[i])
+		// Vertices
 		vindices, _ := yamldata.AsSequence(fmap["vertices"])
-		a, _ := yamldata.AsInt(vindices[0])
-		b, _ := yamldata.AsInt(vindices[1])
-		c, _ := yamldata.AsInt(vindices[2])
-		tri := NewTriangle(a, b, c, mesh)
+		va, _ := yamldata.AsInt(vindices[0])
+		vb, _ := yamldata.AsInt(vindices[1])
+		vc, _ := yamldata.AsInt(vindices[2])
+		// UVs
+		uva, uvb, uvc := -1, -1, -1
+		if _, hasUVs := fmap["uvs"]; len(uvs) > 0 && hasUVs {
+			uvindices, _ := yamldata.AsSequence(fmap["uvs"])
+			uva, _ = yamldata.AsInt(uvindices[0])
+			uvb, _ = yamldata.AsInt(uvindices[1])
+			uvc, _ = yamldata.AsInt(uvindices[2])
+		}
+		// Create triangle
+		tri := NewTriangle(va, vb, vc, mesh)
+		tri.SetUVs(uva, uvb, uvc)
 		tri.SetMaterial(fmap["material"].(material.Material))
 		mesh.AddTriangle(tri)
 	}

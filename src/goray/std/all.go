@@ -23,4 +23,6 @@ import (
 	_ "goray/std/materials/debug"
 	_ "goray/std/materials/shinydiffuse"
 	_ "goray/std/objects/mesh"
+	_ "goray/std/shaders/texmap"
+	_ "goray/std/textures/image"
 )

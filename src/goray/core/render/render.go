@@ -68,7 +68,7 @@ type Image struct {
 	Pix           []color.RGBA
 }
 
-// NewImage creates a new, black image with the given width and height.
+// NewImage creates a new, blank image with the given width and height.
 func NewImage(w, h int) (img *Image) {
 	return &Image{
 		Width:  w,
@@ -77,9 +77,28 @@ func NewImage(w, h int) (img *Image) {
 	}
 }
 
+// NewGoImage creates a new image based on an image from the standard Go library.
+func NewGoImage(oldImage image.Image) (newImage *Image) {
+	bd := oldImage.Bounds()
+	newImage = &Image{Width: bd.Dx(), Height: bd.Dy(), Pix: make([]color.RGBA, bd.Dx()*bd.Dy())}
+	model := newImage.ColorModel()
+	for y := 0; y < newImage.Height; y++ {
+		for x := 0; x < newImage.Width; x++ {
+			col := model.Convert(oldImage.At(bd.Min.X+x, bd.Min.Y+y)).(color.RGBA)
+			newImage.Pix[y*newImage.Width+x] = col
+		}
+	}
+	return
+}
+
 func (i *Image) ColorModel() image.ColorModel { return color.Model }
 func (i *Image) At(x, y int) image.Color      { return i.Pix[y*i.Width+x] }
 func (i *Image) Bounds() image.Rectangle      { return image.Rect(0, 0, i.Width, i.Height) }
+
+// Pixel returns the color.RGBA at a position. If you are iterating over the pixels, use the Pix slice directly.
+func (i *Image) Pixel(x, y int) color.RGBA {
+	return i.Pix[y*i.Width+x]
+}
 
 // Clear sets all of the pixels in the image to a given color.
 func (i *Image) Clear(clearColor color.AlphaColor) {

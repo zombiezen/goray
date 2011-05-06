@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"goray/std/yamlscene"
 )
 
 // Manager maintains a render job queue and records completed jobs.
@@ -45,11 +46,11 @@ func (manager *Manager) Init(queueSize int) {
 }
 
 // New creates a new job and adds it to the job queue.
-func (manager *Manager) New(yaml io.Reader) (j *Job, err os.Error) {
+func (manager *Manager) New(yaml io.Reader, params yamlscene.Params) (j *Job, err os.Error) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 	name := fmt.Sprintf("%04d", manager.nextNum)
-	j = New(name, yaml)
+	j = New(name, yaml, params)
 	select {
 	case manager.jobQueue <- j:
 		manager.jobs[name] = j

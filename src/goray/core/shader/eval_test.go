@@ -14,7 +14,7 @@ type testNode struct {
 	deps []Node
 }
 
-func (n *testNode) Eval(params map[string]interface{}, inputs []Result) Result {
+func (n *testNode) Eval(inputs []Result, params Params) Result {
 	sum := n.val
 	for _, input := range inputs {
 		sum += input.Scalar()
@@ -22,7 +22,7 @@ func (n *testNode) Eval(params map[string]interface{}, inputs []Result) Result {
 	return Result{sum}
 }
 
-func (n *testNode) EvalDerivative(params map[string]interface{}, inputs []Result) Result {
+func (n *testNode) EvalDerivative(inputs []Result, params Params) Result {
 	return Result{}
 }
 
@@ -37,7 +37,7 @@ func TestBasicEval(t *testing.T) {
 			&testNode{-3.0, nil},
 		},
 	}
-	r := Eval(nil, []Node{n})
+	r := Eval([]Node{n}, nil)
 	if len(r) == 1 {
 		if r[0].Scalar() != -1 {
 			t.Errorf("Got %.2f (expected -1)", r[0].Scalar())
