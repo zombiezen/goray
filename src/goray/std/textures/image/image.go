@@ -198,9 +198,16 @@ func clampToRes(x0, y0, w, h int) (x, y int) {
 	return
 }
 
-// Loader is an interface for retrieving images with a slash-separated path.
+// Loader is an interface for retrieving images with a name.
 type Loader interface {
 	Load(name string) (img *render.Image, err os.Error)
+}
+
+// LoaderFunc uses a function to perform loads.
+type LoaderFunc func(string) (*render.Image, os.Error)
+
+func (f LoaderFunc) Load(name string) (img *render.Image, err os.Error) {
+	return f(name)
 }
 
 func init() {
