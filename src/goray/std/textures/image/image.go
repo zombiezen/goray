@@ -11,10 +11,6 @@ import (
 	"math"
 	"os"
 
-	"image"
-	_ "image/jpeg"
-	_ "image/png"
-
 	"goray/core/color"
 	"goray/core/render"
 	"goray/core/vector"
@@ -22,6 +18,7 @@ import (
 	"goray/std/shaders/texmap"
 	"goray/std/yamlscene"
 
+	"goyaml.googlecode.com/hg/parser"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -211,21 +208,43 @@ func (f LoaderFunc) Load(name string) (img *render.Image, err os.Error) {
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"textures/image"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"textures/image"] = yamldata.ConstructorFunc(Construct)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err os.Error) {
-	m = m.Copy()
+func Construct(n parser.Node, ud interface{}) (data interface{}, err os.Error) {
+	mm, ok := n.(*parser.Mapping)
+	if !ok {
+		err = os.NewError("Constructor requires a mapping")
+		return
+	}
+
+	var loader Loader
+	if ud != nil {
+		userData, ok := ud.(yamlscene.Params)
+		if ok && userData != nil {
+			loader, ok = userData["ImageLoader"].(Loader)
+			if !ok && userData["ImageLoader"] != nil {
+				err = os.NewError("ImageLoader does not implement goray/std/texture/image.Loader interface")
+				return
+			}
+		}
+	}
+	if loader == nil {
+		err = os.NewError("No image loader provided")
+		return
+	}
+
+	m := yamldata.Map(mm.Map()).Copy()
 	m.SetDefault("interpolation", "none")
 	m.SetDefault("useAlpha", true)
 	m.SetDefault("clip", "extend")
 	m.SetDefault("repeatX", 1)
 	m.SetDefault("repeatY", 1)
 
-	// Image path
-	path, ok := m["path"].(string)
+	// Image name
+	name, ok := m["name"].(string)
 	if !ok {
-		err = os.NewError("Image must contain path")
+		err = os.NewError("Image must contain name")
 		return
 	}
 	// Interpolation
@@ -283,19 +302,13 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	}
 
 	// Open image file
-	// XXX: Possible security issue
-	imageFile, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer imageFile.Close()
-	img, _, err := image.Decode(imageFile)
+	img, err := loader.Load(name)
 	if err != nil {
 		return
 	}
 	// Construct texture
 	tex := &Texture{
-		Image:         render.NewGoImage(img),
+		Image:         img,
 		Interpolation: intp,
 		UseAlpha:      useAlpha,
 		ClipMode:      clip,
