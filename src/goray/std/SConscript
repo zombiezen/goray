@@ -16,7 +16,7 @@ packages = [
     env.Go('materials/shinydiffuse'),
     env.Go('primitives/sphere'),
     env.Go('shaders/texmap', Glob('shaders/texmap/*.go')),
-    env.Go('textures/image'),
+    env.Go('textures/image', Glob('textures/image/*.go')),
     env.Go('yamlscene', Glob('yamlscene/*.go')),
 ]
 

@@ -1,5 +1,5 @@
 //
-//	goray/std/textures/image.go
+//	goray/std/textures/image/image.go
 //	goray
 //
 //	Created by Ross Light on 2011-04-02.
@@ -196,6 +196,11 @@ func clampToRes(x0, y0, w, h int) (x, y int) {
 		y = y0
 	}
 	return
+}
+
+// Loader is an interface for retrieving images with a slash-separated path.
+type Loader interface {
+	Load(name string) (img *render.Image, err os.Error)
 }
 
 func init() {
