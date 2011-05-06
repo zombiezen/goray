@@ -24,9 +24,11 @@ const (
 	StdPrefix = Prefix + "std/"
 )
 
-func Load(r io.Reader, sc *scene.Scene) (i integrator.Integrator, err os.Error) {
+type Params map[string]interface{}
+
+func Load(r io.Reader, sc *scene.Scene, params Params) (i integrator.Integrator, err os.Error) {
 	// Parse
-	p := parser.New(r, yamldata.CoreSchema, yamldata.ConstructorFunc(realConstructor), nil)
+	p := parser.New(r, yamldata.CoreSchema, yamldata.ConstructorFunc(realConstructor), params)
 	doc, err := p.ParseDocument()
 	if err != nil {
 		return

@@ -125,7 +125,7 @@ func singleFile() int {
 	defer outFile.Close()
 
 	// Create job
-	j := job.New("job", inFile)
+	j := job.New("job", inFile, nil)
 	ch := j.StatusChan()
 	j.SceneLog = logging.NewFormatFilter(
 		logging.MainLog,
