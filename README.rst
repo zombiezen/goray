@@ -30,10 +30,9 @@ For further help::
 License
 =========
 
-Copyright © 2011 Ross Light
-Based on YafaRay: Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo
-de Greef
-jQuery: Copyright © 2011 John Resig
+| Copyright © 2011 Ross Light
+| Based on YafaRay: Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef
+| jQuery: Copyright © 2011 John Resig
 
 goray comes with ABSOLUTELY NO WARRANTY.  goray is free software, and you are
 welcome to redistribute it under the conditions of the GNU Lesser General
