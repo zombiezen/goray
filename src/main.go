@@ -89,10 +89,9 @@ func printVersion() {
 	fmt.Println("Public License v3, or (at your option) any later version.")
 	fmt.Println()
 	// Build information
-	if buildversion.Source == "bzr" {
-		fmt.Printf("Built from \"%s\" branch\n", buildversion.BranchNickname)
-		fmt.Printf("  Revision: %s [%s]\n", buildversion.RevNo, buildversion.RevID)
-		if buildversion.CleanWC == 0 {
+	if buildversion.Source == "hg" {
+		fmt.Printf("Built from %s:%s\n", buildversion.RevNo, buildversion.RevID)
+		if !buildversion.CleanWC {
 			fmt.Printf("  With local modifications\n")
 		}
 	} else {
