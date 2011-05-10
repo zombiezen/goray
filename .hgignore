@@ -1,0 +1,7 @@
+syntax:glob
+.sconsign.dblite
+goray.png
+Session.vim
+syntax:regexp
+^bin/
+^build/
