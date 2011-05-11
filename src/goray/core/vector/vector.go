@@ -38,7 +38,7 @@ func (v Vector3D) Abs() Vector3D { return Vector3D{math.Fabs(v[X]), math.Fabs(v[
 // Negate returns a new vector in the opposite direction.
 func (v Vector3D) Negate() Vector3D { return Vector3D{-v[X], -v[Y], -v[Z]} }
 
-// Inverse returns a new vector that is the result of 1.0 / v.GetComponent(i) for all i.  Any zero value is left as zero.
+// Inverse returns a new vector that is the result of 1.0 / v[i] for all i.  Any zero value is left as zero.
 func (v Vector3D) Inverse() (r Vector3D) {
 	for axis, comp := range v {
 		if comp != 0.0 {
