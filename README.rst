@@ -8,9 +8,8 @@ program is not well documented.
 
 That said, here's what you need to get goray running:
 
-* The most recent release of the Go programming language. <http://golang.org/>
+* The most recent weekly of the Go programming language. <http://golang.org/>
 * SCons <http://www.scons.org/>
-* SCons Go Tools <https://launchpad.net/sconsgo>
 * The goyaml package <http://goyaml.googlecode.com/>
 
 Build goray with::

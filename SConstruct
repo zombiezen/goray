@@ -33,21 +33,35 @@ variables.AddVariables(
         'SSE2',
         "Use Intel SSE2 to optimize triangle intersection",
         True,
-    )
+    ),
+    BoolVariable(
+        'show_commands',
+        "Show actual commands being executed during build",
+        False,
+    ),
 )
 env = Environment(
     TOOLS=['default', 'go'],
-    GOSTRIPTESTS=True,
+    GO_STRIPTESTS=True,
     variables=variables,
 )
 Help(variables.GenerateHelpText(env))
+if not env['show_commands']:
+    env.Append(
+        GO_GCCOMSTR='  GC ${SOURCES.srcpath}',
+        GO_LDCOMSTR='  LD -o $TARGET ${SOURCE.srcpath}',
+        GO_ACOMSTR=' ASM ${SOURCE.srcpath}',
+        GO_PACKCOMSTR='PACK > $TARGET',
+        GO_TESTCOMSTR='TEST > $TARGET',
+    )
 
 test_env = env.Clone()
-test_env['GOSTRIPTESTS'] = False
+test_env['GO_STRIPTESTS'] = False
 test_env['BUILD_DIR'] = test_env['TEST_BUILD_DIR']
 
+
 def setup_paths(e):
-    e.Append(GOLIBPATH=[e['BUILD_DIR']])
+    e.Append(GO_LIBPATH=[e['BUILD_DIR']])
     e.VariantDir(e['BUILD_DIR'], 'src')
 
 setup_paths(env)
@@ -94,7 +108,7 @@ def generate_buildversion(env, target, source):
         f.close()
 
 version_file = File(env.subst('$BUILD_DIR/buildversion.go'))
-Command(version_file, [], generate_buildversion)
+Command(version_file, [], Action(generate_buildversion, 'buildversion.go > $TARGET'))
 AlwaysBuild(version_file)
 
 env.Go(version_file)
