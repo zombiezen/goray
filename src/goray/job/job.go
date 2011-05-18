@@ -9,7 +9,6 @@
 package job
 
 import (
-	"image/png"
 	"io"
 	"os"
 	"sync"
@@ -122,8 +121,12 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	// 4. Write
 	status.Code = StatusWriting
 	job.ChangeStatus(status)
+	format, ok := job.Params["OutputFormat"].(Format)
+	if !ok {
+		format = FormatMap[DefaultFormat]
+	}
 	status.WriteTime = time.Stopwatch(func() {
-		err = png.Encode(w, outputImage)
+		err = format.Encode(w, outputImage)
 	})
 	return
 }

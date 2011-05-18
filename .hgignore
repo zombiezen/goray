@@ -1,6 +1,6 @@
 syntax:glob
 .sconsign.dblite
-goray.png
+goray.{png,jpg}
 Session.vim
 syntax:regexp
 ^bin/

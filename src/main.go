@@ -29,7 +29,7 @@ import (
 
 var showHelp, showVersion bool
 var httpAddress string
-var outputPath, imagePath string
+var outputPath, outputFormat, imagePath string
 var debug int
 
 func main() {
@@ -37,6 +37,7 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "display the version")
 	flag.StringVar(&httpAddress, "http", "", "start HTTP server")
 	flag.StringVar(&outputPath, "o", "", "path for the output")
+	flag.StringVar(&outputFormat, "f", job.DefaultFormat, "output format (default: "+job.DefaultFormat+")")
 	flag.IntVar(&debug, "d", 0, "set debug verbosity level")
 	flag.StringVar(&imagePath, "t", ".", "texture directory (default: current directory)")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
@@ -107,6 +108,13 @@ func singleFile() int {
 		return 1
 	}
 
+	// Check output format
+	formatStruct, found := job.FormatMap[outputFormat]
+	if !found {
+		logging.MainLog.Critical("Unrecognized output format: %s", outputFormat)
+		return 1
+	}
+
 	// Open input file
 	inFile, err := os.Open(flag.Arg(0))
 	if err != nil {
@@ -117,7 +125,7 @@ func singleFile() int {
 
 	// Open output file
 	if outputPath == "" {
-		outputPath = "goray.png"
+		outputPath = "goray" + formatStruct.Extension
 	}
 	outFile, err := os.Create(outputPath)
 	if err != nil {
@@ -128,7 +136,8 @@ func singleFile() int {
 
 	// Create job
 	j := job.New("job", inFile, yamlscene.Params{
-		"ImageLoader": fileloader.New(imagePath),
+		"ImageLoader":  fileloader.New(imagePath),
+		"OutputFormat": formatStruct,
 	})
 	ch := j.StatusChan()
 	j.SceneLog = logging.NewFormatFilter(
