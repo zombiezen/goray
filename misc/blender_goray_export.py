@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-bl_addon_info = {
+bl_info = {
     'name': "Export goray Scene Format (.yaml)",
     'author': "Ross Light",
     'version': (0, 1),
-    'blender': (2, 5, 5),
+    'blender': (2, 5, 7),
     'api': 33427,
     'location': "File > Export",
     'description': "Export to goray Scene Format (.yaml)",
@@ -170,9 +170,11 @@ def menu_func(self, context):
     op.filepath = default_path
 
 def register():
+    bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_export.append(menu_func)
 
 def unregister():
+    bpy.utils.unregister_module(__name__)
     bpy.types.INFO_MT_file_export.remove(menu_func)
 
 if __name__ == '__main__':
