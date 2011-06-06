@@ -2,7 +2,7 @@
   goray
 *********
 
-goray is very much alpha quality software and not ready for production.  Many
+goray is very much beta quality software and not ready for production.  Many
 features are missing, some things may not work right, and the behavior of the
 program is not well documented.
 
