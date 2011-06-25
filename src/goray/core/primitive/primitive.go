@@ -43,10 +43,10 @@ func (c Collision) Surface() (sp surface.Point) {
 // Primitive defines a basic 3D entity in a scene.
 type Primitive interface {
 	// Bound returns the bounding box in global (world) coordinates.
-	Bound() *bound.Bound
+	Bound() bound.Bound
 	// IntersectsBound returns whether a bounding box intersects the primitive.
 	// This can be used to implement more precise partitioning.
-	IntersectsBound(*bound.Bound) bool
+	IntersectsBound(bound.Bound) bool
 	// Intersect checks whether a ray collides with the primitive.
 	// This should not skip intersections outside of [TMin, TMax].
 	Intersect(r ray.Ray) Collision
@@ -63,7 +63,7 @@ type Primitive interface {
 type Clipper interface {
 	// Clip calculates the overlapping bounding box of a given bounding box and the primitive.
 	// If the bounding box returned is nil, then no such bound exists.
-	Clip(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{})
+	Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{})
 }
 
 type ClipPrimitive interface {

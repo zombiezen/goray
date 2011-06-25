@@ -16,7 +16,7 @@ import (
 type boxClipTest struct {
 	Min, Max        [3]float64
 	PolyIn, PolyOut []vector.Vector3D
-	Region          *bound.Bound
+	Region          bound.Bound
 }
 
 var boxTests = []boxClipTest{
@@ -25,14 +25,13 @@ var boxTests = []boxClipTest{
 		Max:     [3]float64{0, 0, 0},
 		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
 		PolyOut: nil,
-		Region:  nil,
 	},
 	{
 		Min:     [3]float64{0, 0, 0},
 		Max:     [3]float64{1, 1, 1},
 		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
 		PolyOut: []vector.Vector3D{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
-		Region:  bound.New(vector.Vector3D{0.1, 0.1, 0.1}, vector.Vector3D{0.9, 0.9, 0.9}),
+		Region:  bound.Bound{vector.Vector3D{0.1, 0.1, 0.1}, vector.Vector3D{0.9, 0.9, 0.9}},
 	},
 }
 
@@ -63,25 +62,15 @@ func (test boxClipTest) Run(t *testing.T) {
 		}
 	}
 
-	switch {
-	case test.Region == nil:
-		if resultBound != nil {
-			t.Error("Resulting bound not nil")
+	boundEq := true
+	for axis := vector.X; boundEq && axis <= vector.Z; axis++ {
+		if test.Region.Min[axis] != resultBound.Min[axis] || test.Region.Max[axis] != resultBound.Max[axis] {
+			boundEq = false
+			break
 		}
-	case resultBound == nil:
-		t.Error("Resulting bound is nil")
-	default:
-		amin, amax := test.Region.Get()
-		bmin, bmax := resultBound.Get()
-		boundEq := true
-		for axis := vector.X; boundEq && axis <= vector.Z; axis++ {
-			if amin[axis] != bmin[axis] || amax[axis] != bmax[axis] {
-				boundEq = false
-			}
-		}
-		if !boundEq {
-			t.Errorf("Bound: %v, wanted %v", resultBound, test.Region)
-		}
+	}
+	if !boundEq {
+		t.Errorf("Bound: %v, wanted %v", resultBound, test.Region)
 	}
 }
 

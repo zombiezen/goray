@@ -13,7 +13,7 @@ import (
 	"goray/core/vector"
 )
 
-func calcBound(poly []vector.Vector3D) *bound.Bound {
+func calcBound(poly []vector.Vector3D) bound.Bound {
 	a, g := poly[0], poly[0]
 	for i := 1; i < len(poly); i++ {
 		for axis := vector.X; axis <= vector.Z; axis++ {
@@ -21,10 +21,10 @@ func calcBound(poly []vector.Vector3D) *bound.Bound {
 			g[axis] = math.Fmax(g[axis], poly[i][axis])
 		}
 	}
-	return bound.New(a, g)
+	return bound.Bound{a, g}
 }
 
-func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3D, *bound.Bound) {
+func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3D, bound.Bound) {
 	for axis := vector.X; axis <= vector.Z; axis++ { // for each axis
 		// clip lower bound
 		poly = triClip(axis, bMin[axis], poly, cmpMin)
@@ -34,7 +34,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 		}
 		if len(poly) == 0 {
 			// entire polygon clipped
-			return nil, nil
+			return nil, bound.Bound{}
 		}
 
 		// clip upper bound
@@ -45,7 +45,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 		}
 		if len(poly) == 0 {
 			// entire polygon clipped
-			return nil, nil
+			return nil, bound.Bound{}
 		}
 	}
 
@@ -56,7 +56,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 	return poly, calcBound(poly)
 }
 
-func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, *bound.Bound) {
+func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, bound.Bound) {
 	if lower {
 		poly = triClip(axis, pos, poly, cmpMin)
 	} else {
@@ -65,7 +65,7 @@ func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vecto
 
 	switch {
 	case len(poly) == 0:
-		return nil, nil
+		return nil, bound.Bound{}
 	case len(poly) < 3:
 		panic("clipped polygon degenerated")
 	case len(poly) > 10:

@@ -13,7 +13,7 @@ type crossTest struct {
 }
 
 func TestCross(t *testing.T) {
-	box := New(vector.Vector3D{-1, -1, -1}, vector.Vector3D{1, 1, 1})
+	box := Bound{vector.Vector3D{-1, -1, -1}, vector.Vector3D{1, 1, 1}}
 
 	tests := []crossTest{
 		crossTest{vector.Vector3D{0, 0, 0}, vector.Vector3D{1, 0, 0}, true},
@@ -49,7 +49,7 @@ func TestCross(t *testing.T) {
 
 func TestRealCross(t *testing.T) {
 	ct := crossTest{vector.Vector3D{0, 0, 5}, vector.Vector3D{-0.23640189135082473, 0.2234736629175765, -0.9456075654032989}, true}
-	box := New(vector.Vector3D{-1.367188, -0.046875, 0.257812}, vector.Vector3D{-0.859375, 0.984375, 0.851562})
+	box := Bound{vector.Vector3D{-1.367188, -0.046875, 0.257812}, vector.Vector3D{-0.859375, 0.984375, 0.851562}}
 	a, b, hit := box.Cross(ct.From, ct.Dir, math.Inf(1))
 	aTarget := 4.387060924402294
 	bTarget := 4.404881484235866

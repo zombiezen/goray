@@ -163,17 +163,17 @@ func (tri *Triangle) Surface(coll primitive.Collision) (sp surface.Point) {
 	return
 }
 
-func (tri *Triangle) Bound() *bound.Bound {
+func (tri *Triangle) Bound() bound.Bound {
 	var minPt, maxPt vector.Vector3D
 	v := tri.getVertices()
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		minPt[axis] = math.Fmin(math.Fmin(v[0][axis], v[1][axis]), v[2][axis])
 		maxPt[axis] = math.Fmax(math.Fmax(v[0][axis], v[1][axis]), v[2][axis])
 	}
-	return bound.New(minPt, maxPt)
+	return bound.Bound{minPt, maxPt}
 }
 
-func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
+func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
 	var points [3][3]float64
 	vert := tri.getVertices()
 	for i := 0; i < 3; i++ {
@@ -188,14 +188,14 @@ func (tri *Triangle) IntersectsBound(bd *bound.Bound) bool {
 
 func (tri *Triangle) Material() material.Material { return tri.material }
 
-func (tri *Triangle) Clip(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	if axis >= 0 {
 		return tri.clipPlane(bound, axis, lower, oldData)
 	}
 	return tri.clipBox(bound)
 }
 
-func (tri *Triangle) clipPlane(bound *bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) clipPlane(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			logging.Debug(logging.MainLog, "Clip plane fault: %v", err)
@@ -213,26 +213,26 @@ func (tri *Triangle) clipPlane(bound *bound.Bound, axis vector.Axis, lower bool,
 
 	var split float64
 	if lower {
-		split = bound.Min()[axis]
+		split = bound.Min[axis]
 	} else {
-		split = bound.Max()[axis]
+		split = bound.Max[axis]
 	}
 
 	newData, clipped = triPlaneClip(axis, split, lower, poly)
 	return
 }
 
-func (tri *Triangle) clipBox(bound *bound.Bound) (clipped *bound.Bound, newData interface{}) {
+func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			clipped, newData = nil, nil
+			clipped, newData = bound.Bound{}, nil
 			logging.Warning(logging.MainLog, "Clip panic: %v", err)
 		}
 	}()
 
 	v := tri.getVertices()
 	poly := []vector.Vector3D{v[0], v[1], v[2], v[0]}
-	newData, clipped = triBoxClip([3]float64(bound.Min()), [3]float64(bound.Max()), poly)
+	newData, clipped = triBoxClip([3]float64(bd.Min), [3]float64(bd.Max), poly)
 	return
 }
 

@@ -37,5 +37,5 @@ type Region interface {
 	Intersect(r ray.Ray) (t0, t1 float64, ok bool)
 
 	// GetBound returns the bounding box of the volume.
-	GetBound() *bound.Bound
+	GetBound() bound.Bound
 }

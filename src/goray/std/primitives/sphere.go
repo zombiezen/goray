@@ -31,13 +31,13 @@ func New(center vector.Vector3D, radius float64, material material.Material) pri
 	return &sphere{center, radius, material}
 }
 
-func (s *sphere) Bound() *bound.Bound {
+func (s *sphere) Bound() bound.Bound {
 	r := vector.Vector3D{s.radius * 1.0001, s.radius * 1.0001, s.radius * 1.0001}
-	return bound.New(vector.Sub(s.center, r), vector.Add(s.center, r))
+	return bound.Bound{vector.Sub(s.center, r), vector.Add(s.center, r)}
 }
 
-func (s *sphere) IntersectsBound(b *bound.Bound) bool { return true }
-func (s *sphere) Material() material.Material         { return s.material }
+func (s *sphere) IntersectsBound(b bound.Bound) bool { return true }
+func (s *sphere) Material() material.Material        { return s.material }
 
 func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	coll.Ray = r

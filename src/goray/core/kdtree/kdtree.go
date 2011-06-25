@@ -19,17 +19,17 @@ import (
 // Tree is a generic kd-tree.
 type Tree struct {
 	root  *Node
-	bound *bound.Bound
+	bound bound.Bound
 }
 
 // A DimensionFunc calculates the range of a value in a particular axis.
 type DimensionFunc func(v Value, axis vector.Axis) (min, max float64)
 
-func getBound(v Value, getDim DimensionFunc) *bound.Bound {
+func getBound(v Value, getDim DimensionFunc) bound.Bound {
 	minX, maxX := getDim(v, 0)
 	minY, maxY := getDim(v, 1)
 	minZ, maxZ := getDim(v, 2)
-	return bound.New(vector.Vector3D{minX, minY, minZ}, vector.Vector3D{maxX, maxY, maxZ})
+	return bound.Bound{vector.Vector3D{minX, minY, minZ}, vector.Vector3D{maxX, maxY, maxZ}}
 }
 
 const (
@@ -64,14 +64,14 @@ func MakeOptions(f DimensionFunc, log logging.Handler) Options {
 }
 
 type ClipInfo struct {
-	Bound        *bound.Bound
+	Bound        bound.Bound
 	InternalData interface{}
 }
 
 // BuildState holds information for building a level of a kd-tree.
 type BuildState struct {
 	Options
-	TreeBound  *bound.Bound
+	TreeBound  bound.Bound
 	OldCost    float64
 	BadRefines uint
 	Clips      []ClipInfo
@@ -80,13 +80,13 @@ type BuildState struct {
 	Pool       *nodePool
 }
 
-func (state BuildState) getBound(v Value) *bound.Bound {
+func (state BuildState) getBound(v Value) bound.Bound {
 	return getBound(v, state.GetDimension)
 }
 
 func (state BuildState) getClippedDimension(i int, v Value, axis vector.Axis) (min, max float64) {
-	if info := state.getClipInfo(i); info.Bound != nil {
-		return info.Bound.Min()[axis], info.Bound.Max()[axis]
+	if info := state.getClipInfo(i); !info.Bound.IsZero() {
+		return info.Bound.Min[axis], info.Bound.Max[axis]
 	}
 	return state.GetDimension(v, axis)
 }
@@ -110,12 +110,10 @@ func New(vals []Value, opts Options) (tree *Tree) {
 	}
 
 	if len(vals) > 0 {
-		tree.bound = bound.New(state.getBound(vals[0]).Get())
+		tree.bound = state.getBound(vals[0])
 		for _, v := range vals[1:] {
 			tree.bound = bound.Union(tree.bound, state.getBound(v))
 		}
-	} else {
-		tree.bound = bound.New(vector.Vector3D{}, vector.Vector3D{})
 	}
 	state.TreeBound = tree.bound
 
@@ -161,7 +159,7 @@ func nodeString(n *Node, indent int) string {
 		indentString)
 }
 
-func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
+func build(vals []Value, bd bound.Bound, state BuildState) *Node {
 	// Clip any primitives
 	if uint(len(vals)) <= state.ClipThreshold {
 		vals, state.Clips, _ = clip(vals, bd, state)
@@ -197,18 +195,9 @@ func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 		}
 	}
 	// Calculate new bounds
-	leftBound, rightBound := bound.New(bd.Get()), bound.New(bd.Get())
-	switch axis {
-	case 0:
-		leftBound.SetMaxX(pivot)
-		rightBound.SetMinX(pivot)
-	case 1:
-		leftBound.SetMaxY(pivot)
-		rightBound.SetMinY(pivot)
-	case 2:
-		leftBound.SetMaxZ(pivot)
-		rightBound.SetMinZ(pivot)
-	}
+	leftBound, rightBound := bd, bd
+	leftBound.Max[axis] = pivot
+	rightBound.Min[axis] = pivot
 	// Build subtrees
 	state.OldCost = cost
 	leftChan, rightChan := make(chan *Node, 1), make(chan *Node, 1)
@@ -229,7 +218,7 @@ func build(vals []Value, bd *bound.Bound, state BuildState) *Node {
 	return state.Pool.NewInterior(axis, pivot, <-leftChan, <-rightChan)
 }
 
-func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Value, clipData []ClipInfo, clipBox *bound.Bound) {
+func clip(vals []Value, nodeBound bound.Bound, state BuildState) (clipVals []Value, clipData []ClipInfo, clipBox bound.Bound) {
 	const treeSizeWeight = 1e-5
 	const nodeSizeWeight = 0.021
 
@@ -237,17 +226,15 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 		return vals, []ClipInfo{}, nodeBound
 	}
 
-	var bExt [2][3]float64
-	for axis := 0; axis < 3; axis++ {
-		treeSize := state.TreeBound.Max()[axis] - state.TreeBound.Min()[axis]
-		nodeSize := nodeBound.Max()[axis] - nodeBound.Min()[axis]
+	var bd bound.Bound
+	for axis := vector.X; axis <= vector.Z; axis++ {
+		treeSize := state.TreeBound.Max[axis] - state.TreeBound.Min[axis]
+		nodeSize := nodeBound.Max[axis] - nodeBound.Min[axis]
 		delta := treeSize*treeSizeWeight + nodeSize*nodeSizeWeight
 
-		bExt[0][axis] = nodeBound.Min()[axis] - delta
-		bExt[1][axis] = nodeBound.Max()[axis] + delta
+		bd.Min[axis] = nodeBound.Min[axis] - delta
+		bd.Max[axis] = nodeBound.Max[axis] + delta
 	}
-
-	bd := bound.New(vector.Vector3D(bExt[0]), vector.Vector3D(bExt[1]))
 
 	clipVals = make([]Value, 0, len(vals))
 	clipData = make([]ClipInfo, 0, len(vals))
@@ -255,18 +242,18 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 	for i, v := range vals {
 		if clipv, ok := v.(primitive.Clipper); ok {
 			info := state.getClipInfo(i)
-			if info.Bound == nil {
+			if info.Bound.IsZero() {
 				info.Bound = state.getBound(v)
 			}
 			newBound, newData := clipv.Clip(bd, state.ClipAxis, state.ClipLower, info.InternalData)
-			if newBound != nil {
+			if !newBound.IsZero() {
 				// Polygon clipped and still with us.
 				info.Bound, info.InternalData = newBound, newData
 				clipVals = append(clipVals, v)
 				clipData = append(clipData, info)
 
 				// Update bound
-				if clipBox == nil {
+				if clipBox.IsZero() {
 					clipBox = newBound
 				} else {
 					clipBox = bound.Union(clipBox, newBound)
@@ -276,7 +263,7 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 				nClip++
 			}
 		} else {
-			if clipBox == nil {
+			if clipBox.IsZero() {
 				clipBox = state.getBound(v)
 			} else {
 				clipBox = bound.Union(clipBox, state.getBound(v))
@@ -297,4 +284,4 @@ func clip(vals []Value, nodeBound *bound.Bound, state BuildState) (clipVals []Va
 func (tree *Tree) Root() *Node { return tree.root }
 
 // Bound returns a bounding box that encloses all objects in the tree.
-func (tree *Tree) Bound() *bound.Bound { return bound.New(tree.bound.Get()) }
+func (tree *Tree) Bound() bound.Bound { return tree.bound }

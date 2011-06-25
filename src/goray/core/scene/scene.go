@@ -59,7 +59,7 @@ type Scene struct {
 	intersect  intersect.Interface
 	camera     camera.Camera
 	background background.Background
-	sceneBound *bound.Bound
+	sceneBound bound.Bound
 
 	aaSamples, aaPasses int
 	aaIncSamples        int
@@ -159,7 +159,7 @@ func (s *Scene) SetAntialiasing(numSamples, numPasses, incSamples int, threshold
 }
 
 // Bound returns a bounding box that contains every object in the scene.
-func (s *Scene) Bound() *bound.Bound { return s.sceneBound }
+func (s *Scene) Bound() bound.Bound { return s.sceneBound }
 
 func (s *Scene) DoDepth() bool { return s.doDepth }
 

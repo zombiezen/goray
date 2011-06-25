@@ -38,12 +38,12 @@ type Interface interface {
 	// maximum depth is exceeded.
 	TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool)
 	// Bound returns a bounding box that contains all of the primitives that the intersecter knows about.
-	Bound() *bound.Bound
+	Bound() bound.Bound
 }
 
 type simple struct {
 	prims []primitive.Primitive
-	bound *bound.Bound
+	bound bound.Bound
 }
 
 // NewSimple creates a partitioner that doesn't split up the scene at all.
@@ -51,7 +51,7 @@ type simple struct {
 func NewSimple(prims []primitive.Primitive) Interface {
 	part := &simple{prims: prims}
 	if len(prims) == 0 {
-		part.bound = bound.New(vector.Vector3D{}, vector.Vector3D{})
+		part.bound = bound.Bound{}
 		return part
 	}
 	part.bound = part.prims[0].Bound()
@@ -61,7 +61,7 @@ func NewSimple(prims []primitive.Primitive) Interface {
 	return part
 }
 
-func (s *simple) Bound() *bound.Bound { return s.bound }
+func (s *simple) Bound() bound.Bound { return s.bound }
 
 func (s *simple) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
 	for _, p := range s.prims {
@@ -110,7 +110,7 @@ type kdPartition struct {
 
 func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
 	bd := v.(primitive.Primitive).Bound()
-	return bd.Min()[axis], bd.Max()[axis]
+	return bd.Min[axis], bd.Max[axis]
 }
 
 func NewKD(prims []primitive.Primitive, log logging.Handler) Interface {
