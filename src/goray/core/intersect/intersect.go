@@ -300,19 +300,19 @@ func (f *kdTranspFollower) Next() (coll primitive.Collision) {
 }
 
 func (kd *kdPartition) Intersect(r ray.Ray, dist float64) (coll primitive.Collision) {
-	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
+	f := kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
 	f.Init(kd.Tree)
 	return f.First()
 }
 
 func (kd *kdPartition) Shadowed(r ray.Ray, dist float64) bool {
-	f := &kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
+	f := kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
 	f.Init(kd.Tree)
 	return f.Hit()
 }
 
 func (kd *kdPartition) TransparentShadow(state *render.State, r ray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool) {
-	f := &kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
+	f := kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
 	f.Init(kd.Tree)
 	depth := 0
 	filt = color.White
