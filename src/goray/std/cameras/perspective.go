@@ -21,8 +21,8 @@ type Bokeh int
 
 const (
 	Disk1Bokeh Bokeh = 0
-	Disk2Bokeh = 1
-	RingBokeh  = 7
+	Disk2Bokeh       = 1
+	RingBokeh        = 7
 )
 
 const (
