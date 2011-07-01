@@ -3,6 +3,10 @@
 package mesh
 
 import "testing"
+import (
+	"goray/core/ray"
+	"goray/core/vector"
+)
 
 type IntersectTest struct {
 	Vertices [3][3]float64
@@ -81,5 +85,23 @@ func BenchmarkIntersect(b *testing.B) {
 			[3]float64{0.211504, 0.558421, -0.802142},  // Dir
 			[3]float64{1.339351, 0.225915, -0.059020},  // From
 		)
+	}
+}
+
+func BenchmarkIntersectMethod(b *testing.B) {
+	mesh := New(1, false)
+	mesh.SetData([]vector.Vector3D{
+		{1.565772, -0.227881, -0.856351},
+		{0.480624, 1.452136, -0.856351},
+		{2.433322, 0.332482, 0.856351},
+	}, nil, nil)
+	tri := NewTriangle(0, 1, 2, mesh)
+	mesh.AddTriangle(tri)
+
+	for i := 0; i < b.N; i++ {
+		tri.Intersect(ray.Ray{
+			Dir: vector.Vector3D{0.211504, 0.558421, -0.802142},
+			From: vector.Vector3D{1.339351, 0.225915, -0.059020},
+		})
 	}
 }
