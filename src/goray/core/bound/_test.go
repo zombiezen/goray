@@ -65,3 +65,19 @@ func TestRealCross(t *testing.T) {
 		}
 	}
 }
+
+func TestVolume(t *testing.T) {
+	b := Bound{vector.Vector3D{15, -27, 3}, vector.Vector3D{20, -24, 7}}
+	vol := b.Volume()
+	if vol != 60 {
+		t.Errorf("%#v != 60", vol)
+	}
+}
+
+func TestSize(t *testing.T) {
+	b := Bound{vector.Vector3D{15, -27, 3}, vector.Vector3D{20, -24, 7}}
+	size := b.Size()
+	if !(size[0] == 5 && size[1] == 3 && size[2] == 4) {
+		t.Errorf("%#v != {5, 3, 4}", size)
+	}
+}
