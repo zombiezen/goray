@@ -8,9 +8,13 @@ program is not well documented.
 
 That said, here's what you need to get goray running:
 
-* The most recent weekly of the Go programming language. <http://golang.org/>
-* SCons <http://www.scons.org/>
-* The goyaml package <http://goyaml.googlecode.com/>
+* The most recent weekly of the `Go programming language`_.
+* `SCons`_
+* The `goyaml package`_
+
+.. _Go programming language: http://golang.org/
+.. _SCons: http://www.scons.org/
+.. _goyaml package: http://goyaml.googlecode.com/
 
 Build goray with::
 
@@ -65,7 +69,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 SCons Go Tools License
 ------------------------
 
-Copyright (c) 2010, Ross Light
+Copyright © 2010, Ross Light
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
