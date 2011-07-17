@@ -51,7 +51,7 @@ func New(manager *job.Manager, data string) (s *Server) {
 		urls.New(`^submit$`, serverView{s, (*Server).handleSubmitJob}, "submit"),
 		urls.New(`^log$`, serverView{s, (*Server).handleLog}, "log"),
 		urls.New(`^status$`, urls.HandlerView{websocket.Handler(func(ws *websocket.Conn) { s.handleStatus(ws) })}, "status"),
-		urls.New(`^static/`, urls.HandlerView{http.FileServer(filepath.Join(data, "static"), "/static/")}, "static"),
+		urls.New(`^static/`, urls.HandlerView{http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(data, "static"))))}, "static"),
 		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
 	)
 	s.blocks = map[string]string{

@@ -100,7 +100,7 @@ func BenchmarkIntersectMethod(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		tri.Intersect(ray.Ray{
-			Dir: vector.Vector3D{0.211504, 0.558421, -0.802142},
+			Dir:  vector.Vector3D{0.211504, 0.558421, -0.802142},
 			From: vector.Vector3D{1.339351, 0.225915, -0.059020},
 		})
 	}
