@@ -8,7 +8,7 @@ program is not well documented.
 
 That said, here's what you need to get goray running:
 
-* The most recent weekly of the `Go programming language`_.
+* The most recent stable release of the `Go programming language`_.
 * `SCons`_
 * The `goyaml package`_
 
