@@ -59,7 +59,6 @@ test_env = env.Clone()
 test_env['GO_STRIPTESTS'] = False
 test_env['BUILD_DIR'] = test_env['TEST_BUILD_DIR']
 
-
 def setup_paths(e):
     e.Append(GO_LIBPATH=[e['BUILD_DIR']])
     e.VariantDir(e['BUILD_DIR'], 'src')

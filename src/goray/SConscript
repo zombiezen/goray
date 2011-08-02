@@ -5,20 +5,24 @@ Import('env')
 package = env.GoPack('../goray.a', env.Go('_go_', Glob('*.go')))
 
 subpackages = [
-    env.Go('bound', Glob('bound/*.go')),
-    env.Go('color', Glob('color/*.go')),
-    env.Go('intersect', Glob('intersect/*.go')),
-    env.Go('job', Glob('job/*.go')),
-    env.Go('kdtree', Glob('kdtree/*.go')),
-    env.Go('logging', Glob('logging/*.go')),
-    env.Go('matrix', Glob('matrix/*.go')),
-    env.Go('montecarlo', Glob('montecarlo/*.go')),
-    env.Go('sampleutil', Glob('sampleutil/*.go')),
-    env.Go('server', Glob('server/*.go')),
-    env.Go('server/urls', Glob('server/urls/*.go')),
-    env.Go('shader', Glob('shader/*.go')),
-    env.Go('time', Glob('time/*.go')),
-    env.Go('vector', Glob('vector/*.go')),
+    'bound',
+    'color',
+    'intersect',
+    'job',
+    'kdtree',
+    'logging',
+    'matrix',
+    'montecarlo',
+    'sampleutil',
+    'server',
+    'server/urls',
+    'shader',
+    'time',
+    'vector',
+]
+subpackages = [
+    env.GoPack(path + '.a', env.Go(path + '/_go_', env.Glob(path + '/*.go')))
+    for path in subpackages
 ]
 
 subtrees = SConscript(
