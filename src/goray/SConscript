@@ -14,6 +14,8 @@ subpackages = [
     env.Go('matrix', Glob('matrix/*.go')),
     env.Go('montecarlo', Glob('montecarlo/*.go')),
     env.Go('sampleutil', Glob('sampleutil/*.go')),
+    env.Go('server', Glob('server/*.go')),
+    env.Go('server/urls', Glob('server/urls/*.go')),
     env.Go('shader', Glob('shader/*.go')),
     env.Go('time', Glob('time/*.go')),
     env.Go('vector', Glob('vector/*.go')),
@@ -22,7 +24,6 @@ subpackages = [
 subtrees = SConscript(
     [
         'std/SConscript',
-        'server/SConscript',
     ],
     exports='env',
 )
