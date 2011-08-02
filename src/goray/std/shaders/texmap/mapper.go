@@ -1,22 +1,34 @@
-//
-//	goray/std/shaders/texmap/mapper.go
-//	goray
-//
-//	Created by Ross Light on 2011-04-02.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
 
-// The texmap package provides a shader node that performs texture mapping with various options.
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Package texmap provides a shader node that performs texture mapping with various options.
 package texmap
 
 import (
 	"math"
 	"os"
 
-	"goray/core/matrix"
-	"goray/core/render"
-	"goray/core/shader"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray"
+	"goray/matrix"
+	"goray/shader"
+	"goray/vector"
 	"goray/std/yamlscene"
 
 	yamldata "goyaml.googlecode.com/hg/data"
@@ -88,7 +100,7 @@ func (tmap *TextureMapper) Init(tex Texture, coord Coordinates, scalar bool) {
 	}
 }
 
-func (tmap *TextureMapper) textureCoordinates(state *render.State, sp surface.Point) (p, n vector.Vector3D) {
+func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray.SurfacePoint) (p, n vector.Vector3D) {
 	p, n = sp.Position, sp.GeometricNormal
 	switch tmap.Coordinates {
 	case UV:
@@ -109,6 +121,7 @@ func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D)
 		// Normalize to [-1, 1]
 		texPt = vector.Vector3D{2*texPt[vector.X] - 1, 2*texPt[vector.Y] - 1, texPt[vector.Z]}
 	}
+
 	// Map axes
 	m := map[vector.Axis]float64{
 		-1:       0.0,
@@ -119,17 +132,20 @@ func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D)
 	texPt[vector.X] = m[tmap.MapX]
 	texPt[vector.Y] = m[tmap.MapY]
 	texPt[vector.Z] = m[tmap.MapZ]
+
 	// Texture coordinate mapping
 	texPt = tmap.Projector.Project(texPt, n)
+
 	// Scale and offset
 	texPt = vector.Add(vector.CompMul(texPt, tmap.Scale), tmap.Offset)
 	return
 }
 
 func (tmap *TextureMapper) Eval(inputs []shader.Result, params shader.Params) (result shader.Result) {
-	state := params["RenderState"].(*render.State)
-	sp := params["SurfacePoint"].(surface.Point)
+	state := params["RenderState"].(*goray.RenderState)
+	sp := params["SurfacePoint"].(goray.SurfacePoint)
 	p := tmap.mapping(tmap.textureCoordinates(state, sp))
+
 	// TODO: We may need to store both scalar and color.
 	if tmap.Scalar {
 		result = shader.Result{tmap.Texture.ScalarAt(p)}
@@ -141,8 +157,8 @@ func (tmap *TextureMapper) Eval(inputs []shader.Result, params shader.Params) (r
 }
 
 func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.Params) (result shader.Result) {
-	state := params["RenderState"].(*render.State)
-	sp := params["SurfacePoint"].(surface.Point)
+	state := params["RenderState"].(*goray.RenderState)
+	sp := params["SurfacePoint"].(goray.SurfacePoint)
 	scale := tmap.Scale.Length()
 	bstr := tmap.BumpStrength / scale
 	if tmap.Coordinates == UV {
@@ -153,9 +169,11 @@ func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.
 		p1 = tmap.mapping(vector.Vector3D{sp.U, sp.V - tmap.deltaV, 0}, sp.GeometricNormal)
 		p2 = tmap.mapping(vector.Vector3D{sp.U, sp.V + tmap.deltaV, 0}, sp.GeometricNormal)
 		dfdv := (tmap.Texture.ScalarAt(p2) - tmap.Texture.ScalarAt(p1)) / tmap.deltaV
+
 		// Derivative is in UV-space, convert to shading space.
 		vecU, vecV := sp.ShadingU, sp.ShadingV
 		vecU[vector.Z], vecV[vector.Z] = dfdu, dfdv
+
 		// Solve plane equation to get 1/0/df 0/1/df.
 		norm := vector.Cross(vecU, vecV)
 		if math.Fabs(norm[vector.Z]) > 1e-30 {
@@ -197,12 +215,14 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	m.SetDefault("offset", vector.Vector3D{})
 	m.SetDefault("scalar", false)
 	m.SetDefault("bumpStrength", 0.02)
+
 	// Texture
 	tex, ok := m["texture"].(Texture)
 	if !ok {
 		err = os.NewError("Texture mapper must be given a texture")
 		return
 	}
+
 	// Coordinates
 	var coord Coordinates
 	coordString, ok := m["coordinates"].(string)
@@ -225,6 +245,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Unrecognized coordinate space: " + coordString)
 		return
 	}
+
 	// Scalar
 	scalar, ok := yamldata.AsBool(m["scalar"])
 	if !ok {
@@ -232,6 +253,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		return
 	}
 	tmap := New(tex, coord, scalar)
+
 	// Projection
 	projString, ok := m["projection"].(string)
 	if !ok {
@@ -251,6 +273,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Unrecognized projection: " + projString)
 		return
 	}
+
 	// Axis mapping
 	axisMap, ok := yamldata.AsSequence(m["mapAxes"])
 	if !ok || len(axisMap) != 3 {
@@ -273,6 +296,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 			tmap.MapZ = constructMapAxis(a)
 		}
 	}
+
 	// Scale and offset
 	tmap.Scale, ok = m["scale"].(vector.Vector3D)
 	if !ok {
@@ -284,12 +308,14 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("offset must be a vector")
 		return
 	}
+
 	// Bump Strength
 	tmap.BumpStrength, ok = yamldata.AsFloat(m["bumpStrength"])
 	if !ok {
 		err = os.NewError("bumpStrength must be a number")
 		return
 	}
+
 	// Finish
 	return tmap, nil
 }

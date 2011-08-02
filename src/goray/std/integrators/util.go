@@ -1,25 +1,33 @@
-//
-//	goray/std/integrators/util.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-10.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package util
 
 import (
 	"math"
+
+	"goray"
+	"goray/color"
 	"goray/montecarlo"
 	"goray/sampleutil"
-	"goray/core/color"
-	"goray/core/light"
-	"goray/core/material"
-	"goray/core/photon"
-	"goray/core/ray"
-	"goray/core/render"
-	"goray/core/scene"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray/vector"
 )
 
 const (
@@ -42,6 +50,7 @@ func colorSum(n int, concurrent bool, f colorFunc) (col color.Color) {
 		for i, _ := range channels {
 			channels[i] = make(chan color.Color, 1)
 		}
+
 		// Start sampling
 		for i := 0; i < n; i++ {
 			go func(i int) {
@@ -49,6 +58,7 @@ func colorSum(n int, concurrent bool, f colorFunc) (col color.Color) {
 				channels[i] <- f(i)
 			}(i)
 		}
+
 		// Collect samples
 		for _, ch := range channels {
 			col = color.Add(col, <-ch)
@@ -76,12 +86,12 @@ func halSeq(n int, base, start uint) (seq []float64) {
 }
 
 // EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2.
-func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Light, sc *scene.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
+func EstimateDirectPH(state *goray.RenderState, sp goray.SurfacePoint, lights []goray.Light, sc *goray.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
 	return colorSum(len(lights), false, func(i int) (col color.Color) {
 		switch l := lights[i].(type) {
-		case light.DiracLight:
+		case goray.DiracLight:
 			// Light with delta distribution
 			col = estimateDiracDirect(params, l)
 		default:
@@ -93,16 +103,16 @@ func EstimateDirectPH(state *render.State, sp surface.Point, lights []light.Ligh
 }
 
 type directParams struct {
-	State  *render.State
-	Surf   surface.Point
-	Lights []light.Light
-	Scene  *scene.Scene
+	State  *goray.RenderState
+	Surf   goray.SurfacePoint
+	Lights []goray.Light
+	Scene  *goray.Scene
 	Wo     vector.Vector3D
 	TrShad bool
 	SDepth int
 }
 
-func checkShadow(params directParams, r ray.Ray) bool {
+func checkShadow(params directParams, r goray.Ray) bool {
 	r.TMin = raySelfBias
 	if params.TrShad {
 		// TODO
@@ -110,13 +120,13 @@ func checkShadow(params directParams, r ray.Ray) bool {
 	return params.Scene.Shadowed(r, math.Inf(1))
 }
 
-func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
+func estimateDiracDirect(params directParams, l goray.DiracLight) color.Color {
 	sp := params.Surf
-	lightRay := ray.Ray{
+	lightRay := goray.Ray{
 		From: sp.Position,
 		TMax: -1.0,
 	}
-	mat := sp.Material.(material.Material)
+	mat := sp.Material.(goray.Material)
 
 	lcol, ok := l.Illuminate(sp, &lightRay)
 	if ok {
@@ -124,7 +134,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 			if params.TrShad {
 				//lcol = color.Mul(lcol, scol)
 			}
-			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, goray.BSDFAll)
 			//TODO: transmitCol
 			return color.ScalarMul(
 				color.Mul(surfCol, lcol),
@@ -136,7 +146,7 @@ func estimateDiracDirect(params directParams, l light.DiracLight) color.Color {
 	return color.Black
 }
 
-func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
+func estimateAreaDirect(params directParams, l goray.Light) (ccol color.Color) {
 	ccol = color.Black
 
 	n := l.NumSamples()
@@ -149,12 +159,12 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	// TODO: Add a unique offset for every light
 	offset := uint(n*params.State.PixelSample) + params.State.SamplingOffset
 
-	isect, canIntersect := l.(light.Intersecter)
+	isect, canIntersect := l.(goray.LightIntersecter)
 
 	// Sample from light
 	hals1 := halSeq(n, 3, offset-1)
 	ccol = sample(n, func(i int) color.Color {
-		lightSamp := light.Sample{
+		lightSamp := goray.LightSample{
 			S1: montecarlo.VanDerCorput(uint32(offset)+uint32(i), 0),
 			S2: hals1[i],
 		}
@@ -175,17 +185,17 @@ func estimateAreaDirect(params directParams, l light.Light) (ccol color.Color) {
 	return
 }
 
-func sampleLight(params directParams, l light.Light, canIntersect bool, lightSamp light.Sample) (col color.Color) {
+func sampleLight(params directParams, l goray.Light, canIntersect bool, lightSamp goray.LightSample) (col color.Color) {
 	col = color.Black
 	sp := params.Surf
-	mat := sp.Material.(material.Material)
+	mat := sp.Material.(goray.Material)
 
 	if params.State.RayDivision > 1 {
 		lightSamp.S1 = sampleutil.AddMod1(lightSamp.S1, params.State.Dc1)
 		lightSamp.S2 = sampleutil.AddMod1(lightSamp.S2, params.State.Dc2)
 	}
 
-	lightRay := ray.Ray{ // Illuminate will fill in most of the ray
+	lightRay := goray.Ray{ // Illuminate will fill in most of the ray
 		From: sp.Position,
 		TMax: -1.0,
 	}
@@ -193,7 +203,7 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 		if shadowed := checkShadow(params, lightRay); !shadowed && lightSamp.Pdf > pdfCutoff {
 			// TODO: if trShad
 			// TODO: transmitCol
-			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, material.BSDFAll)
+			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, goray.BSDFAll)
 			col = color.ScalarMul(
 				color.Mul(surfCol, lightSamp.Color),
 				math.Fabs(vector.Dot(sp.Normal, lightRay.Dir)),
@@ -201,7 +211,7 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 			if canIntersect {
 				mPdf := mat.Pdf(
 					params.State, sp, params.Wo, lightRay.Dir,
-					material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive|material.BSDFReflect|material.BSDFTransmit,
+					goray.BSDFGlossy|goray.BSDFDiffuse|goray.BSDFDispersive|goray.BSDFReflect|goray.BSDFTransmit,
 				)
 				l2 := lightSamp.Pdf * lightSamp.Pdf
 				m2 := mPdf * mPdf
@@ -215,10 +225,10 @@ func sampleLight(params directParams, l light.Light, canIntersect bool, lightSam
 	return
 }
 
-func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col color.Color) {
+func sampleBSDF(params directParams, l goray.LightIntersecter, s1, s2 float64) (col color.Color) {
 	sp := params.Surf
-	mat := sp.Material.(material.Material)
-	bRay := ray.Ray{
+	mat := sp.Material.(goray.Material)
+	bRay := goray.Ray{
 		From: sp.Position,
 		TMin: raySelfBias,
 		TMax: -1.0,
@@ -228,8 +238,8 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col c
 		s1 = sampleutil.AddMod1(s1, params.State.Dc1)
 		s2 = sampleutil.AddMod1(s2, params.State.Dc2)
 	}
-	s := material.NewSample(s1, s2)
-	s.Flags = material.BSDFGlossy | material.BSDFDiffuse | material.BSDFDispersive | material.BSDFReflect | material.BSDFTransmit
+	s := goray.NewMaterialSample(s1, s2)
+	s.Flags = goray.BSDFGlossy | goray.BSDFDiffuse | goray.BSDFDispersive | goray.BSDFReflect | goray.BSDFTransmit
 
 	surfCol, wi := mat.Sample(params.State, sp, params.Wo, &s)
 	bRay.Dir = wi
@@ -256,7 +266,7 @@ func sampleBSDF(params directParams, l light.Intersecter, s1, s2 float64) (col c
 	return
 }
 
-func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
+func EstimatePhotons(state *goray.RenderState, sp goray.SurfacePoint, m *goray.PhotonMap, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
 	sum = color.Black
 	if !m.Ready() {
 		return
@@ -264,12 +274,12 @@ func EstimatePhotons(state *render.State, sp surface.Point, m *photon.Map, wo ve
 	gathered := m.Gather(sp.Position, nSearch, radius)
 
 	if len(gathered) > 0 {
-		mat := sp.Material.(material.Material)
+		mat := sp.Material.(goray.Material)
 		for _, gResult := range gathered {
 			phot := gResult.Photon
-			surfCol := mat.Eval(state, sp, wo, phot.Direction(), material.BSDFAll)
+			surfCol := mat.Eval(state, sp, wo, phot.Direction, goray.BSDFAll)
 			k := kernel(gResult.Distance, radius)
-			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.Color(), k)))
+			sum = color.Add(sum, color.Mul(surfCol, color.ScalarMul(phot.Color, k)))
 		}
 		sum = color.ScalarMul(sum, 1.0/float64(m.NumPaths()))
 	}
@@ -286,8 +296,8 @@ func ckernel(phot, gather float64) float64 {
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 
-func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
-	mat := sp.Material.(material.Material)
+func SampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
+	mat := sp.Material.(goray.Material)
 
 	n := aoSamples
 	if state.RayDivision > 1 {
@@ -307,14 +317,14 @@ func SampleAO(sc *scene.Scene, state *render.State, sp surface.Point, wo vector.
 			s1 = sampleutil.AddMod1(s1, state.Dc1)
 			s2 = sampleutil.AddMod1(s2, state.Dc2)
 		}
-		lightRay := ray.Ray{
+		lightRay := goray.Ray{
 			From: sp.Position,
 			TMin: raySelfBias,
 			TMax: aoDist,
 		}
 
-		s := material.NewSample(s1, s2)
-		s.Flags = material.BSDFDiffuse | material.BSDFReflect
+		s := goray.NewMaterialSample(s1, s2)
+		s.Flags = goray.BSDFDiffuse | goray.BSDFReflect
 		surfCol, dir := mat.Sample(state, sp, wo, &s)
 		lightRay.Dir = dir
 

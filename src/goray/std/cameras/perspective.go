@@ -1,18 +1,30 @@
-//
-//	goray/std/cameras/perspective.go
-//	goray
-//
-//	Created by Ross Light on 2010-07-06.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package perspective
 
 import (
 	"math"
 	"os"
-	"goray/core/camera"
-	"goray/core/ray"
-	"goray/core/vector"
+	"goray"
+	"goray/vector"
 	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -95,7 +107,7 @@ type Camera struct {
 	lens      []float64
 }
 
-var _ camera.Camera = &Camera{}
+var _ goray.Camera = &Camera{}
 
 func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float64, bokeh Bokeh, bias BokehBias, bokehRot float64) (cam *Camera) {
 	cam = new(Camera)
@@ -180,10 +192,10 @@ func (cam *Camera) getLensUV(r1, r2 float64) (u, v float64) {
 	return shirleyDisk(r1, r2)
 }
 
-func (cam *Camera) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
+func (cam *Camera) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1.0 // for now, always 1, except 0 for probe when outside sphere
 
-	r = ray.Ray{
+	r = goray.Ray{
 		From: cam.eye,
 		Dir:  vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize(),
 		TMax: -1.0,
@@ -198,7 +210,7 @@ func (cam *Camera) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
 	return
 }
 
-func (cam *Camera) Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bool) {
+func (cam *Camera) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	// TODO
 	return
 }

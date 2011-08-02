@@ -1,13 +1,24 @@
-//
-//  goray/server/server.go
-//  goray
-//
-//  Created by Ross Light on 2011-02-05.
-//
-
 /*
-	The server package provides an HTTP front-end for goray.
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+// Package server provides an HTTP front-end for goray.
 package server
 
 import (
@@ -120,8 +131,10 @@ func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, ar
 	j, ok := server.JobManager.Get(args[0])
 	if ok {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
 		// Check to see whether the job is done
 		status := j.Status()
+
 		// Render appropriate template
 		switch status.Code {
 		case job.StatusDone:
@@ -152,12 +165,14 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 	if err != nil {
 		return
 	}
+
 	// Find job
 	j, found := server.JobManager.Get(jobName)
 	if !found {
 		conn.PrintfLine("404 Job not found")
 		return
 	}
+
 	// Notify when job is finished
 	for status := range j.StatusChan() {
 		conn.PrintfLine("%d %s", int(status.Code), status.Code)

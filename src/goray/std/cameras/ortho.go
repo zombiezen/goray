@@ -1,18 +1,30 @@
-//
-//	goray/std/cameras/ortho.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-22.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
 
-// The ortho package provides an orthographic camera.
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Package ortho provides an orthographic camera.
 package ortho
 
 import (
 	"os"
-	"goray/core/camera"
-	"goray/core/ray"
-	"goray/core/vector"
+	"goray"
+	"goray/vector"
 	"goray/std/yamlscene"
 	yamldata "goyaml.googlecode.com/hg/data"
 )
@@ -24,10 +36,10 @@ type orthoCam struct {
 	vlook, vup, vright vector.Vector3D
 }
 
-var _ camera.Camera = &orthoCam{}
+var _ goray.Camera = &orthoCam{}
 
 // NewOrtho creates a new orthographic camera.
-func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) camera.Camera {
+func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) goray.Camera {
 	c := new(orthoCam)
 	c.resx, c.resy = resx, resy
 	c.vup = vector.Sub(up, pos)
@@ -53,9 +65,9 @@ func (c *orthoCam) SampleLens() bool { return false }
 func (c *orthoCam) ResolutionX() int { return c.resx }
 func (c *orthoCam) ResolutionY() int { return c.resy }
 
-func (c *orthoCam) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
+func (c *orthoCam) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1
-	r = ray.Ray{
+	r = goray.Ray{
 		From: vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y)),
 		Dir:  c.vlook,
 		TMax: -1.0,
@@ -63,7 +75,7 @@ func (c *orthoCam) ShootRay(x, y, u, v float64) (r ray.Ray, wt float64) {
 	return
 }
 
-func (c *orthoCam) Project(wo ray.Ray, lu, lv *float64) (pdf float64, changed bool) {
+func (c *orthoCam) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	return 0.0, false
 }
 
@@ -80,6 +92,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Ortho nodes must have position, look, and up vectors")
 		return
 	}
+
 	// Width and height
 	width, widthOk := yamldata.AsInt(m["width"])
 	height, heightOk := yamldata.AsInt(m["height"])
@@ -87,6 +100,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		err = os.NewError("Ortho must have width and height")
 		return
 	}
+
 	// Aspect and scale
 	aspect, ok := yamldata.AsFloat(m["aspect"])
 	if !ok {
@@ -96,6 +110,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 	if !ok {
 		scale = 1.0
 	}
+
 	// Create camera (finally!)
 	data = New(pos, look, up, width, height, aspect, scale)
 	return

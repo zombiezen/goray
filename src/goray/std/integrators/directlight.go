@@ -1,29 +1,38 @@
-//
-//	goray/std/integrators/directlight.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-06.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package directlight
 
 import (
 	"os"
-	"goray/core/background"
-	"goray/core/color"
-	"goray/core/integrator"
-	"goray/core/light"
-	"goray/core/material"
-	"goray/core/ray"
-	"goray/core/render"
-	"goray/core/scene"
+
+	"goray"
+	"goray/color"
 	"goray/std/integrators/util"
 	"goray/std/yamlscene"
+
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
 type directLighting struct {
-	background            background.Background
+	background            goray.Background
 	transparentShadows    bool
 	shadowDepth, rayDepth int
 	numPhotons, numSearch int
@@ -37,12 +46,10 @@ type directLighting struct {
 	aoDist    float64
 	aoColor   color.Color
 
-	lights []light.Light
+	lights []goray.Light
 }
 
-var _ integrator.SurfaceIntegrator = &directLighting{}
-
-func New(transparentShadows bool, shadowDepth, rayDepth int) integrator.SurfaceIntegrator {
+func New(transparentShadows bool, shadowDepth, rayDepth int) goray.SurfaceIntegrator {
 	return &directLighting{
 		transparentShadows: transparentShadows,
 		shadowDepth:        shadowDepth,
@@ -56,10 +63,10 @@ func New(transparentShadows bool, shadowDepth, rayDepth int) integrator.SurfaceI
 
 func (dl *directLighting) SurfaceIntegrator() {}
 
-func (dl *directLighting) Preprocess(sc *scene.Scene) {
+func (dl *directLighting) Preprocess(sc *goray.Scene) {
 	// Add lights
 	sceneLights := sc.Lights()
-	dl.lights = make([]light.Light, len(sceneLights), len(sceneLights)+1)
+	dl.lights = make([]goray.Light, len(sceneLights), len(sceneLights)+1)
 	copy(dl.lights, sceneLights)
 	// Set up background
 	dl.background = sc.Background()
@@ -71,7 +78,7 @@ func (dl *directLighting) Preprocess(sc *scene.Scene) {
 	return
 }
 
-func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.DifferentialRay) color.AlphaColor {
+func (dl *directLighting) Integrate(sc *goray.Scene, state *goray.RenderState, r goray.DifferentialRay) color.AlphaColor {
 	col, alpha := color.Black, 0.0
 
 	defer func(il bool) {
@@ -80,39 +87,41 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
 		sp := coll.Surface()
+
 		// Camera ray
 		if state.RayLevel == 0 {
 			state.IncludeLights = true
 		}
 
-		mat := sp.Material.(material.Material)
+		mat := sp.Material.(goray.Material)
 		bsdfs := mat.InitBSDF(state, sp)
 		wo := r.Dir.Negate()
 
 		// Contribution of light-emitting surfaces
-		if emat, ok := mat.(material.EmitMaterial); ok {
+		if emat, ok := mat.(goray.EmitMaterial); ok {
 			col = color.Add(col, emat.Emit(state, sp, wo))
 		}
+
 		// Normal lighting
-		if bsdfs&(material.BSDFGlossy|material.BSDFDiffuse|material.BSDFDispersive) != 0 {
+		if bsdfs&(goray.BSDFGlossy|goray.BSDFDiffuse|goray.BSDFDispersive) != 0 {
 			col = color.Add(col, util.EstimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))
 		}
-		if bsdfs&(material.BSDFDiffuse|material.BSDFGlossy) != 0 {
+		if bsdfs&(goray.BSDFDiffuse|goray.BSDFGlossy) != 0 {
 			// TODO: EstimatePhotons
 		}
-		if bsdfs&material.BSDFDiffuse != 0 && dl.doAO {
+		if bsdfs&goray.BSDFDiffuse != 0 && dl.doAO {
 			col = color.Add(col, util.SampleAO(sc, state, sp, wo, dl.aoSamples, dl.aoDist, dl.aoColor))
 		}
 
 		state.RayLevel++
 		if state.RayLevel <= dl.rayDepth {
 			// Dispersive effects with recursive raytracing
-			if bsdfs&material.BSDFDispersive != 0 && state.Chromatic {
+			if bsdfs&goray.BSDFDispersive != 0 && state.Chromatic {
 				// TODO
 			}
 
 			// Glossy reflection with recursive raytracing
-			if bsdfs&material.BSDFGlossy != 0 {
+			if bsdfs&goray.BSDFGlossy != 0 {
 				// TODO
 			}
 
@@ -122,8 +131,8 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 
 				reflect, refract, dir, rcol := mat.Specular(state, sp, wo)
 				if reflect {
-					refRay := ray.DifferentialRay{
-						Ray: ray.Ray{
+					refRay := goray.DifferentialRay{
+						Ray: goray.Ray{
 							From: sp.Position,
 							Dir:  dir[0],
 							TMin: 0.0005,
@@ -136,8 +145,8 @@ func (dl *directLighting) Integrate(sc *scene.Scene, state *render.State, r ray.
 					col = color.Add(col, color.Mul(integ, rcol[0]))
 				}
 				if refract {
-					refRay := ray.DifferentialRay{
-						Ray: ray.Ray{
+					refRay := goray.DifferentialRay{
+						Ray: goray.Ray{
 							From: sp.Position,
 							Dir:  dir[1],
 							TMin: 0.0005,

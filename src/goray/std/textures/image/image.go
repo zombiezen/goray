@@ -1,9 +1,22 @@
-//
-//	goray/std/textures/image/image.go
-//	goray
-//
-//	Created by Ross Light on 2011-04-02.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package image
 
@@ -11,9 +24,9 @@ import (
 	"math"
 	"os"
 
-	"goray/core/color"
-	"goray/core/render"
-	"goray/core/vector"
+	"goray"
+	"goray/color"
+	"goray/vector"
 
 	"goray/std/shaders/texmap"
 	"goray/std/yamlscene"
@@ -40,7 +53,7 @@ const (
 )
 
 type Texture struct {
-	Image         *render.Image
+	Image         *goray.Image
 	Interpolation Interpolation
 	UseAlpha      bool
 
@@ -127,7 +140,7 @@ func cubicInterpolate(c1, c2, c3, c4 color.AlphaColor, x float64) (col color.Alp
 	return
 }
 
-func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) color.AlphaColor {
+func interpolateImage(img *goray.Image, intp Interpolation, p vector.Vector3D) color.AlphaColor {
 	xf := float64(img.Width) * (p[vector.X] - math.Floor(p[vector.X]))
 	yf := float64(img.Width) * (p[vector.Y] - math.Floor(p[vector.Y]))
 	if intp != NoInterpolation {
@@ -139,6 +152,7 @@ func interpolateImage(img *render.Image, intp Interpolation, p vector.Vector3D) 
 	if intp == NoInterpolation {
 		return c1
 	}
+
 	// Now for the fun stuff:
 	x2, y2 := clampToRes(x+1, y+1, img.Width, img.Height)
 	c2 := img.Pixel(x2, y)
@@ -197,13 +211,13 @@ func clampToRes(x0, y0, w, h int) (x, y int) {
 
 // Loader is an interface for retrieving images with a name.
 type Loader interface {
-	Load(name string) (img *render.Image, err os.Error)
+	Load(name string) (img *goray.Image, err os.Error)
 }
 
 // LoaderFunc uses a function to perform loads.
-type LoaderFunc func(string) (*render.Image, os.Error)
+type LoaderFunc func(string) (*goray.Image, os.Error)
 
-func (f LoaderFunc) Load(name string) (img *render.Image, err os.Error) {
+func (f LoaderFunc) Load(name string) (img *goray.Image, err os.Error) {
 	return f(name)
 }
 
@@ -247,6 +261,7 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err os.Error) {
 		err = os.NewError("Image must contain name")
 		return
 	}
+
 	// Interpolation
 	intpName, ok := m["interpolation"].(string)
 	if !ok {
@@ -265,12 +280,14 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err os.Error) {
 		err = os.NewError("Invalid interpolation method")
 		return
 	}
+
 	// Use Alpha
 	useAlpha, ok := yamldata.AsBool(m["useAlpha"])
 	if !ok {
 		err = os.NewError("useAlpha must be a boolean")
 		return
 	}
+
 	// Clipping Mode
 	clipName, ok := m["clip"].(string)
 	if !ok {
@@ -291,6 +308,7 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err os.Error) {
 		err = os.NewError("Invalid clipping mode")
 		return
 	}
+
 	// Repeat X and Y
 	repeatX, ok := yamldata.AsUint(m["repeatX"])
 	if !ok {
@@ -306,6 +324,7 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err os.Error) {
 	if err != nil {
 		return
 	}
+
 	// Construct texture
 	tex := &Texture{
 		Image:         img,

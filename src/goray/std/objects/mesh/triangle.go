@@ -1,36 +1,48 @@
-//
-//	goray/std/objects/mesh/triangle.go
-//	goray
-//
-//	Created by Ross Light on 2010-12-26.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package mesh
 
 import (
 	"fmt"
 	"math"
+
+	"goray"
 	"goray/logging"
-	"goray/core/bound"
-	"goray/core/material"
-	"goray/core/primitive"
-	"goray/core/ray"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray/bound"
+	"goray/vector"
 )
 
 // Triangle stores information for a single triangle.
 type Triangle struct {
-	v        [3]int // v containes the vertex indices in the mesh's array.
-	n        [3]int // n contains the normal indices in the mesh's array (if per-vertex normals are enabled).
-	uv       [3]int // uv contains the UV indices in the mesh's array (if UV is enabled).
-	index    int
+	v     [3]int // v containes the vertex indices in the mesh's array.
+	n     [3]int // n contains the normal indices in the mesh's array (if per-vertex normals are enabled).
+	uv    [3]int // uv contains the UV indices in the mesh's array (if UV is enabled).
+	index int
+
 	normal   vector.Vector3D
-	material material.Material
+	material goray.Material
 	mesh     *Mesh
 }
 
-var _ primitive.Primitive = &Triangle{}
+var _ goray.Primitive = &Triangle{}
 
 // NewTriangle creates a new triangle.
 func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
@@ -75,7 +87,7 @@ func (tri *Triangle) getUVs() (uv [3]UV) {
 	return
 }
 
-func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
+func (tri *Triangle) Intersect(r goray.Ray) (coll goray.Collision) {
 	coll.Ray = r
 	rayDepth, u, v := intersect(
 		[3]float64(tri.mesh.vertices[tri.v[0]]),
@@ -94,11 +106,12 @@ func (tri *Triangle) Intersect(r ray.Ray) (coll primitive.Collision) {
 	return
 }
 
-func (tri *Triangle) Surface(coll primitive.Collision) (sp surface.Point) {
+func (tri *Triangle) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 	sp.GeometricNormal = tri.normal
 	vert := tri.getVertices()
-	dat := coll.UserData.([2]float64)
+
 	// The u and v in intersection code are actually v and w
+	dat := coll.UserData.([2]float64)
 	v, w := dat[0], dat[1]
 	u := 1.0 - v - w
 
@@ -186,7 +199,7 @@ func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
 	return triBoxOverlap([3]float64(ctr), bd.HalfSize(), points)
 }
 
-func (tri *Triangle) Material() material.Material { return tri.material }
+func (tri *Triangle) Material() goray.Material { return tri.material }
 
 func (tri *Triangle) Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	if axis >= 0 {
@@ -238,12 +251,12 @@ func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData inter
 
 // The rest of these are non-interface triangle-specific methods.
 
-func (tri *Triangle) SetMaterial(mat material.Material) { tri.material = mat }
-func (tri *Triangle) SetNormals(a, b, c int)            { tri.n = [3]int{a, b, c} }
-func (tri *Triangle) ClearNormals()                     { tri.n = [3]int{-1, -1, -1} }
-func (tri *Triangle) SetUVs(a, b, c int)                { tri.uv = [3]int{a, b, c} }
-func (tri *Triangle) ClearUVs()                         { tri.uv = [3]int{-1, -1, -1} }
-func (tri *Triangle) GetNormal() vector.Vector3D        { return tri.normal }
+func (tri *Triangle) SetMaterial(mat goray.Material) { tri.material = mat }
+func (tri *Triangle) SetNormals(a, b, c int)         { tri.n = [3]int{a, b, c} }
+func (tri *Triangle) ClearNormals()                  { tri.n = [3]int{-1, -1, -1} }
+func (tri *Triangle) SetUVs(a, b, c int)             { tri.uv = [3]int{a, b, c} }
+func (tri *Triangle) ClearUVs()                      { tri.uv = [3]int{-1, -1, -1} }
+func (tri *Triangle) GetNormal() vector.Vector3D     { return tri.normal }
 
 func (tri *Triangle) CalculateNormal() {
 	v := tri.getVertices()

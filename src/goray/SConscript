@@ -2,23 +2,30 @@
 
 Import('env')
 
-root_packages = [
+package = env.GoPack('../goray.a', env.Go('_go_', Glob('*.go')))
+
+subpackages = [
+    env.Go('bound', Glob('bound/*.go')),
+    env.Go('color', Glob('color/*.go')),
+    env.Go('intersect', Glob('intersect/*.go')),
     env.Go('job', Glob('job/*.go')),
+    env.Go('kdtree', Glob('kdtree/*.go')),
     env.Go('logging', Glob('logging/*.go')),
-    env.Go('montecarlo.go'),
-    env.Go('sampleutil.go'),
+    env.Go('matrix', Glob('matrix/*.go')),
+    env.Go('montecarlo', Glob('montecarlo/*.go')),
+    env.Go('sampleutil', Glob('sampleutil/*.go')),
+    env.Go('shader', Glob('shader/*.go')),
     env.Go('time', Glob('time/*.go')),
-    env.Go('version'),
+    env.Go('vector', Glob('vector/*.go')),
 ]
 
-subpackages = SConscript(
+subtrees = SConscript(
     [
-        'core/SConscript',
         'std/SConscript',
         'server/SConscript',
     ],
     exports='env',
 )
-packages = Flatten([root_packages, subpackages])
+packages = Flatten([package, subpackages, subtrees])
 
 Return('packages')

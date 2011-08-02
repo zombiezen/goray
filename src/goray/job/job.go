@@ -1,11 +1,24 @@
-//
-//  goray/job/job.go
-//  goray
-//
-//  Created by Ross Light on 2011-03-14.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
 
-// The job package specifies a consistent description of a render job.
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Package job specifies a consistent description of a render job.
 package job
 
 import (
@@ -13,14 +26,11 @@ import (
 	"os"
 	"sync"
 
+	"goray"
+	"goray/intersect"
 	"goray/logging"
-	"goray/time"
-
-	"goray/core/render"
-	"goray/core/scene"
-	"goray/core/integrator"
-
 	"goray/std/yamlscene"
+	"goray/time"
 )
 
 type Job struct {
@@ -94,30 +104,33 @@ func (job *Job) Render(w io.Writer) (err os.Error) {
 	// 1. Read
 	status.Code = StatusReading
 	job.ChangeStatus(status)
-	sc := scene.New()
+	sc := goray.NewScene(goray.IntersecterBuilder(intersect.NewKD))
 	if job.SceneLog != nil {
 		sc.Log().AddHandler(job.SceneLog)
 	}
-	var integ integrator.Integrator
+	var integ goray.Integrator
 	status.ReadTime = time.Stopwatch(func() {
 		integ, err = yamlscene.Load(job.Source, sc, job.Params)
 	})
 	if err != nil {
 		return
 	}
+
 	// 2. Update
 	status.Code = StatusUpdating
 	job.ChangeStatus(status)
 	status.UpdateTime = time.Stopwatch(func() {
 		sc.Update()
 	})
+
 	// 3. Render
-	var outputImage *render.Image
+	var outputImage *goray.Image
 	status.Code = StatusRendering
 	job.ChangeStatus(status)
 	status.RenderTime = time.Stopwatch(func() {
-		outputImage = integrator.Render(sc, integ, job.RenderLog)
+		outputImage = goray.Render(sc, integ, job.RenderLog)
 	})
+
 	// 4. Write
 	status.Code = StatusWriting
 	job.ChangeStatus(status)

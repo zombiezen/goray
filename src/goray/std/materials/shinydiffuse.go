@@ -1,24 +1,38 @@
-//
-//	goray/std/materials/shinydiffuse.go
-//	goray
-//
-//	Created by Ross Light on 2010-07-14.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package shinydiffuse
 
 import (
 	"math"
 	"os"
+
+	"goray"
 	"goray/sampleutil"
-	"goray/core/color"
-	"goray/core/material"
-	"goray/core/render"
-	"goray/core/shader"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray/color"
+	"goray/shader"
+	"goray/vector"
+
 	"goray/std/materials/common"
 	"goray/std/yamlscene"
+
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -43,14 +57,14 @@ type ShinyDiffuse struct {
 	isDiffuse, isReflective, isTransp, isTransl bool
 
 	fresnelEffect bool
-	bsdfFlags     material.BSDF
+	bsdfFlags     goray.BSDF
 
 	viewDependent bool
 	useShaders    [4]bool
 }
 
-var _ material.Material = &ShinyDiffuse{}
-var _ material.EmitMaterial = &ShinyDiffuse{}
+var _ goray.Material = &ShinyDiffuse{}
+var _ goray.EmitMaterial = &ShinyDiffuse{}
 
 func (sd *ShinyDiffuse) Init() {
 	const threshold = 1e-5
@@ -67,7 +81,7 @@ func (sd *ShinyDiffuse) Init() {
 		} else if !sd.fresnelEffect {
 			acc = 1.0 - sd.SpecRefl
 		}
-		sd.bsdfFlags |= material.BSDFSpecular | material.BSDFReflect
+		sd.bsdfFlags |= goray.BSDFSpecular | goray.BSDFReflect
 	}
 	if sd.Transp*acc > threshold || sd.TranspShad != nil {
 		sd.isTransp = true
@@ -79,7 +93,7 @@ func (sd *ShinyDiffuse) Init() {
 		} else {
 			acc = 1.0 - sd.Transp
 		}
-		sd.bsdfFlags |= material.BSDFTransmit | material.BSDFFilter
+		sd.bsdfFlags |= goray.BSDFTransmit | goray.BSDFFilter
 	}
 	if sd.Transl*acc > threshold || sd.TranslShad != nil {
 		sd.isTransl = true
@@ -91,7 +105,7 @@ func (sd *ShinyDiffuse) Init() {
 		} else {
 			acc = 1.0 - sd.Transl
 		}
-		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFTransmit
+		sd.bsdfFlags |= goray.BSDFDiffuse | goray.BSDFTransmit
 	}
 	if sd.Diffuse*acc > threshold {
 		sd.isDiffuse = true
@@ -101,7 +115,7 @@ func (sd *ShinyDiffuse) Init() {
 			}
 			sd.useShaders[3] = true
 		}
-		sd.bsdfFlags |= material.BSDFDiffuse | material.BSDFReflect
+		sd.bsdfFlags |= goray.BSDFDiffuse | goray.BSDFReflect
 	}
 }
 
@@ -110,7 +124,7 @@ type sdData struct {
 	DiffuseColor, MirrorColor         color.Color
 }
 
-func makeSdData(sd *ShinyDiffuse, state *render.State, sp surface.Point, use [4]bool, params shader.Params) (data sdData) {
+func makeSdData(sd *ShinyDiffuse, state *goray.RenderState, sp goray.SurfacePoint, use [4]bool, params shader.Params) (data sdData) {
 	results := shader.Eval(
 		[]shader.Node{
 			sd.DiffuseColorShad,
@@ -174,7 +188,7 @@ func (data sdData) accumulate(kr float64) (newData sdData) {
 	return
 }
 
-func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material.BSDF {
+func (sd *ShinyDiffuse) InitBSDF(state *goray.RenderState, sp goray.SurfacePoint) goray.BSDF {
 	params := shader.Params{
 		"RenderState":  state,
 		"SurfacePoint": sp,
@@ -188,7 +202,7 @@ func (sd *ShinyDiffuse) InitBSDF(state *render.State, sp surface.Point) material
 	return sd.bsdfFlags
 }
 
-func (sd *ShinyDiffuse) MaterialFlags() material.BSDF {
+func (sd *ShinyDiffuse) MaterialFlags() goray.BSDF {
 	return sd.bsdfFlags
 }
 
@@ -200,7 +214,7 @@ func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) (kr float64) {
 	return
 }
 
-func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vector.Vector3D, types material.BSDF) (col color.Color) {
+func (sd *ShinyDiffuse) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vector.Vector3D, types goray.BSDF) (col color.Color) {
 	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
 	cosNgWl := vector.Dot(sp.GeometricNormal, wl)
 	col = color.Black
@@ -210,7 +224,7 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 		n = n.Negate()
 	}
 
-	if types&sd.bsdfFlags&material.BSDFDiffuse == 0 {
+	if types&sd.bsdfFlags&goray.BSDFDiffuse == 0 {
 		return
 	}
 
@@ -237,13 +251,13 @@ func (sd *ShinyDiffuse) Eval(state *render.State, sp surface.Point, wo, wl vecto
 }
 
 type sdc struct {
-	BSDF  material.BSDF
+	BSDF  goray.BSDF
 	Value float64
 }
 
 type sdComps []sdc
 
-func (comps sdComps) Get(b material.BSDF) (v float64, ok bool) {
+func (comps sdComps) Get(b goray.BSDF) (v float64, ok bool) {
 	for _, c := range comps {
 		if c.BSDF == b {
 			return c.Value, true
@@ -255,21 +269,21 @@ func (comps sdComps) Get(b material.BSDF) (v float64, ok bool) {
 func getComps(sd *ShinyDiffuse, data sdData) (comps sdComps) {
 	comps = make(sdComps, 0, 4)
 	if sd.isReflective {
-		comps = append(comps, sdc{material.BSDFSpecular | material.BSDFReflect, data.SpecRefl})
+		comps = append(comps, sdc{goray.BSDFSpecular | goray.BSDFReflect, data.SpecRefl})
 	}
 	if sd.isTransp {
-		comps = append(comps, sdc{material.BSDFTransmit | material.BSDFFilter, data.Transp})
+		comps = append(comps, sdc{goray.BSDFTransmit | goray.BSDFFilter, data.Transp})
 	}
 	if sd.isTransl {
-		comps = append(comps, sdc{material.BSDFDiffuse | material.BSDFTransmit, data.Transl})
+		comps = append(comps, sdc{goray.BSDFDiffuse | goray.BSDFTransmit, data.Transl})
 	}
 	if sd.isDiffuse {
-		comps = append(comps, sdc{material.BSDFDiffuse | material.BSDFReflect, data.Diffuse})
+		comps = append(comps, sdc{goray.BSDFDiffuse | goray.BSDFReflect, data.Diffuse})
 	}
 	return
 }
 
-func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (col color.Color, wi vector.Vector3D) {
+func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (col color.Color, wi vector.Vector3D) {
 	data := state.MaterialData.(sdData)
 	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
 	cosNgWi := vector.Dot(sp.GeometricNormal, wi)
@@ -289,7 +303,7 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 		vals[i] = sum
 	}
 	if len(comps) == 0 || sum < 1e-6 {
-		s.SampledFlags = material.BSDFNone
+		s.SampledFlags = goray.BSDFNone
 		s.Pdf = 0
 		col = color.White
 		return
@@ -314,7 +328,7 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 	// Update sample information
 	col = color.Black
 	switch comps[pick].BSDF {
-	case material.BSDFSpecular | material.BSDFReflect:
+	case goray.BSDFSpecular | goray.BSDFReflect:
 		wi = vector.Reflect(n, wo)
 		s.Pdf = comps[pick].Value
 		col = color.ScalarMul(accumC.MirrorColor, accumC.SpecRefl)
@@ -323,7 +337,7 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 			s.ColorBack = color.ScalarDiv(col, math.Fabs(vector.Dot(sp.Normal, wo)))
 		}
 		col = color.ScalarDiv(col, math.Fabs(vector.Dot(sp.Normal, wi)))
-	case material.BSDFTransmit | material.BSDFFilter:
+	case goray.BSDFTransmit | goray.BSDFFilter:
 		wi = wo.Negate()
 		col = color.ScalarMul(color.Add(color.ScalarMul(accumC.DiffuseColor, sd.TransmitFilter), color.Gray(1-sd.TransmitFilter)), accumC.Transp)
 		cosN := math.Fabs(vector.Dot(wi, n))
@@ -333,13 +347,13 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 			col = color.ScalarDiv(col, cosN)
 			s.Pdf = comps[pick].Value
 		}
-	case material.BSDFDiffuse | material.BSDFTransmit:
+	case goray.BSDFDiffuse | goray.BSDFTransmit:
 		wi = sampleutil.CosHemisphere(n.Negate(), sp.NormalU, sp.NormalV, s1, s.S2)
 		if cosNgWo*cosNgWi < 0 {
 			col = color.ScalarMul(accumC.DiffuseColor, accumC.Transl)
 		}
 		s.Pdf = math.Fabs(vector.Dot(wi, n)) * comps[pick].Value
-	case material.BSDFDiffuse | material.BSDFReflect:
+	case goray.BSDFDiffuse | goray.BSDFReflect:
 		fallthrough
 	default:
 		wi = sampleutil.CosHemisphere(n, sp.NormalU, sp.NormalV, s1, s.S2)
@@ -353,8 +367,8 @@ func (sd *ShinyDiffuse) Sample(state *render.State, sp surface.Point, wo vector.
 	return
 }
 
-func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector.Vector3D, bsdfs material.BSDF) (pdf float64) {
-	if bsdfs&material.BSDFDiffuse == 0 {
+func (sd *ShinyDiffuse) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vector.Vector3D, bsdfs goray.BSDF) (pdf float64) {
+	if bsdfs&goray.BSDFDiffuse == 0 {
 		return
 	}
 
@@ -373,11 +387,11 @@ func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector
 	for _, c := range comps {
 		sum += c.Value
 		switch c.BSDF {
-		case material.BSDFDiffuse | material.BSDFTransmit:
+		case goray.BSDFDiffuse | goray.BSDFTransmit:
 			if cosNgWo*cosNgWi < 0 {
 				pdf += math.Fabs(vector.Dot(wi, n)) * c.Value
 			}
-		case material.BSDFDiffuse | material.BSDFReflect:
+		case goray.BSDFDiffuse | goray.BSDFReflect:
 			if cosNgWo*cosNgWi > 0 {
 				pdf += math.Fabs(vector.Dot(wi, n)) * c.Value
 			}
@@ -389,7 +403,7 @@ func (sd *ShinyDiffuse) Pdf(state *render.State, sp surface.Point, wo, wi vector
 	return pdf / sum
 }
 
-func (sd *ShinyDiffuse) Specular(state *render.State, sp surface.Point, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
 	data := state.MaterialData.(sdData)
 	backface := vector.Dot(sp.GeometricNormal, wo) < 0
 	n, ng := sp.Normal, sp.GeometricNormal
@@ -416,11 +430,11 @@ func (sd *ShinyDiffuse) Specular(state *render.State, sp surface.Point, wo vecto
 	return
 }
 
-func (sd *ShinyDiffuse) Reflectivity(state *render.State, sp surface.Point, flags material.BSDF) color.Color {
+func (sd *ShinyDiffuse) Reflectivity(state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) color.Color {
 	return common.GetReflectivity(sd, state, sp, flags)
 }
 
-func (sd *ShinyDiffuse) Alpha(state *render.State, sp surface.Point, wo vector.Vector3D) float64 {
+func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
 	if sd.isTransp {
 		data := state.MaterialData.(sdData)
 		n := sp.Normal
@@ -433,11 +447,11 @@ func (sd *ShinyDiffuse) Alpha(state *render.State, sp surface.Point, wo vector.V
 	return 1
 }
 
-func (sd *ShinyDiffuse) ScatterPhoton(state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func (sd *ShinyDiffuse) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
 	return common.ScatterPhoton(sd, state, sp, wi, s)
 }
 
-func (sd *ShinyDiffuse) Emit(state *render.State, sp surface.Point, wo vector.Vector3D) color.Color {
+func (sd *ShinyDiffuse) Emit(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) color.Color {
 	if sd.DiffuseColorShad != nil {
 		data := state.MaterialData.(sdData)
 		return color.ScalarMul(data.DiffuseColor, sd.EmitValue)

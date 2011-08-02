@@ -1,9 +1,22 @@
-//
-//	goray/std/lights/spot.go
-//	goray
-//
-//	Created by Ross Light on 2011-03-23.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package spot
 
@@ -11,11 +24,9 @@ import (
 	"math"
 	"os"
 
-	"goray/core/color"
-	"goray/core/light"
-	"goray/core/ray"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray"
+	"goray/color"
+	"goray/vector"
 	"goray/sampleutil"
 	"goray/std/yamlscene"
 
@@ -34,9 +45,9 @@ type spotLight struct {
 	interv1, interv2 float64
 }
 
-var _ light.DiracLight = &spotLight{}
+var _ goray.DiracLight = &spotLight{}
 
-func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) light.Light {
+func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) goray.Light {
 	newSpot := &spotLight{
 		position:  from,
 		direction: vector.Sub(to, from).Normalize(),
@@ -55,6 +66,7 @@ func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float6
 		f[i] = v * v * (3 - 2*v)
 	}
 	newSpot.pdf = sampleutil.NewPdf1D(f)
+
 	/* the integral of the smoothstep is 0.5, and since it gets applied to the cos, and each delta cos
 	corresponds to a constant surface are of the (partial) emitting sphere, we can actually simply
 	compute the energy emitted from both areas, the constant and blending one...
@@ -71,16 +83,16 @@ func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float6
 	return newSpot
 }
 
-func (spot *spotLight) LightFlags() uint { return light.TypeSingular }
+func (spot *spotLight) LightFlags() uint { return goray.LightTypeSingular }
 func (spot *spotLight) NumSamples() int  { return 1 }
 
-func (spot *spotLight) SetScene(scene interface{}) {}
+func (spot *spotLight) SetScene(scene *goray.Scene) {}
 
 func (spot *spotLight) TotalEnergy() color.Color {
 	return color.ScalarMul(spot.color, 2*math.Pi*(1-0.5*(spot.cosStart+spot.cosEnd)))
 }
 
-func (spot *spotLight) Illuminate(sp surface.Point, wi *ray.Ray) (col color.Color, ok bool) {
+func (spot *spotLight) Illuminate(sp goray.SurfacePoint, wi *goray.Ray) (col color.Color, ok bool) {
 	ldir := vector.Sub(spot.position, sp.Position)
 	distSqr := ldir.LengthSqr()
 	dist := math.Sqrt(distSqr)
@@ -107,7 +119,7 @@ func (spot *spotLight) Illuminate(sp surface.Point, wi *ray.Ray) (col color.Colo
 	return
 }
 
-func (spot *spotLight) IlluminateSample(sp surface.Point, wi *ray.Ray, s *light.Sample) (ok bool) {
+func (spot *spotLight) IlluminateSample(sp goray.SurfacePoint, wi *goray.Ray, s *goray.LightSample) (ok bool) {
 	s.Color, ok = spot.Illuminate(sp, wi)
 	if ok {
 		s.Flags = spot.LightFlags()
@@ -116,7 +128,7 @@ func (spot *spotLight) IlluminateSample(sp surface.Point, wi *ray.Ray, s *light.
 	return
 }
 
-func (spot *spotLight) IlluminatePdf(sp, spLight surface.Point) float64 {
+func (spot *spotLight) IlluminatePdf(sp, spLight goray.SurfacePoint) float64 {
 	return 0
 }
 
@@ -140,14 +152,14 @@ func (spot *spotLight) emit(s1, s2, s3 float64) (col color.Color, wo vector.Vect
 	return
 }
 
-func (spot *spotLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r ray.Ray, ipdf float64) {
+func (spot *spotLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r goray.Ray, ipdf float64) {
 	col, r.Dir, ipdf = spot.emit(s1, s2, s3)
 	ipdf = math.Pi / ipdf
 	r.From = spot.position
 	return
 }
 
-func (spot *spotLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col color.Color) {
+func (spot *spotLight) EmitSample(s *goray.LightSample) (wo vector.Vector3D, col color.Color) {
 	col, wo, s.DirPdf = spot.emit(s.S1, s.S2, s.S3)
 	s.Point.Position = spot.position
 	s.AreaPdf = 1.0
@@ -155,7 +167,7 @@ func (spot *spotLight) EmitSample(s *light.Sample) (wo vector.Vector3D, col colo
 	return
 }
 
-func (spot *spotLight) EmitPdf(sp surface.Point, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
+func (spot *spotLight) EmitPdf(sp goray.SurfacePoint, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
 	areaPdf, cosWo = 1, 1
 	cosa := vector.Dot(spot.direction, wo)
 	switch {

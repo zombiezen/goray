@@ -1,33 +1,44 @@
-//
-//	goray/std/primitives/sphere.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-05.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
 
-// The sphere package provides a spherical primitive.
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Package sphere provides a spherical primitive.
 package sphere
 
 import (
 	"math"
-	"goray/core/bound"
-	"goray/core/material"
-	"goray/core/primitive"
-	"goray/core/ray"
-	"goray/core/surface"
-	"goray/core/vector"
+
+	"goray"
+	"goray/bound"
+	"goray/vector"
 )
 
 type sphere struct {
 	center   vector.Vector3D
 	radius   float64
-	material material.Material
+	material goray.Material
 }
 
-var _ primitive.Primitive = &sphere{}
+var _ goray.Primitive = &sphere{}
 
 // New creates a spherical primitive.
-func New(center vector.Vector3D, radius float64, material material.Material) primitive.Primitive {
+func New(center vector.Vector3D, radius float64, material goray.Material) goray.Primitive {
 	return &sphere{center, radius, material}
 }
 
@@ -37,9 +48,9 @@ func (s *sphere) Bound() bound.Bound {
 }
 
 func (s *sphere) IntersectsBound(b bound.Bound) bool { return true }
-func (s *sphere) Material() material.Material        { return s.material }
+func (s *sphere) Material() goray.Material           { return s.material }
 
-func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
+func (s *sphere) Intersect(r goray.Ray) (coll goray.Collision) {
 	coll.Ray = r
 
 	vf := vector.Sub(r.From, s.center)
@@ -65,7 +76,7 @@ func (s *sphere) Intersect(r ray.Ray) (coll primitive.Collision) {
 	return
 }
 
-func (s *sphere) Surface(coll primitive.Collision) (sp surface.Point) {
+func (s *sphere) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 	normal := vector.Sub(coll.Point(), s.center)
 	sp.HasOrco = true
 	sp.OrcoPosition = normal

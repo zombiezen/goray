@@ -1,9 +1,22 @@
-//
-//  goray/server/templates.go
-//  goray
-//
-//  Created by Ross Light on 2011-02-05.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package server
 
@@ -36,6 +49,7 @@ func (loader *TemplateLoader) Get(name string) (templ *template.Template, err os
 	if cacheHit {
 		return
 	}
+
 	// Load template
 	path := filepath.Join(loader.Root, filepath.FromSlash(name))
 	templ = template.New(fmap)
@@ -44,6 +58,7 @@ func (loader *TemplateLoader) Get(name string) (templ *template.Template, err os
 	if err != nil {
 		return nil, err
 	}
+
 	// Save template to cache
 	// Yes, another thread may have already read in the template. However, the
 	// end result is really the same (and yes, there could be a disk write in
@@ -72,6 +87,7 @@ func (loader *TemplateLoader) RenderResponse(rw http.ResponseWriter, name string
 	if err != nil {
 		return
 	}
+
 	// Write to response
 	rw.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	_, err = io.Copy(rw, buf)

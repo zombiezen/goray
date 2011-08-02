@@ -1,9 +1,22 @@
-//
-//  main.go
-//  goray
-//
-//  Created by Ross Light on 2010-05-27.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package main
 
@@ -20,7 +33,6 @@ import (
 	"goray/job"
 	"goray/logging"
 	"goray/server"
-	"goray/version"
 
 	_ "goray/std/all"
 	"goray/std/yamlscene"
@@ -78,7 +90,8 @@ func printInstructions() {
 }
 
 func printVersion() {
-	fmt.Printf("goray v%s - The Concurrent Raytracer\n", version.GetString())
+	fmt.Println("goray v0.1.0 - The Concurrent Raytracer")
+
 	// Copyright notice
 	fmt.Println("Copyright © 2011 Ross Light")
 	fmt.Println("Based on YafaRay: Copyright © 2005 Mathias Wein, Alejandro Conty, and Alfredo")
@@ -89,6 +102,7 @@ func printVersion() {
 	fmt.Println("welcome to redistribute it under the conditions of the GNU Lesser General")
 	fmt.Println("Public License v3, or (at your option) any later version.")
 	fmt.Println()
+
 	// Build information
 	if buildversion.Source == "hg" {
 		fmt.Printf("Built from %s:%s\n", buildversion.RevNo, buildversion.RevID)

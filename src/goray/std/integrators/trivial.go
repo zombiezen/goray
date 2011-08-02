@@ -1,29 +1,42 @@
-//
-//	goray/std/integrators/trivial.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-03.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package trivial
 
 import (
-	"goray/core/color"
-	"goray/core/integrator"
-	"goray/core/ray"
-	"goray/core/render"
-	"goray/core/scene"
+	"goray"
+	"goray/color"
 )
 
 type trivial struct{}
 
-var _ integrator.SurfaceIntegrator = trivial{}
+var _ goray.SurfaceIntegrator = trivial{}
 
-func New() integrator.SurfaceIntegrator       { return trivial{} }
+func New() goray.SurfaceIntegrator {
+	return trivial{}
+}
+
 func (ti trivial) SurfaceIntegrator()         {}
-func (ti trivial) Preprocess(sc *scene.Scene) {}
+func (ti trivial) Preprocess(sc *goray.Scene) {}
 
-func (ti trivial) Integrate(sc *scene.Scene, s *render.State, r ray.DifferentialRay) color.AlphaColor {
+func (ti trivial) Integrate(sc *goray.Scene, s *goray.RenderState, r goray.DifferentialRay) color.AlphaColor {
 	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
 		return color.NewRGBAFromColor(color.White, 1.0)
 	}

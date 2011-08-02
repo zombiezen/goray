@@ -1,12 +1,25 @@
-//
-//	goray/std/objects/mesh/mesh.go
-//	goray
-//
-//	Created by Ross Light on 2010-06-04.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /*
-	The mesh package provides mesh objects constructed from triangles.
+	Package mesh provides 3D objects constructed from triangles.
 
 	The basic workflow for making a working mesh is: create the mesh, set the mesh's data, then add the triangles.
 */
@@ -14,13 +27,12 @@ package mesh
 
 import (
 	"os"
-	"goray/core/light"
-	"goray/core/material"
-	"goray/core/matrix"
-	"goray/core/object"
-	"goray/core/primitive"
-	"goray/core/vector"
+
+	"goray"
+	"goray/matrix"
+	"goray/vector"
 	"goray/std/yamlscene"
+
 	yamldata "goyaml.googlecode.com/hg/data"
 )
 
@@ -34,12 +46,12 @@ type Mesh struct {
 	normals   []vector.Vector3D
 	uvs       []UV
 	hasOrco   bool
-	light     light.Light
+	light     goray.Light
 	world2obj *matrix.Matrix
 	hidden    bool
 }
 
-var _ object.Object3D = &Mesh{}
+var _ goray.Object3D = &Mesh{}
 
 // New creates an empty mesh.
 func New(ntris int, hasOrco bool) (mesh *Mesh) {
@@ -52,8 +64,8 @@ func New(ntris int, hasOrco bool) (mesh *Mesh) {
 	return
 }
 
-func (mesh *Mesh) Primitives() (prims []primitive.Primitive) {
-	prims = make([]primitive.Primitive, len(mesh.triangles))
+func (mesh *Mesh) Primitives() (prims []goray.Primitive) {
+	prims = make([]goray.Primitive, len(mesh.triangles))
 	for i, _ := range prims {
 		prims[i] = mesh.triangles[i]
 	}
@@ -64,7 +76,7 @@ func (mesh *Mesh) Visible() bool     { return !mesh.hidden }
 func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
 
 //func (mesh *Mesh) EvalVmap(sp surface.Point, id uint, val []float) int { return 0 }
-func (mesh *Mesh) SetLight(l light.Light) { mesh.light = l }
+func (mesh *Mesh) SetLight(l goray.Light) { mesh.light = l }
 
 //func (mesh *Mesh) EnableSampling() bool {}
 //func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {}
@@ -123,6 +135,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 
 	var vertexData []vector.Vector3D
 	var uvData []UV
+
 	// Parse vertices
 	// TODO: Error handling
 	vertexData = make([]vector.Vector3D, len(vertices))
@@ -133,6 +146,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		z, _ := yamldata.AsFloat(vseq[2])
 		vertexData[i] = vector.Vector3D{x, y, z}
 	}
+
 	// Parse UVs
 	// TODO: Error handling
 	if len(uvs) > 0 {
@@ -166,7 +180,7 @@ func Construct(m yamldata.Map) (data interface{}, err os.Error) {
 		// Create triangle
 		tri := NewTriangle(va, vb, vc, mesh)
 		tri.SetUVs(uva, uvb, uvc)
-		tri.SetMaterial(fmap["material"].(material.Material))
+		tri.SetMaterial(fmap["material"].(goray.Material))
 		mesh.AddTriangle(tri)
 	}
 

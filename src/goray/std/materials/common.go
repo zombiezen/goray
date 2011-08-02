@@ -1,21 +1,33 @@
-//
-//	goray/std/materials/common.go
-//	goray
-//
-//	Created by Ross Light on 2011-02-04.
-//
+/*
+	Copyright (c) 2011 Ross Light.
+	Copyright (c) 2005 Mathias Wein, Alejandro Conty, and Alfredo de Greef.
+
+	This file is part of goray.
+
+	goray is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	goray is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with goray.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package common
 
 import (
 	"math"
+
+	"goray"
+	"goray/color"
 	"goray/montecarlo"
 	"goray/sampleutil"
-	"goray/core/color"
-	"goray/core/material"
-	"goray/core/render"
-	"goray/core/surface"
-	"goray/core/vector"
+	"goray/vector"
 )
 
 func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
@@ -43,12 +55,12 @@ func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 }
 
 type Sampler interface {
-	Sample(state *render.State, sp surface.Point, wo vector.Vector3D, s *material.Sample) (color.Color, vector.Vector3D)
-	MaterialFlags() material.BSDF
+	Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (color.Color, vector.Vector3D)
+	MaterialFlags() goray.BSDF
 }
 
-func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector.Vector3D, s *material.PhotonSample) (wo vector.Vector3D, scattered bool) {
-	scol, wo := mat.Sample(state, sp, wi, &s.Sample)
+func ScatterPhoton(mat Sampler, state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+	scol, wo := mat.Sample(state, sp, wi, &s.MaterialSample)
 	if s.Pdf <= 1e-6 {
 		return
 	}
@@ -63,11 +75,11 @@ func ScatterPhoton(mat Sampler, state *render.State, sp surface.Point, wi vector
 	return
 }
 
-func GetReflectivity(mat Sampler, state *render.State, sp surface.Point, flags material.BSDF) (col color.Color) {
+func GetReflectivity(mat Sampler, state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) (col color.Color) {
 	const N = 16
 
 	col = color.Black
-	if flags&(material.BSDFTransmit|material.BSDFReflect)&mat.MaterialFlags() == 0 {
+	if flags&(goray.BSDFTransmit|goray.BSDFReflect)&mat.MaterialFlags() == 0 {
 		return
 	}
 
@@ -80,7 +92,7 @@ func GetReflectivity(mat Sampler, state *render.State, sp surface.Point, flags m
 		s4 := h2.Float64()
 
 		wo := sampleutil.CosHemisphere(sp.Normal, sp.NormalU, sp.NormalV, s1, s2)
-		s := material.Sample{S1: s3, S2: s4, Flags: flags}
+		s := goray.MaterialSample{S1: s3, S2: s4, Flags: flags}
 		c, wi := mat.Sample(state, sp, wo, &s)
 		if s.Pdf > 1e-6 {
 			col = color.Add(col, color.ScalarMul(c, math.Fabs(vector.Dot(wi, sp.Normal))/s.Pdf))
