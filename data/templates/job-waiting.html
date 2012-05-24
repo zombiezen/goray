@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Goray - Job {{Job.Name}}</title>
-        {{Blocks.Head|safe}}
+        <title>Goray - Job {{.Name}}</title>
+        {{template "head.html"}}
     </head>
     <body>
-        {{Blocks.Header|safe}}
+        {{template "header.html"}}
         <div id="main">
-            <h1>Job #{{Job.Name}}</h1>
+            <h1>Job #{{.Name}}</h1>
             <div id="viewport">&nbsp;</div>
             <p id="websocket_warning">Your browser must support <a href="http://en.wikipedia.org/wiki/WebSockets">Web sockets</a> in order to show your render results immediately. Try refreshing in a few seconds.</p>
         </div>
-        {{Blocks.Footer|safe}}
+        {{template "footer.html"}}
         <script type="text/javascript" src="/static/jquery.js"></script>
         <script type="text/javascript" src="/static/job.js"></script>
         <script type="text/javascript">
-            var jobName = "{{Job.Name}}";
+            var jobName = "{{.Name}}";
             $(function()
             {
                 if (!!window.WebSocket)

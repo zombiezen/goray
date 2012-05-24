@@ -1,0 +1,10 @@
+goyaml
+========
+
+goyaml is ported from libyaml (written by Kirill Simonov) and is released under
+an MIT license.
+
+http://pyyaml.org/wiki/LibYAML
+
+Copyright (C) 2006 Kirill Simonov
+Copyright (C) 2010 Ross Light

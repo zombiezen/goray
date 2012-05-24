@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Goray - Job {{Job.Name}}</title>
-        {{Blocks.Head|safe}}
+        <title>Goray - Job {{.Name}}</title>
+        {{template "head.html"}}
     </head>
     <body>
-        {{Blocks.Header|safe}}
+        {{template "header.html"}}
         <div id="main">
-            <h1>Job #{{Job.Name}}</h1>
-            <pre id="render_error">{{Job.Status.Error}}</pre>
+            <h1>Job #{{.Name}}</h1>
+            <pre id="render_error">{{.Status.Error}}</pre>
         </div>
-        {{Blocks.Footer|safe}}
+        {{template "footer.html"}}
     </body>
 </html>

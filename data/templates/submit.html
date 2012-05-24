@@ -2,10 +2,10 @@
 <html>
     <head>
         <title>Goray - Submit a Job</title>
-        {{Blocks.Head|safe}}
+        {{template "head.html"}}
     </head>
     <body>
-        {{Blocks.Header|safe}}
+        {{template "header.html"}}
         <div id="main">
             <h1>Submit a Job</h1>
             <p>Submit a render document below!</p>
@@ -14,6 +14,6 @@
                 <p><input type="submit" value="Submit" class="button"></p>
             </form>
         </div>
-        {{Blocks.Footer|safe}}
+        {{template "footer.html"}}
     </body>
 </html>

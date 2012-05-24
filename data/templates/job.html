@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Goray - Job {{Job.Name}}</title>
-        {{Blocks.Head|safe}}
+        <title>Goray - Job {{.Name}}</title>
+        {{template "head.html"}}
     </head>
     <body>
-        {{Blocks.Header|safe}}
+        {{template "header.html"}}
         <div id="main">
-            <h1>Job #{{Job.Name}}</h1>
-            <img src="/output/{{Job.Name}}">
-            <p>Total Time: {{Job.Status.TotalTime}}</p>
+            <h1>Job #{{.Name}}</h1>
+            <img src="/output/{{.Name}}">
+            <p>Total Time: {{.Status.TotalTime}}</p>
         </div>
-        {{Blocks.Footer|safe}}
+        {{template "footer.html"}}
     </body>
 </html>

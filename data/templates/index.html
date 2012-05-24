@@ -2,10 +2,10 @@
 <html>
     <head>
         <title>Goray</title>
-        {{Blocks.Head|safe}}
+        {{template "head.html"}}
     </head>
     <body>
-        {{Blocks.Header|safe}}
+        {{template "header.html"}}
         <div id="main">
             <h1>Render Queue</h1>
             <table id="render_queue">
@@ -16,20 +16,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{.repeated section Jobs}}
+                    {{range .}}
                     <tr>
-                        <td class="col_job"><a href="/job/{{Name}}">{{Name}}</a></td>
-                        <td class="col_status">{{Status.Code}}</td>
+                        <td class="col_job"><a href="/job/{{.Name}}">{{.Name}}</a></td>
+                        <td class="col_status">{{.Status.Code}}</td>
                     </tr>
-                    {{.or}}
+                    {{else}}
                     <tr class="nodata">
                         <td colspan="2">No jobs</td>
                     </tr>
-                    {{.end}}
+                    {{end}}
                 </tbody>
             </table>
             <p><span class="button"><a href="/submit">Submit a Job</a></span></p>
         </div>
-        {{Blocks.Footer|safe}}
+        {{template "footer.html"}}
     </body>
 </html>
