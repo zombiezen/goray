@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/vector"
 	"bitbucket.org/zombiezen/goray/std/primitives/sphere"
+	"bitbucket.org/zombiezen/goray/vector"
 )
 
 func TestDepth(t *testing.T) {

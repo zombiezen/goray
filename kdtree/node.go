@@ -21,9 +21,9 @@
 package kdtree
 
 import (
-	"sync"
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/vector"
+	"sync"
 )
 
 type nodePool struct {

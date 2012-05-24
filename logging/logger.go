@@ -68,22 +68,27 @@ func (log *Logger) Logf(level Level, format string, args ...interface{}) {
 func (log *Logger) VerboseDebug(format string, args ...interface{}) {
 	VerboseDebug(log, format, args...)
 }
+
 // Debug is a shortcut for Logf(DebugLevel).
 func (log *Logger) Debug(format string, args ...interface{}) {
 	Debug(log, format, args...)
 }
+
 // Info is a shortcut for Logf(InfoLevel).
 func (log *Logger) Info(format string, args ...interface{}) {
 	Info(log, format, args...)
 }
+
 // Warning is a shortcut for Logf(WarningLevel).
 func (log *Logger) Warning(format string, args ...interface{}) {
 	Warning(log, format, args...)
 }
+
 // Error is a shortcut for Logf(ErrorLevel).
 func (log *Logger) Error(format string, args ...interface{}) {
 	Error(log, format, args...)
 }
+
 // Critical is a shortcut for Logf(CriticalLevel).
 func (log *Logger) Critical(format string, args ...interface{}) {
 	Critical(log, format, args...)

@@ -21,9 +21,9 @@
 package job
 
 import (
+	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"errors"
 	"fmt"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"io"
 	"sync"
 )

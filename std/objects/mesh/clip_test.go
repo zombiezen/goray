@@ -21,9 +21,9 @@
 package mesh
 
 import (
-	"testing"
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/vector"
+	"testing"
 )
 
 type boxClipTest struct {

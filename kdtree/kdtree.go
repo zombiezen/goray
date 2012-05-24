@@ -22,10 +22,10 @@
 package kdtree
 
 import (
-	"fmt"
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/logging"
 	"bitbucket.org/zombiezen/goray/vector"
+	"fmt"
 )
 
 // Tree is a generic kd-tree.

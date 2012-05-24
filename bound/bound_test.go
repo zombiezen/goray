@@ -21,9 +21,9 @@
 package bound
 
 import (
+	"bitbucket.org/zombiezen/goray/vector"
 	"math"
 	"testing"
-	"bitbucket.org/zombiezen/goray/vector"
 )
 
 type crossTest struct {

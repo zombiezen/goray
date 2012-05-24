@@ -8,8 +8,8 @@
 package scanner
 
 import (
-	"bytes"
 	"bitbucket.org/zombiezen/goray/yaml/token"
+	"bytes"
 	"io"
 )
 

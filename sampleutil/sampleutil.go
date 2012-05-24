@@ -22,9 +22,9 @@
 package sampleutil
 
 import (
+	"bitbucket.org/zombiezen/goray/vector"
 	"math"
 	"sort"
-	"bitbucket.org/zombiezen/goray/vector"
 )
 
 // CosHemisphere samples a cosine-weighted hemisphere given the coordinate system built by n, ru, and rv.
