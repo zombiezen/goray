@@ -23,28 +23,33 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"runtime"
 
 	"bitbucket.org/zombiezen/goray/job"
 	"bitbucket.org/zombiezen/goray/logging"
-	"bitbucket.org/zombiezen/goray/server"
 
 	_ "bitbucket.org/zombiezen/goray/std"
 	"bitbucket.org/zombiezen/goray/std/textures/image/fileloader"
 	"bitbucket.org/zombiezen/goray/std/yamlscene"
 )
 
-var showHelp, showVersion bool
-var httpAddress string
-var outputPath, outputFormat, imagePath string
-var debug int
+var (
+	showHelp     bool
+	showVersion  bool
+	httpAddress  string
+	dataRoot     string
+	outputPath   string
+	outputFormat string
+	imagePath    string
+	debug        int
+)
 
 func main() {
 	flag.BoolVar(&showHelp, "help", false, "display this help")
 	flag.BoolVar(&showVersion, "version", false, "display the version")
 	flag.StringVar(&httpAddress, "http", "", "start HTTP server")
+	flag.StringVar(&dataRoot, "dataroot", "data", "web server resource files")
 	flag.StringVar(&outputPath, "o", "", "path for the output")
 	flag.StringVar(&outputFormat, "f", job.DefaultFormat, "output format (default: "+job.DefaultFormat+")")
 	flag.IntVar(&debug, "d", 0, "set debug verbosity level")
@@ -176,37 +181,6 @@ func singleFile() int {
 			logging.MainLog.Critical("Error: %v", stat.Error)
 			return 1
 		}
-	}
-	return 0
-}
-
-func httpServer() int {
-	if flag.NArg() != 0 {
-		printInstructions()
-		return 1
-	}
-	if outputPath == "" {
-		outputPath = "output"
-	}
-	storage, err := job.NewFileStorage(outputPath)
-	if err != nil {
-		logging.MainLog.Critical("FileStorage: %v", err)
-		return 1
-	}
-
-	s, err := server.New(job.NewManager(storage, 5), "data")
-	if err != nil {
-		logging.MainLog.Critical("Server: %v", err)
-		return 1
-	}
-	s.BaseParams = yamlscene.Params{
-		"ImageLoader": fileloader.New(imagePath),
-	}
-	logging.MainLog.Info("Starting HTTP server")
-	err = http.ListenAndServe(httpAddress, s)
-	if err != nil {
-		logging.MainLog.Critical("ListenAndServe: %v", err)
-		return 1
 	}
 	return 0
 }
