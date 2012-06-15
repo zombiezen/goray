@@ -51,7 +51,7 @@ const defaultOutputRoot = "output"
 
 const (
 	dataTemplateSubdir = "templates"
-	dataStaticSubdir = "static"
+	dataStaticSubdir   = "static"
 )
 
 func httpServer() int {
