@@ -18,16 +18,14 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package mesh
+package goray
 
 import (
-	"testing"
-
-	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/vector"
+	"testing"
 )
 
-type IntersectTest struct {
+type MeshIntersectTest struct {
 	Vertices [3][3]float64
 	RayDir   [3]float64
 	RayFrom  [3]float64
@@ -36,8 +34,8 @@ type IntersectTest struct {
 	U, V     float64
 }
 
-func TestIntersect(t *testing.T) {
-	testList := []IntersectTest{
+func TestMeshIntersect(t *testing.T) {
+	testList := []MeshIntersectTest{
 		{
 			Vertices: [3][3]float64{
 				{1.0, 0.0, 0.0},
@@ -95,7 +93,7 @@ func TestIntersect(t *testing.T) {
 	}
 }
 
-func BenchmarkIntersect(b *testing.B) {
+func BenchmarkMeshIntersect(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		intersect(
 			[3]float64{1.565772, -0.227881, -0.856351}, // A
@@ -107,8 +105,8 @@ func BenchmarkIntersect(b *testing.B) {
 	}
 }
 
-func BenchmarkIntersectMethod(b *testing.B) {
-	mesh := New(1, false)
+func BenchmarkMeshIntersectMethod(b *testing.B) {
+	mesh := NewMesh(1, false)
 	mesh.SetData([]vector.Vector3D{
 		{1.565772, -0.227881, -0.856351},
 		{0.480624, 1.452136, -0.856351},
@@ -118,7 +116,7 @@ func BenchmarkIntersectMethod(b *testing.B) {
 	mesh.AddTriangle(tri)
 
 	for i := 0; i < b.N; i++ {
-		tri.Intersect(goray.Ray{
+		tri.Intersect(Ray{
 			Dir:  vector.Vector3D{0.211504, 0.558421, -0.802142},
 			From: vector.Vector3D{1.339351, 0.225915, -0.059020},
 		})

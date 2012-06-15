@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package mesh
+package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
@@ -26,7 +26,7 @@ import (
 	"math"
 )
 
-func calcBound(poly []vector.Vector3D) bound.Bound {
+func calcPolyBound(poly []vector.Vector3D) bound.Bound {
 	a, g := poly[0], poly[0]
 	for i := 1; i < len(poly); i++ {
 		for axis := vector.X; axis <= vector.Z; axis++ {
@@ -66,7 +66,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 		panic("clipped polygon degenerated")
 	}
 
-	return poly, calcBound(poly)
+	return poly, calcPolyBound(poly)
 }
 
 func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, bound.Bound) {
@@ -85,7 +85,7 @@ func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vecto
 		panic("clipped polygon is too complex")
 	}
 
-	return poly, calcBound(poly)
+	return poly, calcPolyBound(poly)
 }
 
 // triClip is the internal clipping function. It's not very user-friendly; use triBoxClip or triPlaneClip.

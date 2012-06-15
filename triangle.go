@@ -18,13 +18,12 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package mesh
+package goray
 
 import (
 	"fmt"
 	"math"
 
-	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/logging"
 	"bitbucket.org/zombiezen/goray/vector"
@@ -38,11 +37,11 @@ type Triangle struct {
 	index int
 
 	normal   vector.Vector3D
-	material goray.Material
+	material Material
 	mesh     *Mesh
 }
 
-var _ goray.Primitive = &Triangle{}
+var _ Primitive = &Triangle{}
 
 // NewTriangle creates a new triangle.
 func NewTriangle(a, b, c int, m *Mesh) (tri *Triangle) {
@@ -87,7 +86,7 @@ func (tri *Triangle) getUVs() (uv [3]UV) {
 	return
 }
 
-func (tri *Triangle) Intersect(r goray.Ray) (coll goray.Collision) {
+func (tri *Triangle) Intersect(r Ray) (coll Collision) {
 	coll.Ray = r
 	rayDepth, u, v := intersect(
 		[3]float64(tri.mesh.vertices[tri.v[0]]),
@@ -106,7 +105,7 @@ func (tri *Triangle) Intersect(r goray.Ray) (coll goray.Collision) {
 	return
 }
 
-func (tri *Triangle) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
+func (tri *Triangle) Surface(coll Collision) (sp SurfacePoint) {
 	sp.GeometricNormal = tri.normal
 	vert := tri.getVertices()
 
@@ -199,7 +198,7 @@ func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
 	return triBoxOverlap([3]float64(ctr), bd.HalfSize(), points)
 }
 
-func (tri *Triangle) Material() goray.Material { return tri.material }
+func (tri *Triangle) Material() Material { return tri.material }
 
 func (tri *Triangle) Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	if axis >= 0 {
@@ -251,12 +250,12 @@ func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData inter
 
 // The rest of these are non-interface triangle-specific methods.
 
-func (tri *Triangle) SetMaterial(mat goray.Material) { tri.material = mat }
-func (tri *Triangle) SetNormals(a, b, c int)         { tri.n = [3]int{a, b, c} }
-func (tri *Triangle) ClearNormals()                  { tri.n = [3]int{-1, -1, -1} }
-func (tri *Triangle) SetUVs(a, b, c int)             { tri.uv = [3]int{a, b, c} }
-func (tri *Triangle) ClearUVs()                      { tri.uv = [3]int{-1, -1, -1} }
-func (tri *Triangle) GetNormal() vector.Vector3D     { return tri.normal }
+func (tri *Triangle) SetMaterial(mat Material)   { tri.material = mat }
+func (tri *Triangle) SetNormals(a, b, c int)     { tri.n = [3]int{a, b, c} }
+func (tri *Triangle) ClearNormals()              { tri.n = [3]int{-1, -1, -1} }
+func (tri *Triangle) SetUVs(a, b, c int)         { tri.uv = [3]int{a, b, c} }
+func (tri *Triangle) ClearUVs()                  { tri.uv = [3]int{-1, -1, -1} }
+func (tri *Triangle) GetNormal() vector.Vector3D { return tri.normal }
 
 func (tri *Triangle) CalculateNormal() {
 	v := tri.getVertices()

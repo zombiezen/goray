@@ -35,7 +35,6 @@ import (
 	_ "bitbucket.org/zombiezen/goray/std/lights/spot"
 	_ "bitbucket.org/zombiezen/goray/std/materials/debug"
 	_ "bitbucket.org/zombiezen/goray/std/materials/shinydiffuse"
-	_ "bitbucket.org/zombiezen/goray/std/objects/mesh"
 	_ "bitbucket.org/zombiezen/goray/std/shaders/texmap"
 	_ "bitbucket.org/zombiezen/goray/std/textures/image"
 )

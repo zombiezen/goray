@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package mesh
+package goray
 
 // Declaration of ray intersection
 
