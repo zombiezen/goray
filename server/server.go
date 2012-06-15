@@ -30,16 +30,16 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"code.google.com/p/go.net/websocket"
+	"code.google.com/p/gorilla/mux"
+
 	"bitbucket.org/zombiezen/goray/job"
 	"bitbucket.org/zombiezen/goray/logging"
-	"bitbucket.org/zombiezen/goray/server/urls"
 	"bitbucket.org/zombiezen/goray/std/yamlscene"
-
-	"code.google.com/p/go.net/websocket"
 )
 
 type Server struct {
-	Resolver   *urls.RegexResolver
+	Router     *mux.Router
 	DataRoot   string
 	JobManager *job.Manager
 	BaseParams yamlscene.Params
@@ -54,41 +54,44 @@ func New(manager *job.Manager, data string) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
+		Router:      mux.NewRouter(),
 		DataRoot:    data,
 		JobManager:  manager,
 		templates:   t,
 		logRecorder: logging.NewCircularHandler(100),
 	}
-	s.Resolver = urls.Patterns(``,
-		urls.New(`^$`, serverView{s, (*Server).handleIndex}, "index"),
-		urls.New(`^license$`, serverView{s, (*Server).handleLicense}, "license"),
-		urls.New(`^job/([0-9]+)$`, serverView{s, (*Server).handleViewJob}, "view"),
-		urls.New(`^submit$`, serverView{s, (*Server).handleSubmitJob}, "submit"),
-		urls.New(`^log$`, serverView{s, (*Server).handleLog}, "log"),
-		urls.New(`^status$`, urls.HandlerView{websocket.Handler(func(ws *websocket.Conn) { s.handleStatus(ws) })}, "status"),
-		urls.New(`^static/`, urls.HandlerView{http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(data, "static"))))}, "static"),
-		urls.New(`^output/([0-9]+)$`, serverView{s, (*Server).handleOutput}, "output"),
-	)
+	s.Router.Handle("/", serverHandler{s, (*Server).handleIndex}).Name("index")
+	s.Router.Handle("/license", serverHandler{s, (*Server).handleLicense}).Name("license")
+	s.Router.Handle("/job/{job:[0-9]+}", serverHandler{s, (*Server).handleViewJob}).Name("view")
+	s.Router.Handle("/submit", serverHandler{s, (*Server).handleSubmitJob}).Name("submit")
+	s.Router.Handle("/log", serverHandler{s, (*Server).handleLog}).Name("log")
+	s.Router.Handle("/status", websocket.Handler(func(ws *websocket.Conn) { s.handleStatus(ws) })).Name("status")
+	s.Router.Handle("/output/{job:[0-9]+}", serverHandler{s, (*Server).handleOutput}).Name("output")
+	fs := http.FileServer(http.Dir(filepath.Join(data, "static")))
+	s.Router.HandleFunc("/static/{path:.*}", func(w http.ResponseWriter, req *http.Request) {
+		req.URL.Path = mux.Vars(req)["path"]
+		fs.ServeHTTP(w, req)
+	}).Name("static")
 	logging.MainLog.AddHandler(s.logRecorder)
 	go s.JobManager.RenderJobs()
 	return s, nil
 }
 
 func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	server.Resolver.ServeHTTP(w, req)
+	server.Router.ServeHTTP(w, req)
 }
 
-func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request, args []string) {
+func (server *Server) handleIndex(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.ExecuteTemplate(w, "index.html", server.JobManager.List())
 }
 
-func (server *Server) handleLicense(w http.ResponseWriter, req *http.Request, args []string) {
+func (server *Server) handleLicense(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.ExecuteTemplate(w, "license.html", nil)
 }
 
-func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, args []string) {
+func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -106,13 +109,13 @@ func (server *Server) handleSubmitJob(w http.ResponseWriter, req *http.Request, 
 	}
 }
 
-func (server *Server) handleLog(w http.ResponseWriter, req *http.Request, args []string) {
+func (server *Server) handleLog(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.templates.ExecuteTemplate(w, "log.html", server.logRecorder.Records())
 }
 
-func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request, args []string) {
-	j, ok := server.JobManager.Get(args[0])
+func (server *Server) handleViewJob(w http.ResponseWriter, req *http.Request) {
+	j, ok := server.JobManager.Get(mux.Vars(req)["job"])
 	if ok {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -162,8 +165,8 @@ func (server *Server) handleStatus(ws *websocket.Conn) {
 	}
 }
 
-func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request, args []string) {
-	j, ok := server.JobManager.Get(args[0])
+func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request) {
+	j, ok := server.JobManager.Get(mux.Vars(req)["job"])
 	if ok && j.Status().Code == job.StatusDone {
 		w.Header().Set("Content-Type", "image/png; charset=utf-8")
 		r, err := server.JobManager.Storage.OpenReader(j)
@@ -184,11 +187,11 @@ func (server *Server) handleOutput(w http.ResponseWriter, req *http.Request, arg
 	}
 }
 
-type serverView struct {
+type serverHandler struct {
 	Server *Server
-	Func   func(*Server, http.ResponseWriter, *http.Request, []string)
+	Func   func(*Server, http.ResponseWriter, *http.Request)
 }
 
-func (v serverView) Render(w http.ResponseWriter, req *http.Request, args []string) {
-	v.Func(v.Server, w, req, args)
+func (v serverHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	v.Func(v.Server, w, req)
 }
