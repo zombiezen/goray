@@ -85,7 +85,7 @@ func (t *Texture) IsNormalMap() bool         { return false }
 func (t *Texture) Resolution() (x, y, z int) { x, y = t.Image.Width, t.Image.Height; return }
 
 func (t *Texture) mapping(texPt vector.Vector3D) (p vector.Vector3D, outside bool) {
-	texPt = vector.ScalarAdd(vector.ScalarMul(texPt, 0.5), 0.5)
+	texPt = texPt.Scale(0.5).AddScalar(0.5)
 	if t.ClipMode == ClipRepeat {
 		if t.RepeatX > 1 {
 			texPt[vector.X] = mapRepeat(texPt[vector.X], t.RepeatX)

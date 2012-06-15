@@ -137,7 +137,7 @@ func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D)
 	texPt = tmap.Projector.Project(texPt, n)
 
 	// Scale and offset
-	texPt = vector.Add(vector.CompMul(texPt, tmap.Scale), tmap.Offset)
+	texPt = vector.Add(vector.Mul(texPt, tmap.Scale), tmap.Offset)
 	return
 }
 
@@ -183,8 +183,8 @@ func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.
 	} else {
 		p, n := tmap.textureCoordinates(state, sp)
 		delta := tmap.delta / scale
-		du := vector.ScalarMul(sp.NormalU, delta)
-		dv := vector.ScalarMul(sp.NormalV, delta)
+		du := sp.NormalU.Scale(delta)
+		dv := sp.NormalV.Scale(delta)
 		u1, u2 := tmap.mapping(vector.Sub(p, du), n), tmap.mapping(vector.Add(p, du), n)
 		v1, v2 := tmap.mapping(vector.Sub(p, dv), n), tmap.mapping(vector.Add(p, dv), n)
 		result = shader.Result{

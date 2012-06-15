@@ -131,16 +131,16 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 	cam.z = cam.look
 
 	// For DOF, premultiply values with aperture
-	cam.dofRight = vector.ScalarMul(cam.right, cam.aperture)
-	cam.dofUp = vector.ScalarMul(cam.up, cam.aperture)
+	cam.dofRight = cam.right.Scale(cam.aperture)
+	cam.dofUp = cam.up.Scale(cam.aperture)
 
 	cam.aspectRatio = aspect * float64(resy) / float64(resx)
-	cam.up = vector.ScalarMul(cam.up, cam.aspectRatio)
+	cam.up = cam.up.Scale(cam.aspectRatio)
 
 	cam.focalDistance = focalDist
-	cam.look = vector.Sub(vector.ScalarMul(cam.look, cam.focalDistance), vector.ScalarMul(vector.Add(cam.up, cam.right), 0.5))
-	cam.up = vector.ScalarDiv(cam.up, float64(resy))
-	cam.right = vector.ScalarDiv(cam.right, float64(resx))
+	cam.look = vector.Sub(cam.look.Scale(cam.focalDistance), vector.Add(cam.up, cam.right).Scale(0.5))
+	cam.up = cam.up.Scale(1.0 / float64(resy))
+	cam.right = cam.right.Scale(1.0 / float64(resx))
 	cam.aPix = cam.aspectRatio / (cam.focalDistance * cam.focalDistance)
 
 	// Set up bokeh
@@ -197,15 +197,15 @@ func (cam *Camera) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 
 	r = goray.Ray{
 		From: cam.eye,
-		Dir:  vector.Add(vector.ScalarMul(cam.right, x), vector.ScalarMul(cam.up, y), cam.look).Normalize(),
+		Dir:  vector.Sum(cam.right.Scale(x), cam.up.Scale(y), cam.look).Normalize(),
 		TMax: -1.0,
 	}
 
 	if cam.SampleLens() {
 		u, v = cam.getLensUV(u, v)
-		li := vector.Add(vector.ScalarMul(cam.dofRight, u), vector.ScalarMul(cam.dofUp, v))
+		li := vector.Add(cam.dofRight.Scale(u), cam.dofUp.Scale(v))
 		r.From = vector.Add(r.From, li)
-		r.Dir = vector.Sub(vector.ScalarMul(r.Dir, cam.dofDistance), li).Normalize()
+		r.Dir = vector.Sub(r.Dir.Scale(cam.dofDistance), li).Normalize()
 	}
 	return
 }

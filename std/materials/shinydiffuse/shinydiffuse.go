@@ -419,10 +419,10 @@ func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint
 	}
 	reflect = sd.isReflective
 	if sd.isReflective {
-		dir[0] = vector.Sub(vector.ScalarMul(n, 2.0*vector.Dot(wo, n)), wo)
+		dir[0] = vector.Sub(n.Scale(2.0*vector.Dot(wo, n)), wo)
 		cosWiNg := vector.Dot(dir[0], ng)
 		if cosWiNg < 0.01 {
-			dir[0] = vector.Add(dir[0], vector.ScalarMul(ng, (0.01-cosWiNg)))
+			dir[0] = vector.Add(dir[0], ng.Scale(0.01-cosWiNg))
 			dir[0] = dir[0].Normalize()
 		}
 		col[0] = color.ScalarMul(data.MirrorColor, data.SpecRefl*kr)

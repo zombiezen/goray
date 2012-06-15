@@ -52,12 +52,12 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) g
 	c.vright = c.vright.Normalize()
 
 	c.vright = c.vright.Negate()
-	c.vup = vector.ScalarMul(c.vup, aspect*float64(resy)/float64(resx))
+	c.vup = c.vup.Scale(aspect * float64(resy) / float64(resx))
 
-	c.position = vector.Sub(pos, vector.ScalarMul(vector.Add(c.vup, c.vright), 0.5*scale))
+	c.position = vector.Sub(pos, vector.Add(c.vup, c.vright).Scale(0.5*scale))
 
-	c.vup = vector.ScalarMul(c.vup, scale/float64(resy))
-	c.vright = vector.ScalarMul(c.vright, scale/float64(resx))
+	c.vup = c.vup.Scale(scale / float64(resy))
+	c.vright = c.vright.Scale(scale / float64(resx))
 	return c
 }
 
@@ -68,7 +68,7 @@ func (c *orthoCam) ResolutionY() int { return c.resy }
 func (c *orthoCam) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1
 	r = goray.Ray{
-		From: vector.Add(c.position, vector.ScalarMul(c.vright, x), vector.ScalarMul(c.vup, y)),
+		From: vector.Sum(c.position, c.vright.Scale(x), c.vup.Scale(y)),
 		Dir:  c.vlook,
 		TMax: -1.0,
 	}

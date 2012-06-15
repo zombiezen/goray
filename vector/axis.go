@@ -24,6 +24,7 @@ import (
 	"fmt"
 )
 
+// An Axis is one of the coordinate axes.
 type Axis int
 
 // Axes

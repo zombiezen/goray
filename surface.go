@@ -57,9 +57,9 @@ type Differentials struct {
 func NewDifferentials(p SurfacePoint, r *DifferentialRay) Differentials {
 	d := -vector.Dot(p.Normal, p.Position)
 	tx := -(vector.Dot(p.Normal, r.FromX) + d) / vector.Dot(p.Normal, r.DirX)
-	px := vector.CompMul(vector.ScalarAdd(r.FromX, tx), r.DirX)
+	px := vector.Mul(r.FromX.AddScalar(tx), r.DirX)
 	ty := -(vector.Dot(p.Normal, r.FromY) + d) / vector.Dot(p.Normal, r.DirY)
-	py := vector.CompMul(vector.ScalarAdd(r.FromY, ty), r.DirY)
+	py := vector.Mul(r.FromY.AddScalar(ty), r.DirY)
 	return Differentials{
 		X:     vector.Sub(px, p.Position),
 		Y:     vector.Sub(py, p.Position),
@@ -77,8 +77,8 @@ func (d Differentials) ReflectRay(in, out *DifferentialRay) {
 	// Compute differential reflected directions
 	incidenceX, incidenceY := vector.Sub(in.Dir, in.DirX), vector.Sub(in.Dir, in.DirY)
 	normDx, normDy := vector.Dot(incidenceX, d.Point.Normal), vector.Dot(incidenceY, d.Point.Normal)
-	out.DirX = vector.Add(out.Dir, incidenceX.Negate(), vector.ScalarMul(d.Point.Normal, 2*normDx))
-	out.DirY = vector.Add(out.Dir, incidenceY.Negate(), vector.ScalarMul(d.Point.Normal, 2*normDy))
+	out.DirX = vector.Sum(out.Dir, incidenceX.Negate(), d.Point.Normal.Scale(2*normDx))
+	out.DirY = vector.Sum(out.Dir, incidenceY.Negate(), d.Point.Normal.Scale(2*normDy))
 }
 
 // RefractRay computes differentials for a scattered ray.
@@ -94,8 +94,8 @@ func (d Differentials) RefractRay(in, out *DifferentialRay, ior float64) {
 	muDx := muDeriv * normDx
 	muDy := muDeriv * normDy
 
-	out.DirX = vector.Add(out.Dir, vector.ScalarMul(incidenceX, ior), vector.ScalarMul(d.Point.Normal, -muDx))
-	out.DirY = vector.Add(out.Dir, vector.ScalarMul(incidenceY, ior), vector.ScalarMul(d.Point.Normal, -muDy))
+	out.DirX = vector.Sum(out.Dir, incidenceX.Scale(ior), d.Point.Normal.Scale(-muDx))
+	out.DirY = vector.Sum(out.Dir, incidenceY.Scale(ior), d.Point.Normal.Scale(-muDy))
 }
 
 func (d Differentials) ProjectedPixelArea() float64 {

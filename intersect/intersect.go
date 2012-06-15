@@ -141,7 +141,7 @@ func (f *kdFollower) Init(kd *kdtree.Tree) {
 	f.enterStack = append(f.enterStack, followFrame{t: a, point: f.Ray.From})
 	if a > 0 {
 		// XXX: May not align exactly with box
-		f.enterStack[0].point = vector.Add(f.enterStack[0].point, vector.ScalarMul(f.Ray.Dir, a))
+		f.enterStack[0].point = vector.Add(f.enterStack[0].point, f.Ray.Dir.Scale(a))
 	}
 
 	if f.exitStack == nil {
@@ -152,7 +152,7 @@ func (f *kdFollower) Init(kd *kdtree.Tree) {
 	f.exitStack = append(
 		f.exitStack,
 		f.enterStack[0],
-		followFrame{t: b, point: vector.Add(f.Ray.From, vector.ScalarMul(f.Ray.Dir, b))},
+		followFrame{t: b, point: vector.Add(f.Ray.From, f.Ray.Dir.Scale(b))},
 	)
 
 	f.currNode = kd.Root()

@@ -96,7 +96,7 @@ func (l *pointLight) Illuminate(sp goray.SurfacePoint, wi *goray.Ray) (col color
 
 	ok = true
 	idistSqr := 1.0 / distSqr
-	ldir = vector.ScalarMul(ldir, 1.0/dist)
+	ldir = ldir.Scale(1.0 / dist)
 
 	wi.TMax = dist
 	wi.Dir = ldir

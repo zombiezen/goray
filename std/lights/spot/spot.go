@@ -98,7 +98,7 @@ func (spot *spotLight) Illuminate(sp goray.SurfacePoint, wi *goray.Ray) (col col
 	if dist == 0 {
 		return
 	}
-	ldir = vector.ScalarDiv(ldir, dist) // normalize
+	ldir = ldir.Scale(1.0 / dist) // normalize
 	cosa := vector.Dot(spot.direction.Negate(), ldir)
 	switch {
 	case cosa < spot.cosEnd:
@@ -146,7 +146,7 @@ func (spot *spotLight) emit(s1, s2, s3 float64) (col color.Color, wo vector.Vect
 	cosAngle := spot.cosEnd + (spot.cosStart-spot.cosEnd)*sm2
 	sinAngle := math.Sqrt(1 - cosAngle*cosAngle)
 	t1 := 2 * math.Pi * s1
-	wo = vector.Add(vector.ScalarMul(vector.Add(vector.ScalarMul(spot.du, math.Cos(t1)), vector.ScalarMul(spot.dv, math.Sin(t1))), sinAngle), vector.ScalarMul(spot.direction, cosAngle))
+	wo = vector.Add(vector.Add(spot.du.Scale(math.Cos(t1)), spot.dv.Scale(math.Sin(t1))).Scale(sinAngle), spot.direction.Scale(cosAngle))
 	col = color.ScalarMul(spot.color, spdf*spot.pdf.Integral) // color is scaled by falloff
 	return
 }
@@ -188,7 +188,7 @@ func (spot *spotLight) CanIlluminate(pt vector.Vector3D) bool {
 	if dist == 0 {
 		return false
 	}
-	ldir = vector.ScalarDiv(ldir, dist) // normalize
+	ldir = ldir.Scale(1.0 / dist) // normalize
 	cosa := vector.Dot(spot.direction.Negate(), ldir)
 	return cosa >= spot.cosEnd
 }

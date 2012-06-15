@@ -21,8 +21,8 @@
 package goray
 
 import (
-	"fmt"
 	"bitbucket.org/zombiezen/goray/vector"
+	"fmt"
 )
 
 // Ray defines the path of light.

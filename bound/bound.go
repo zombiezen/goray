@@ -122,7 +122,7 @@ func (b Bound) Includes(p vector.Vector3D) bool {
 }
 
 func (b Bound) Center() vector.Vector3D {
-	return vector.ScalarMul(vector.Add(b.Max, b.Min), 0.5)
+	return vector.Add(b.Max, b.Min).Scale(0.5)
 }
 
 func (b Bound) CenterX() float64 { return (b.Max[vector.X] + b.Min[vector.X]) * 0.5 }

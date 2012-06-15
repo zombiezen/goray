@@ -31,8 +31,8 @@ import (
 func CosHemisphere(n, ru, rv vector.Vector3D, s1, s2 float64) (v vector.Vector3D) {
 	z1 := s1
 	z2 := s2 * 2 * math.Pi
-	v = vector.ScalarMul(vector.Add(vector.ScalarMul(ru, math.Cos(z2)), vector.ScalarMul(rv, math.Sin(z2))), math.Sqrt(1-z1))
-	v = vector.Add(v, vector.ScalarMul(n, math.Sqrt(z1)))
+	v = vector.Add(ru.Scale(math.Cos(z2)), rv.Scale(math.Sin(z2))).Scale(math.Sqrt(1 - z1))
+	v = vector.Add(v, n.Scale(math.Sqrt(z1)))
 	return
 }
 
@@ -57,7 +57,7 @@ func Cone(d, u, v vector.Vector3D, maxCosAngle, s1, s2 float64) vector.Vector3D 
 	t1 := 2 * math.Pi * s1
 
 	// \sin \theta (\vec{u} \cos t_1 + \vec{v} \cos t_1) + \vec{d} \cos \theta
-	return vector.Add(vector.ScalarMul(vector.Add(vector.ScalarMul(u, math.Cos(t1)), vector.ScalarMul(v, math.Sin(t1))), sinAngle), vector.ScalarMul(d, cosAngle))
+	return vector.Add(vector.Add(u.Scale(math.Cos(t1)), v.Scale(math.Sin(t1))).Scale(sinAngle), d.Scale(cosAngle))
 }
 
 // AddMod1 performs an floating-point addition modulo 1. Both values must be in the range [0,1].

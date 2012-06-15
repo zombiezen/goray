@@ -117,7 +117,7 @@ func (tri *Triangle) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 
 	if tri.mesh.normals != nil {
 		n := tri.getNormals()
-		sp.Normal = vector.Add(vector.ScalarMul(n[0], u), vector.ScalarMul(n[1], v), vector.ScalarMul(n[2], w)).Normalize()
+		sp.Normal = vector.Sum(n[0].Scale(u), n[1].Scale(v), n[2].Scale(w)).Normalize()
 	} else {
 		sp.Normal = tri.normal
 	}
@@ -125,7 +125,7 @@ func (tri *Triangle) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 	sp.HasOrco = tri.mesh.hasOrco
 	if tri.mesh.hasOrco {
 		// TODO: Yafaray uses index+1 for each one of the vertices. Why?
-		sp.OrcoPosition = vector.Add(vector.ScalarMul(vert[0], u), vector.ScalarMul(vert[1], v), vector.ScalarMul(vert[2], w))
+		sp.OrcoPosition = vector.Sum(vert[0].Scale(u), vert[1].Scale(v), vert[2].Scale(w))
 		sp.OrcoNormal = vector.Cross(vector.Sub(vert[1], vert[0]), vector.Sub(vert[2], vert[0])).Normalize()
 	} else {
 		sp.OrcoPosition = coll.Point()
@@ -146,8 +146,8 @@ func (tri *Triangle) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 		if det != 0.0 {
 			invdet := 1.0 / det
 			dp1, dp2 := vector.Sub(vert[0], vert[2]), vector.Sub(vert[1], vert[2])
-			sp.WorldU = vector.Sub(vector.ScalarMul(dp1, dv2*invdet), vector.ScalarMul(dp2, dv1*invdet))
-			sp.WorldV = vector.Sub(vector.ScalarMul(dp2, du1*invdet), vector.ScalarMul(dp1, du2*invdet))
+			sp.WorldU = vector.Sub(dp1.Scale(dv2*invdet), dp2.Scale(dv1*invdet))
+			sp.WorldV = vector.Sub(dp2.Scale(du1*invdet), dp1.Scale(du2*invdet))
 		} else {
 			sp.WorldU, sp.WorldV = vector.Vector3D{}, vector.Vector3D{}
 		}

@@ -24,8 +24,8 @@ import (
 	"runtime"
 	"sync"
 
-	"bitbucket.org/zombiezen/goray/logging"
 	"bitbucket.org/zombiezen/goray/color"
+	"bitbucket.org/zombiezen/goray/logging"
 	"bitbucket.org/zombiezen/goray/vector"
 )
 

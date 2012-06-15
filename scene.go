@@ -233,7 +233,7 @@ func (s *Scene) Shadowed(r Ray, dist float64) bool {
 		s.log.Warning("Shadowed called without an Update")
 		return false
 	}
-	r.From = vector.Add(r.From, vector.ScalarMul(r.Dir, r.TMin))
+	r.From = vector.Add(r.From, r.Dir.Scale(r.TMin))
 	if r.TMax >= 0 {
 		dist = r.TMax - 2*r.TMin
 	}

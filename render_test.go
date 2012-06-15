@@ -21,8 +21,8 @@
 package goray
 
 import (
-	"testing"
 	"bitbucket.org/zombiezen/goray/color"
+	"testing"
 )
 
 func doAcquireBench(b *testing.B, queueSize int) {
