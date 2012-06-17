@@ -96,6 +96,7 @@ func (s *simple) TransparentShadow(state *goray.RenderState, r goray.Ray, maxDep
 type kdPartition struct {
 	*kdtree.Tree
 	prims []goray.Primitive
+	tris  []*goray.Triangle
 }
 
 func (kd *kdPartition) Len() int {
@@ -108,7 +109,18 @@ func (kd *kdPartition) Dimension(i int, axis vector.Axis) (min, max float64) {
 }
 
 func NewKD(prims []goray.Primitive, log logging.Handler) goray.Intersecter {
-	kd := &kdPartition{nil, prims}
+	kd := &kdPartition{
+		prims: prims,
+		tris:  make([]*goray.Triangle, len(prims)),
+	}
+	for i := range prims {
+		if tri, ok := prims[i].(*goray.Triangle); ok {
+			kd.tris[i] = tri
+		} else {
+			kd.tris = nil
+			break
+		}
+	}
 	kd.Tree = kdtree.New(kd, kdtree.DefaultOptions)
 	return kd
 }
@@ -214,11 +226,19 @@ func (f *kdFollower) First() (firstColl goray.Collision) {
 		if !f.findLeaf() {
 			break
 		}
-		for _, i := range f.currNode.Indices() {
-			p := f.Partition.prims[i]
-			coll := p.Intersect(f.Ray)
-			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
-				firstColl = coll
+		if f.Partition.tris != nil {
+			for _, i := range f.currNode.Indices() {
+				coll := f.Partition.tris[i].Intersect(f.Ray)
+				if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+					firstColl = coll
+				}
+			}
+		} else {
+			for _, i := range f.currNode.Indices() {
+				coll := f.Partition.prims[i].Intersect(f.Ray)
+				if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
+					firstColl = coll
+				}
 			}
 		}
 		if firstColl.Hit() {
@@ -234,11 +254,19 @@ func (f *kdFollower) Hit() bool {
 		if !f.findLeaf() {
 			break
 		}
-		for _, i := range f.currNode.Indices() {
-			p := f.Partition.prims[i]
-			coll := p.Intersect(f.Ray)
-			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
-				return true
+		if f.Partition.tris != nil {
+			for _, i := range f.currNode.Indices() {
+				coll := f.Partition.tris[i].Intersect(f.Ray)
+				if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
+					return true
+				}
+			}
+		} else {
+			for _, i := range f.currNode.Indices() {
+				coll := f.Partition.prims[i].Intersect(f.Ray)
+				if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
+					return true
+				}
 			}
 		}
 		f.pop()
@@ -248,13 +276,13 @@ func (f *kdFollower) Hit() bool {
 
 type kdTranspFollower struct {
 	kdFollower
-	hitList   map[goray.Primitive]bool
+	hitList   map[int]bool
 	currPrims []goray.Primitive
 }
 
 func (f *kdTranspFollower) Init(kd *kdPartition) {
 	f.kdFollower.Init(kd)
-	f.hitList = make(map[goray.Primitive]bool)
+	f.hitList = make(map[int]bool)
 	if f.currPrims == nil {
 		f.currPrims = make([]goray.Primitive, 0, 10)
 	} else {
@@ -270,11 +298,11 @@ func (f *kdTranspFollower) findMore() {
 		indices := f.currNode.Indices()
 		for _, i := range indices {
 			p := f.Partition.prims[i]
-			if f.hitList[p] {
+			if f.hitList[i] {
 				continue
 			}
 			f.currPrims = append(f.currPrims, p)
-			f.hitList[p] = true
+			f.hitList[i] = true
 		}
 		f.pop()
 	}
