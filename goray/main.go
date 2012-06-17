@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"runtime/pprof"
 
 	"bitbucket.org/zombiezen/goray/job"
 	"bitbucket.org/zombiezen/goray/logging"
@@ -42,6 +43,7 @@ var (
 	outputPath   string
 	outputFormat string
 	imagePath    string
+	cpuprofile   string
 	debug        int
 )
 
@@ -52,6 +54,7 @@ func main() {
 	flag.StringVar(&dataRoot, "dataroot", "data", "web server resource files")
 	flag.StringVar(&outputPath, "o", "", "path for the output")
 	flag.StringVar(&outputFormat, "f", job.DefaultFormat, "output format (default: "+job.DefaultFormat+")")
+	flag.StringVar(&cpuprofile, "cpuprofile", "", "write CPU profile to file")
 	flag.IntVar(&debug, "d", 0, "set debug verbosity level")
 	flag.StringVar(&imagePath, "t", ".", "texture directory (default: current directory)")
 	maxProcs := flag.Int("procs", 1, "set the number of processors to use")
@@ -142,6 +145,17 @@ func singleFile() int {
 	}
 	defer outFile.Close()
 
+	// Set up profile file
+	var cpuprofileFile *os.File
+	if cpuprofile != "" {
+		cpuprofileFile, err = os.Create(cpuprofile)
+		if err != nil {
+			logging.MainLog.Critical("Error opening cpuprofile file: %v", err)
+			return 1
+		}
+		defer cpuprofileFile.Close()
+	}
+
 	// Create job
 	j := job.New("job", inFile, yamlscene.Params{
 		"ImageLoader":  fileloader.New(imagePath),
@@ -160,7 +174,12 @@ func singleFile() int {
 			return "  RENDER: " + rec.String()
 		},
 	)
-	go j.Render(outFile)
+	go func() {
+		if cpuprofileFile != nil {
+			pprof.StartCPUProfile(cpuprofileFile)
+		}
+		j.Render(outFile)
+	}()
 
 	// Log progress
 	for stat := range ch {
@@ -175,6 +194,7 @@ func singleFile() int {
 		case job.StatusWriting:
 			logging.MainLog.Info("Render finished in %v", stat.RenderTime)
 			logging.MainLog.Info("Writing...")
+			pprof.StopCPUProfile()
 		case job.StatusDone:
 			logging.MainLog.Info("TOTAL TIME: %v", stat.TotalTime())
 		case job.StatusError:
