@@ -95,21 +95,22 @@ func (s *simple) TransparentShadow(state *goray.RenderState, r goray.Ray, maxDep
 
 type kdPartition struct {
 	*kdtree.Tree
+	prims []goray.Primitive
 }
 
-func primGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
-	bd := v.(goray.Primitive).Bound()
+func (kd *kdPartition) Len() int {
+	return len(kd.prims)
+}
+
+func (kd *kdPartition) Dimension(i int, axis vector.Axis) (min, max float64) {
+	bd := kd.prims[i].Bound()
 	return bd.Min[axis], bd.Max[axis]
 }
 
 func NewKD(prims []goray.Primitive, log logging.Handler) goray.Intersecter {
-	vals := make([]kdtree.Value, len(prims))
-	for i, p := range prims {
-		vals[i] = p
-	}
-	opts := kdtree.MakeOptions(primGetDim, log)
-	tree := kdtree.New(vals, opts)
-	return &kdPartition{tree}
+	kd := &kdPartition{nil, prims}
+	kd.Tree = kdtree.New(kd, kdtree.DefaultOptions)
+	return kd
 }
 
 type followFrame struct {
@@ -119,6 +120,7 @@ type followFrame struct {
 }
 
 type kdFollower struct {
+	Partition        *kdPartition
 	Ray              goray.Ray
 	MaxDist, MinDist float64
 
@@ -126,8 +128,9 @@ type kdFollower struct {
 	enterStack, exitStack []followFrame
 }
 
-func (f *kdFollower) Init(kd *kdtree.Tree) {
-	a, b, hit := kd.Bound().Cross(f.Ray.From, f.Ray.Dir, f.MaxDist)
+func (f *kdFollower) Init(kd *kdPartition) {
+	f.Partition = kd
+	a, b, hit := kd.Tree.Bound().Cross(f.Ray.From, f.Ray.Dir, f.MaxDist)
 	if !hit {
 		f.currNode = nil
 		return
@@ -155,14 +158,14 @@ func (f *kdFollower) Init(kd *kdtree.Tree) {
 		followFrame{t: b, point: vector.Add(f.Ray.From, f.Ray.Dir.Scale(b))},
 	)
 
-	f.currNode = kd.Root()
+	f.currNode = kd.Tree.Root()
 }
 
 func (f *kdFollower) findLeaf() bool {
 	if f.enterStack[len(f.enterStack)-1].t > f.MaxDist {
 		return false
 	}
-	for !f.currNode.Leaf() {
+	for !f.currNode.IsLeaf() {
 		var farChild *kdtree.Node
 		axis, pivot := f.currNode.Axis(), f.currNode.Pivot()
 		// TODO: Check logic
@@ -211,8 +214,8 @@ func (f *kdFollower) First() (firstColl goray.Collision) {
 		if !f.findLeaf() {
 			break
 		}
-		for _, v := range f.currNode.Values() {
-			p := v.(goray.Primitive)
+		for _, i := range f.currNode.Indices() {
+			p := f.Partition.prims[i]
 			coll := p.Intersect(f.Ray)
 			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist && (!firstColl.Hit() || coll.RayDepth < firstColl.RayDepth) {
 				firstColl = coll
@@ -231,8 +234,8 @@ func (f *kdFollower) Hit() bool {
 		if !f.findLeaf() {
 			break
 		}
-		for _, v := range f.currNode.Values() {
-			p := v.(goray.Primitive)
+		for _, i := range f.currNode.Indices() {
+			p := f.Partition.prims[i]
 			coll := p.Intersect(f.Ray)
 			if coll.Hit() && coll.RayDepth > f.MinDist && coll.RayDepth < f.MaxDist {
 				return true
@@ -249,7 +252,7 @@ type kdTranspFollower struct {
 	currPrims []goray.Primitive
 }
 
-func (f *kdTranspFollower) Init(kd *kdtree.Tree) {
+func (f *kdTranspFollower) Init(kd *kdPartition) {
 	f.kdFollower.Init(kd)
 	f.hitList = make(map[goray.Primitive]bool)
 	if f.currPrims == nil {
@@ -264,9 +267,9 @@ func (f *kdTranspFollower) findMore() {
 		if !f.findLeaf() {
 			break
 		}
-		vals := f.currNode.Values()
-		for _, v := range vals {
-			p := v.(goray.Primitive)
+		indices := f.currNode.Indices()
+		for _, i := range indices {
+			p := f.Partition.prims[i]
 			if f.hitList[p] {
 				continue
 			}
@@ -290,19 +293,19 @@ func (f *kdTranspFollower) Next() (coll goray.Collision) {
 
 func (kd *kdPartition) Intersect(r goray.Ray, dist float64) (coll goray.Collision) {
 	f := kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
-	f.Init(kd.Tree)
+	f.Init(kd)
 	return f.First()
 }
 
 func (kd *kdPartition) Shadowed(r goray.Ray, dist float64) bool {
 	f := kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}
-	f.Init(kd.Tree)
+	f.Init(kd)
 	return f.Hit()
 }
 
 func (kd *kdPartition) TransparentShadow(state *goray.RenderState, r goray.Ray, maxDepth int, dist float64) (filt color.Color, hit bool) {
 	f := kdTranspFollower{kdFollower: kdFollower{Ray: r, MinDist: r.TMin, MaxDist: dist}}
-	f.Init(kd.Tree)
+	f.Init(kd)
 	depth := 0
 	filt = color.White
 	for coll := f.Next(); coll.Hit(); coll = f.Next() {

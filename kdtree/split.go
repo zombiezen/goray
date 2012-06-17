@@ -21,48 +21,37 @@
 package kdtree
 
 import (
+	"bitbucket.org/zombiezen/goray/bound"
+	"bitbucket.org/zombiezen/goray/vector"
 	"math"
 	"sort"
-
-	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/logging"
-	"bitbucket.org/zombiezen/goray/vector"
 )
 
-type SplitFunc func([]Value, bound.Bound, BuildState) (axis vector.Axis, pivot float64, cost float64)
-
-func DefaultSplit(vals []Value, bd bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float64) {
+func split(indices []int, bd bound.Bound, state *buildState) (axis vector.Axis, pivot float64, cost float64) {
 	const pigeonThreshold = 128
-
-	if len(vals) > pigeonThreshold {
-		return PigeonSplit(vals, bd, state)
+	if len(indices) > pigeonThreshold {
+		return pigeonSplit(indices, bd, state)
 	}
-	return MinimalSplit(vals, bd, state)
+	return minimalSplit(indices, bd, state)
 }
 
-type float64array []float64
-
-func (a float64array) Len() int             { return len(a) }
-func (a float64array) Less(i1, i2 int) bool { return a[i1] < a[i2] }
-func (a float64array) Swap(i1, i2 int)      { a[i1], a[i2] = a[i2], a[i1] }
-
-func SimpleSplit(vals []Value, bd bound.Bound, state BuildState) (axis vector.Axis, pivot float64, cost float64) {
+func simpleSplit(indices []int, bd bound.Bound, state *buildState) (axis vector.Axis, pivot float64, cost float64) {
 	axis = bd.LargestAxis()
-	data := make([]float64, 0, len(vals)*2)
-	for i, v := range vals {
-		min, max := state.getClippedDimension(i, v, axis)
+	data := make([]float64, 0, len(indices)*2)
+	for _, i := range indices {
+		min, max := state.ClippedDimension(i, axis)
 		if min == max {
 			data = append(data, min)
 		} else {
 			data = append(data, min, max)
 		}
 	}
-	sort.Sort(float64array(data))
+	sort.Float64s(data)
 	pivot = data[len(data)/2]
 	return
 }
 
-func PigeonSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
+func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
@@ -84,8 +73,8 @@ func PigeonSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vecto
 		s := numBins / d[axis]
 		min := bd.Min[axis]
 
-		for i, v := range vals {
-			tLow, tHigh := state.getClippedDimension(i, v, axis)
+		for _, i := range indices {
+			tLow, tHigh := state.ClippedDimension(i, axis)
 			bLeft, bRight := int((tLow-min)*s), int((tHigh-min)*s)
 			if bLeft < 0 {
 				bLeft = 0
@@ -136,7 +125,7 @@ func PigeonSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vecto
 		capPerim := d[axis.Next()] + d[axis.Prev()]
 
 		// Cumulate values and evaluate cost
-		nBelow, nAbove := 0, len(vals)
+		nBelow, nAbove := 0, len(indices)
 		for _, b := range bins {
 			if b.n != 0 {
 				nBelow += b.left
@@ -155,9 +144,7 @@ func PigeonSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vecto
 			}
 		}
 
-		if nBelow != len(vals) || nAbove != 0 {
-			// SCREWED.
-			logging.Error(state.Log, "Pigeon cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+		if nBelow != len(indices) || nAbove != 0 {
 			panic("Cost function mismatch")
 		}
 
@@ -219,7 +206,7 @@ const (
 	upperB
 )
 
-func MinimalSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
+func minimalSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
 	d := bd.Size()
 	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
@@ -229,9 +216,9 @@ func MinimalSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vect
 	}
 
 	for axis := vector.X; axis <= vector.Z; axis++ {
-		edges := make(boundEdgeArray, 0, len(vals)*2)
-		for i, v := range vals {
-			min, max := state.getClippedDimension(i, v, axis)
+		edges := make(boundEdgeArray, 0, len(indices)*2)
+		for _, i := range indices {
+			min, max := state.ClippedDimension(i, axis)
 			if min == max {
 				edges = append(edges, boundEdge{min, bothB})
 			} else {
@@ -243,7 +230,7 @@ func MinimalSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vect
 		capArea := d[axis.Next()] * d[axis.Prev()]
 		capPerim := d[axis.Next()] + d[axis.Prev()]
 
-		nBelow, nAbove := 0, len(vals)
+		nBelow, nAbove := 0, len(indices)
 		for _, e := range edges {
 			if e.boundEnd == upperB {
 				nAbove--
@@ -264,8 +251,7 @@ func MinimalSplit(vals []Value, bd bound.Bound, state BuildState) (bestAxis vect
 			}
 		}
 
-		if nBelow != len(vals) || nAbove != 0 {
-			logging.Error(state.Log, "Minimal cost failed; %d above and %d below (should be %d)", nAbove, nBelow, len(vals))
+		if nBelow != len(indices) || nAbove != 0 {
 			panic("Cost function mismatch")
 		}
 	}

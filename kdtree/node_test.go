@@ -20,28 +20,28 @@
 
 package kdtree
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestLeaf(t *testing.T) {
-	myLeaf := newLeaf([]Value{1, 2, 3})
-	if !myLeaf.Leaf() {
+	expected := []int{1, 2, 3}
+	input := make([]int, len(expected))
+	copy(input, expected)
+	myLeaf := newLeaf(input)
+	if !myLeaf.IsLeaf() {
 		t.Error("Leaf nodes claim that they are not leaves")
 	}
-	vals := myLeaf.Values()
-	if len(vals) != 3 {
-		t.Error("Leaf nodes don't store the right number of values")
-	}
-	for i := 0; i < 3; i++ {
-		if vals[i].(int) != i+1 {
-			t.Errorf("Leaf value %d is corrupted", i)
-		}
+	if indices := myLeaf.Indices(); !reflect.DeepEqual(indices, expected) {
+		t.Errorf("myLeaf.Indices() != %v (got %v)", expected, indices)
 	}
 }
 
 func TestInterior(t *testing.T) {
-	leafA, leafB := newLeaf([]Value{}), newLeaf([]Value{})
+	leafA, leafB := newLeaf([]int{}), newLeaf([]int{})
 	myInt := newInterior(2, 3.14, leafA, leafB)
-	if myInt.Leaf() {
+	if myInt.IsLeaf() {
 		t.Error("Interior node claims that it is a leaf")
 	}
 	if myInt.Axis() != 2 {

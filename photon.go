@@ -62,23 +62,21 @@ func (pm *PhotonMap) Clear() {
 
 func (pm *PhotonMap) Ready() bool { return pm.fresh }
 
-func photonGetDim(v kdtree.Value, axis vector.Axis) (min, max float64) {
-	photon := v.(Photon)
-	min = photon.Position[axis]
-	max = min
-	return
+func (pm *PhotonMap) Len() int {
+	return len(pm.photons)
+}
+
+func (pm *PhotonMap) Dimension(i int, axis vector.Axis) (float64, float64) {
+	val := pm.photons[i].Position[axis]
+	return val, val
 }
 
 func (pm *PhotonMap) Update() {
 	pm.tree = nil
 	if len(pm.photons) > 0 {
-		values := make([]kdtree.Value, len(pm.photons))
-		for i, _ := range values {
-			values[i] = pm.photons[i]
-		}
-		opts := kdtree.MakeOptions(photonGetDim, nil)
+		opts := kdtree.DefaultOptions
 		opts.LeafSize = 1
-		pm.tree = kdtree.New(values, opts)
+		pm.tree = kdtree.New(pm, opts)
 		pm.fresh = true
 	}
 }
@@ -129,7 +127,7 @@ func (pm *PhotonMap) Gather(p vector.Vector3D, nLookup int, maxDist float64) []G
 	resultHeap := make(gatherHeap, 0, nLookup)
 
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.Root())
+	go lookup(p, ch, distCh, pm.photons, pm.tree.Root())
 	distCh <- maxDist
 
 	for gresult := range ch {
@@ -140,7 +138,7 @@ func (pm *PhotonMap) Gather(p vector.Vector3D, nLookup int, maxDist float64) []G
 
 func (pm *PhotonMap) FindNearest(p, n vector.Vector3D, dist float64) (nearest Photon) {
 	ch, distCh := make(chan GatherResult), make(chan float64)
-	go lookup(p, ch, distCh, pm.tree.Root())
+	go lookup(p, ch, distCh, pm.photons, pm.tree.Root())
 	distCh <- dist
 
 	for gresult := range ch {
@@ -152,7 +150,7 @@ func (pm *PhotonMap) FindNearest(p, n vector.Vector3D, dist float64) (nearest Ph
 	return
 }
 
-func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, root *kdtree.Node) {
+func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, photons []Photon, root *kdtree.Node) {
 	defer close(ch)
 	st := []*kdtree.Node{root}
 	maxDistSqr := <-distCh
@@ -168,8 +166,8 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ro
 	}
 
 	for currNode, empty := next(); !empty; currNode, empty = next() {
-		if currNode.Leaf() {
-			phot := currNode.Values()[0].(Photon)
+		if currNode.IsLeaf() {
+			phot := photons[currNode.Indices()[0]]
 			v := vector.Sub(phot.Position, p)
 			distSqr := v.LengthSqr()
 			if distSqr < maxDistSqr {

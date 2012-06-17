@@ -27,37 +27,33 @@ import (
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
-func dim(v Value, axis vector.Axis) (min, max float64) {
-	switch val := v.(type) {
-	case vector.Vector3D:
-		comp := val[axis]
-		return comp, comp
-	case bound.Bound:
-		return val.Min[axis], val.Max[axis]
-	}
-	return
+type pointTree []vector.Vector3D
+
+func (t pointTree) Len() int {
+	return len(t)
 }
 
-func newPointTree(pts []vector.Vector3D, opts Options) *Tree {
-	vals := make([]Value, len(pts))
-	for i, p := range pts {
-		vals[i] = p
-	}
-	return New(vals, opts)
+func (t pointTree) Dimension(i int, axis vector.Axis) (float64, float64) {
+	return t[i][axis], t[i][axis]
 }
 
-func newBoxTree(boxes []bound.Bound, opts Options) *Tree {
-	vals := make([]Value, len(boxes))
-	for i, b := range boxes {
-		vals[i] = b
-	}
-	return New(vals, opts)
+type boxTree []bound.Bound
+
+func (t boxTree) Len() int {
+	return len(t)
+}
+
+func (t boxTree) Dimension(i int, axis vector.Axis) (float64, float64) {
+	return t[i].Min[axis], t[i].Max[axis]
 }
 
 func TestLeafTree(t *testing.T) {
-	opts := MakeOptions(dim, nil)
-	opts.LeafSize = 2
-	tree := newPointTree([]vector.Vector3D{{-1, 0, 0}, {1, 0, 0}}, opts)
+	tree := New(pointTree{{-1, 0, 0}, {1, 0, 0}}, Options{
+		MaxDepth:       DefaultOptions.MaxDepth,
+		LeafSize:       2,
+		FaultTolerance: DefaultOptions.FaultTolerance,
+		ClipThreshold:  DefaultOptions.ClipThreshold,
+	})
 	if tree.Depth() != 0 {
 		t.Error("Simple leaf tree creation fails")
 	}
@@ -65,9 +61,7 @@ func TestLeafTree(t *testing.T) {
 
 func TestBound(t *testing.T) {
 	ptA, ptB := vector.Vector3D{1, 2, 3}, vector.Vector3D{4, 5, 6}
-
-	opts := MakeOptions(dim, nil)
-	b := newBoxTree([]bound.Bound{{ptA, ptB}}, opts).Bound()
+	b := New(boxTree{{ptA, ptB}}, DefaultOptions).Bound()
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		if b.Min[axis] != ptA[axis] {
 			t.Errorf("Box tree %v minimum expects %.2f, got %.2f", axis, b.Min[axis], ptA[axis])
@@ -79,7 +73,7 @@ func TestBound(t *testing.T) {
 		}
 	}
 
-	b = newPointTree([]vector.Vector3D{ptA, ptB}, opts).Bound()
+	b = New(pointTree{ptA, ptB}, DefaultOptions).Bound()
 	for axis := vector.X; axis <= vector.Z; axis++ {
 		if b.Min[axis] != ptA[axis] {
 			t.Errorf("Point tree %v minimum expects %.2f, got %.2f", axis, b.Min[axis], ptA[axis])
@@ -92,35 +86,28 @@ func TestBound(t *testing.T) {
 	}
 }
 
-func TestSimpleTree(t *testing.T) {
-	opts := MakeOptions(dim, nil)
-	opts.SplitFunc = SimpleSplit
-	tree := newPointTree(
-		[]vector.Vector3D{
-			{-1, 0, 0},
-			{1, 0, 0},
-			{-2, 0, 0},
-			{2, 0, 0},
-		},
-		opts,
-	)
+func TestTree(t *testing.T) {
+	tree := New(pointTree{
+		{-1, 0, 0},
+		{1, 0, 0},
+		{-2, 0, 0},
+		{2, 0, 0},
+	}, DefaultOptions)
 	if tree.Depth() != 1 {
 		t.Error("Creation failed")
 	}
-
-	if tree.root.Leaf() {
+	if tree.root.IsLeaf() {
 		t.Fatal("Tree root is not an interior node")
 	}
 	if tree.root.Axis() != 0 {
 		t.Errorf("Wrong split axis (got %d)", tree.root.Axis())
 	}
-	if tree.root.Pivot() != 1 {
+	if tree.root.Pivot() != -1 {
 		t.Errorf("Wrong pivot value (got %.2f)", tree.root.Pivot())
 	}
-
 	if tree.root.Left() != nil {
-		if tree.root.Left().Leaf() {
-			if len(tree.root.Left().Values()) != 2 {
+		if tree.root.Left().IsLeaf() {
+			if len(tree.root.Left().Indices()) != 1 {
 				t.Error("Wrong number of values in left")
 			}
 		} else {
@@ -129,10 +116,9 @@ func TestSimpleTree(t *testing.T) {
 	} else {
 		t.Error("Left child is nil")
 	}
-
 	if tree.root.Right() != nil {
-		if tree.root.Right().Leaf() {
-			if len(tree.root.Right().Values()) != 2 {
+		if tree.root.Right().IsLeaf() {
+			if len(tree.root.Right().Indices()) != 3 {
 				t.Error("Wrong number of values in right")
 			}
 		} else {
