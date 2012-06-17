@@ -108,6 +108,13 @@ func (kd *kdPartition) Dimension(i int, axis vector.Axis) (min, max float64) {
 	return bd.Min[axis], bd.Max[axis]
 }
 
+func (kd *kdPartition) Clip(i int, bound bound.Bound, axis vector.Axis, lower bool, data interface{}) (bound.Bound, interface{}) {
+	if clipper, ok := kd.prims[i].(goray.Clipper); ok {
+		return clipper.Clip(bound, axis, lower, data)
+	}
+	return bound, data
+}
+
 func NewKD(prims []goray.Primitive, log logging.Handler) goray.Intersecter {
 	kd := &kdPartition{
 		prims: prims,

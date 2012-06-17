@@ -109,6 +109,7 @@ func (state *buildState) Split(axis vector.Axis, lower bool, clips map[int]clipI
 		Data:       state.Data,
 		Options:    state.Options,
 		TreeBound:  state.TreeBound,
+		OldCost:    state.OldCost,
 		BadRefines: state.BadRefines,
 		Clips:      clips,
 		ClipAxis:   axis,

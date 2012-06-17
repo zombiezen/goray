@@ -20,11 +20,11 @@
 
 package kdtree
 
-import "testing"
-
 import (
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/vector"
+	"reflect"
+	"testing"
 )
 
 type pointTree []vector.Vector3D
@@ -93,38 +93,12 @@ func TestTree(t *testing.T) {
 		{-2, 0, 0},
 		{2, 0, 0},
 	}, DefaultOptions)
-	if tree.Depth() != 1 {
-		t.Error("Creation failed")
-	}
-	if tree.root.IsLeaf() {
-		t.Fatal("Tree root is not an interior node")
-	}
-	if tree.root.Axis() != 0 {
-		t.Errorf("Wrong split axis (got %d)", tree.root.Axis())
-	}
-	if tree.root.Pivot() != -1 {
-		t.Errorf("Wrong pivot value (got %.2f)", tree.root.Pivot())
-	}
-	if tree.root.Left() != nil {
-		if tree.root.Left().IsLeaf() {
-			if len(tree.root.Left().Indices()) != 1 {
-				t.Error("Wrong number of values in left")
-			}
-		} else {
-			t.Error("Left child is not a leaf")
-		}
-	} else {
-		t.Error("Left child is nil")
-	}
-	if tree.root.Right() != nil {
-		if tree.root.Right().IsLeaf() {
-			if len(tree.root.Right().Indices()) != 3 {
-				t.Error("Wrong number of values in right")
-			}
-		} else {
-			t.Error("Right child is not a leaf")
-		}
-	} else {
-		t.Error("Right child is nil")
+	expected := newInterior(vector.X, -1,
+		newLeaf([]int{2}),
+		newInterior(vector.X, 1,
+			newLeaf([]int{0}),
+			newLeaf([]int{1, 3})))
+	if !reflect.DeepEqual(tree.root, expected) {
+		t.Errorf("got %v\nexpected %v", tree, &Tree{root: expected})
 	}
 }
