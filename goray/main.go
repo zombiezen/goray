@@ -30,9 +30,14 @@ import (
 	"bitbucket.org/zombiezen/goray/job"
 	"bitbucket.org/zombiezen/goray/log"
 
-	_ "bitbucket.org/zombiezen/goray/std"
-	"bitbucket.org/zombiezen/goray/std/textures/image/fileloader"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
+	_ "bitbucket.org/zombiezen/goray/cameras"
+	_ "bitbucket.org/zombiezen/goray/integrators"
+	_ "bitbucket.org/zombiezen/goray/lights"
+	_ "bitbucket.org/zombiezen/goray/materials"
+	_ "bitbucket.org/zombiezen/goray/shaders/texmap"
+	_ "bitbucket.org/zombiezen/goray/textures"
+	"bitbucket.org/zombiezen/goray/textures"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 )
 
 var (
@@ -156,7 +161,7 @@ func singleFile() int {
 
 	// Create job
 	j := job.New("job", inFile, yamlscene.Params{
-		"ImageLoader":  fileloader.New(imagePath),
+		"ImageLoader":  textures.NewImageLoader(imagePath),
 		"OutputFormat": formatStruct,
 	})
 	ch := j.StatusChan()

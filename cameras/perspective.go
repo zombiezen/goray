@@ -18,30 +18,29 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package perspective
+package cameras
 
 import (
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 	"errors"
 	"math"
 )
 
+// A Bokeh determines the shape of out-of-focus light.
 type Bokeh int
 
+// Bokeh shapes
 const (
-	Disk1Bokeh Bokeh = 0
-	Disk2Bokeh       = 1
-	RingBokeh        = 7
-)
-
-const (
-	TriangleBokeh Bokeh = 3 + iota
-	SquareBokeh
-	PentagonBokeh
-	HexagonBokeh
+	Disk1    Bokeh = 0
+	Disk2    Bokeh = 1
+	Triangle Bokeh = 3
+	Square   Bokeh = 4
+	Pentagon Bokeh = 5
+	Hexagon  Bokeh = 6
+	Ring     Bokeh = 7
 )
 
 type BokehBias int
@@ -89,7 +88,8 @@ func shirleyDisk(r1, r2 float64) (u, v float64) {
 	return r * math.Cos(phi), r * math.Sin(phi)
 }
 
-type Camera struct {
+// perspective is a conventional perspective camera.
+type perspective struct {
 	resx, resy    int
 	eye           vector.Vector3D // eye is the camera position
 	focalDistance float64
@@ -107,10 +107,15 @@ type Camera struct {
 	lens      []float64
 }
 
-var _ goray.Camera = &Camera{}
+var _ goray.Camera = &perspective{}
 
-func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, aperture float64, bokeh Bokeh, bias BokehBias, bokehRot float64) (cam *Camera) {
-	cam = new(Camera)
+// NewPerspective creates a perspective camera.
+// It will not lead you to enlightenment.
+func NewPerspective(pos, look, up vector.Vector3D,
+	resx, resy int,
+	aspect, focalDist, aperture float64,
+	bokeh Bokeh, bias BokehBias, bokehRot float64) goray.Camera {
+	cam := new(perspective)
 	cam.eye = pos
 	cam.aperture = aperture
 	cam.dofDistance = 0
@@ -147,7 +152,7 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 	cam.bokeh = bokeh
 	cam.bokehBias = bias
 
-	if cam.bokeh >= TriangleBokeh && cam.bokeh <= HexagonBokeh {
+	if cam.bokeh >= Triangle && cam.bokeh <= Hexagon {
 		w := bokehRot * math.Pi / 180
 		wi := 2.0 * math.Pi / float64(cam.bokeh)
 		cam.lens = make([]float64, 0, (int(cam.bokeh)+2)*2)
@@ -156,13 +161,18 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, focalDist, apert
 			w += wi
 		}
 	}
-	return
+	return cam
 }
 
-func (cam *Camera) ResolutionX() int { return cam.resx }
-func (cam *Camera) ResolutionY() int { return cam.resy }
+func (cam *perspective) ResolutionX() int {
+	return cam.resx
+}
 
-func (cam *Camera) sampleTSD(r1, r2 float64) (u, v float64) {
+func (cam *perspective) ResolutionY() int {
+	return cam.resy
+}
+
+func (cam *perspective) sampleTSD(r1, r2 float64) (u, v float64) {
 	idx := int(r1 * float64(cam.bokeh))
 	r1 = biasDist(cam.bokehBias, (r1-float64(idx)/float64(cam.bokeh))*float64(cam.bokeh))
 	b1 := r1 * r2
@@ -174,13 +184,13 @@ func (cam *Camera) sampleTSD(r1, r2 float64) (u, v float64) {
 	return
 }
 
-func (cam *Camera) getLensUV(r1, r2 float64) (u, v float64) {
+func (cam *perspective) getLensUV(r1, r2 float64) (u, v float64) {
 	switch cam.bokeh {
-	case TriangleBokeh, SquareBokeh, PentagonBokeh, HexagonBokeh:
+	case Triangle, Square, Pentagon, Hexagon:
 		return cam.sampleTSD(r1, r2)
-	case Disk2Bokeh, RingBokeh:
+	case Disk2, Ring:
 		w := 2 * math.Pi * r2
-		if cam.bokeh == RingBokeh {
+		if cam.bokeh == Ring {
 			r1 = 1.0
 		} else {
 			r1 = biasDist(cam.bokehBias, r1)
@@ -192,7 +202,7 @@ func (cam *Camera) getLensUV(r1, r2 float64) (u, v float64) {
 	return shirleyDisk(r1, r2)
 }
 
-func (cam *Camera) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
+func (cam *perspective) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1.0 // for now, always 1, except 0 for probe when outside sphere
 
 	r = goray.Ray{
@@ -210,23 +220,24 @@ func (cam *Camera) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	return
 }
 
-func (cam *Camera) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
+func (cam *perspective) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	// TODO
 	return
 }
 
-func (cam *Camera) SampleLens() bool { return cam.aperture != 0 }
-
-func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/perspective"] = yamlscene.MapConstruct(Construct)
+func (cam *perspective) SampleLens() bool {
+	return cam.aperture != 0
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func init() {
+	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/perspective"] = yamlscene.MapConstruct(constructPerspective)
+}
+
+func constructPerspective(m yamldata.Map) (interface{}, error) {
 	m = m.Copy()
 
 	if !m.HasKeys("position", "look", "up", "width", "height") {
-		err = errors.New("Missing required camera key")
-		return
+		return nil, errors.New("Missing required camera key")
 	}
 
 	pos := m["position"].(vector.Vector3D)
@@ -243,20 +254,20 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 	bbias, _ := m.SetDefault("bokehBias", "uniform").(string)
 	bokehRot, _ := yamldata.AsFloat(m.SetDefault("bokehRotation", 1.0))
 
-	bokehType := Disk1Bokeh
+	bokehType := Disk1
 	switch btype {
 	case "disk2":
-		bokehType = Disk2Bokeh
+		bokehType = Disk2
 	case "triangle":
-		bokehType = TriangleBokeh
+		bokehType = Triangle
 	case "square":
-		bokehType = SquareBokeh
+		bokehType = Square
 	case "pentagon":
-		bokehType = PentagonBokeh
+		bokehType = Pentagon
 	case "hexagon":
-		bokehType = HexagonBokeh
+		bokehType = Hexagon
 	case "ring":
-		bokehType = RingBokeh
+		bokehType = Ring
 	}
 
 	bokehBias := NoBias
@@ -267,7 +278,7 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 		bokehBias = EdgeBias
 	}
 
-	cam := New(pos, look, up, width, height, aspect, focalDistance, aperture, bokehType, bokehBias, bokehRot)
-	cam.dofDistance = dofDistance
+	cam := NewPerspective(pos, look, up, width, height, aspect, focalDistance, aperture, bokehType, bokehBias, bokehRot)
+	cam.(*perspective).dofDistance = dofDistance
 	return cam, nil
 }

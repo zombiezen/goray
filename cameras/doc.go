@@ -18,27 +18,5 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package trivial
-
-import (
-	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/color"
-)
-
-type trivial struct{}
-
-var _ goray.SurfaceIntegrator = trivial{}
-
-func New() goray.SurfaceIntegrator {
-	return trivial{}
-}
-
-func (ti trivial) SurfaceIntegrator()         {}
-func (ti trivial) Preprocess(sc *goray.Scene) {}
-
-func (ti trivial) Integrate(sc *goray.Scene, s *goray.RenderState, r goray.DifferentialRay) color.AlphaColor {
-	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
-		return color.NewRGBAFromColor(color.White, 1.0)
-	}
-	return color.NewRGBAFromColor(color.Gray(0.1), 0.0)
-}
+// Package cameras provides standard perspective and orthographic cameras.
+package cameras

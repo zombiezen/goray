@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package image
+package textures
 
 import (
 	"errors"
@@ -28,8 +28,8 @@ import (
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/vector"
 
-	"bitbucket.org/zombiezen/goray/std/shaders/texmap"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
+	"bitbucket.org/zombiezen/goray/shaders/texmap"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yaml/parser"
@@ -209,43 +209,28 @@ func clampToRes(x0, y0, w, h int) (x, y int) {
 	return
 }
 
-// Loader is an interface for retrieving images with a name.
-type Loader interface {
-	Load(name string) (img *goray.Image, err error)
-}
-
-// LoaderFunc uses a function to perform loads.
-type LoaderFunc func(string) (*goray.Image, error)
-
-func (f LoaderFunc) Load(name string) (img *goray.Image, err error) {
-	return f(name)
-}
-
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"textures/image"] = yamldata.ConstructorFunc(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"textures/image"] = yamldata.ConstructorFunc(constructImage)
 }
 
-func Construct(n parser.Node, ud interface{}) (data interface{}, err error) {
+func constructImage(n parser.Node, ud interface{}) (interface{}, error) {
 	mm, ok := n.(*parser.Mapping)
 	if !ok {
-		err = errors.New("Constructor requires a mapping")
-		return
+		return nil, errors.New("Constructor requires a mapping")
 	}
 
-	var loader Loader
+	var loader ImageLoader
 	if ud != nil {
 		userData, ok := ud.(yamlscene.Params)
 		if ok && userData != nil {
-			loader, ok = userData["ImageLoader"].(Loader)
+			loader, ok = userData["ImageLoader"].(ImageLoader)
 			if !ok && userData["ImageLoader"] != nil {
-				err = errors.New("ImageLoader does not implement goray/std/texture/image.Loader interface")
-				return
+				return nil, errors.New("ImageLoader does not implement goray/std/texture/image.Loader interface")
 			}
 		}
 	}
 	if loader == nil {
-		err = errors.New("No image loader provided")
-		return
+		return nil, errors.New("No image loader provided")
 	}
 
 	m := yamldata.Map(mm.Map()).Copy()
@@ -258,15 +243,13 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err error) {
 	// Image name
 	name, ok := m["name"].(string)
 	if !ok {
-		err = errors.New("Image must contain name")
-		return
+		return nil, errors.New("Image must contain name")
 	}
 
 	// Interpolation
 	intpName, ok := m["interpolation"].(string)
 	if !ok {
-		err = errors.New("interpolation must be a string")
-		return
+		return nil, errors.New("interpolation must be a string")
 	}
 	var intp Interpolation
 	switch intpName {
@@ -277,22 +260,19 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err error) {
 	case "bicubic":
 		intp = Bicubic
 	default:
-		err = errors.New("Invalid interpolation method")
-		return
+		return nil, errors.New("Invalid interpolation method")
 	}
 
 	// Use Alpha
 	useAlpha, ok := yamldata.AsBool(m["useAlpha"])
 	if !ok {
-		err = errors.New("useAlpha must be a boolean")
-		return
+		return nil, errors.New("useAlpha must be a boolean")
 	}
 
 	// Clipping Mode
 	clipName, ok := m["clip"].(string)
 	if !ok {
-		err = errors.New("clip must be a string")
-		return
+		return nil, errors.New("clip must be a string")
 	}
 	var clip ClipMode
 	switch clipName {
@@ -305,34 +285,32 @@ func Construct(n parser.Node, ud interface{}) (data interface{}, err error) {
 	case "repeat":
 		clip = ClipRepeat
 	default:
-		err = errors.New("Invalid clipping mode")
-		return
+		return nil, errors.New("Invalid clipping mode")
 	}
 
 	// Repeat X and Y
 	repeatX, ok := yamldata.AsUint(m["repeatX"])
 	if !ok {
-		err = errors.New("repeatX must be an integer")
+		return nil, errors.New("repeatX must be an integer")
 	}
 	repeatY, ok := yamldata.AsUint(m["repeatY"])
 	if !ok {
-		err = errors.New("repeatY must be an integer")
+		return nil, errors.New("repeatY must be an integer")
 	}
 
 	// Open image file
-	img, err := loader.Load(name)
+	img, err := loader.LoadImage(name)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// Construct texture
-	tex := &Texture{
+	return &Texture{
 		Image:         img,
 		Interpolation: intp,
 		UseAlpha:      useAlpha,
 		ClipMode:      clip,
 		RepeatX:       int(repeatX),
 		RepeatY:       int(repeatY),
-	}
-	return tex, nil
+	}, nil
 }

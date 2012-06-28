@@ -18,13 +18,12 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package directlight
+package integrators
 
 import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/std/integrators/util"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 )
@@ -47,7 +46,8 @@ type directLighting struct {
 	lights []goray.Light
 }
 
-func New(transparentShadows bool, shadowDepth, rayDepth int) goray.SurfaceIntegrator {
+// NewDirectLight creates a new direct lighting integrator.
+func NewDirectLight(transparentShadows bool, shadowDepth, rayDepth int) goray.SurfaceIntegrator {
 	return &directLighting{
 		transparentShadows: transparentShadows,
 		shadowDepth:        shadowDepth,
@@ -102,13 +102,13 @@ func (dl *directLighting) Integrate(sc *goray.Scene, state *goray.RenderState, r
 
 		// Normal lighting
 		if bsdfs&(goray.BSDFGlossy|goray.BSDFDiffuse|goray.BSDFDispersive) != 0 {
-			col = color.Add(col, util.EstimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))
+			col = color.Add(col, estimateDirectPH(state, sp, dl.lights, sc, wo, dl.transparentShadows, dl.shadowDepth))
 		}
 		if bsdfs&(goray.BSDFDiffuse|goray.BSDFGlossy) != 0 {
-			// TODO: EstimatePhotons
+			// TODO: estimatePhotons
 		}
 		if bsdfs&goray.BSDFDiffuse != 0 && dl.doAO {
-			col = color.Add(col, util.SampleAO(sc, state, sp, wo, dl.aoSamples, dl.aoDist, dl.aoColor))
+			col = color.Add(col, sampleAO(sc, state, sp, wo, dl.aoSamples, dl.aoDist, dl.aoColor))
 		}
 
 		state.RayLevel++
@@ -172,13 +172,12 @@ func (dl *directLighting) Integrate(sc *goray.Scene, state *goray.RenderState, r
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"integrators/directlight"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"integrators/directlight"] = yamlscene.MapConstruct(constructDirectLight)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func constructDirectLight(m yamldata.Map) (interface{}, error) {
 	trShad, _ := yamldata.AsBool(m["transparentShadows"])
 	shadowDepth, _ := yamldata.AsInt(m["shadowDepth"])
 	rayDepth, _ := yamldata.AsInt(m["rayDepth"])
-	data = New(trShad, shadowDepth, rayDepth)
-	return
+	return NewDirectLight(trShad, shadowDepth, rayDepth), nil
 }

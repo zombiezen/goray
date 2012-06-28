@@ -28,8 +28,8 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/matrix"
 	"bitbucket.org/zombiezen/goray/shader"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 )

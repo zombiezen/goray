@@ -29,7 +29,7 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/intersect"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 )
 
 type Job struct {

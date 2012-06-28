@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package util
+package integrators
 
 import (
 	"math"
@@ -85,8 +85,8 @@ func halSeq(n int, base, start uint) (seq []float64) {
 	return
 }
 
-// EstimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2.
-func EstimateDirectPH(state *goray.RenderState, sp goray.SurfacePoint, lights []goray.Light, sc *goray.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
+// estimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2.
+func estimateDirectPH(state *goray.RenderState, sp goray.SurfacePoint, lights []goray.Light, sc *goray.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
 	return colorSum(len(lights), false, func(i int) (col color.Color) {
@@ -266,7 +266,7 @@ func sampleBSDF(params directParams, l goray.LightIntersecter, s1, s2 float64) (
 	return
 }
 
-func EstimatePhotons(state *goray.RenderState, sp goray.SurfacePoint, m *goray.PhotonMap, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
+func estimatePhotons(state *goray.RenderState, sp goray.SurfacePoint, m *goray.PhotonMap, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
 	sum = color.Black
 	if !m.Ready() {
 		return
@@ -296,7 +296,7 @@ func ckernel(phot, gather float64) float64 {
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 
-func SampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
+func sampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
 	mat := sp.Material.(goray.Material)
 
 	n := aoSamples

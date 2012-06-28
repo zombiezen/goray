@@ -18,18 +18,16 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package debug
+package materials
 
 import (
 	"errors"
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/std/materials/common"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"bitbucket.org/zombiezen/goray/vector"
-
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 )
 
 type debugMaterial struct {
@@ -38,7 +36,9 @@ type debugMaterial struct {
 
 var _ goray.Material = &debugMaterial{}
 
-func New(col color.Color) goray.Material { return &debugMaterial{col} }
+func NewDebug(col color.Color) goray.Material {
+	return &debugMaterial{col}
+}
 
 func (mat *debugMaterial) InitBSDF(state *goray.RenderState, sp goray.SurfacePoint) goray.BSDF {
 	return goray.BSDFDiffuse
@@ -62,7 +62,7 @@ func (mat *debugMaterial) Specular(state *goray.RenderState, sp goray.SurfacePoi
 }
 
 func (mat *debugMaterial) Reflectivity(state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) color.Color {
-	return common.GetReflectivity(mat, state, sp, flags)
+	return getReflectivity(mat, state, sp, flags)
 }
 
 func (mat *debugMaterial) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
@@ -70,7 +70,7 @@ func (mat *debugMaterial) Alpha(state *goray.RenderState, sp goray.SurfacePoint,
 }
 
 func (mat *debugMaterial) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
-	return common.ScatterPhoton(mat, state, sp, wi, s)
+	return scatterPhoton(mat, state, sp, wi, s)
 }
 
 func (mat *debugMaterial) MaterialFlags() goray.BSDF {
@@ -78,16 +78,13 @@ func (mat *debugMaterial) MaterialFlags() goray.BSDF {
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"materials/debug"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"materials/debug"] = yamlscene.MapConstruct(constructDebug)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func constructDebug(m yamldata.Map) (interface{}, error) {
 	col, ok := m["color"].(color.Color)
 	if !ok {
-		err = errors.New("Color must be an RGB")
-		return
+		return nil, errors.New("Color must be an RGB")
 	}
-
-	data = New(col)
-	return
+	return NewDebug(col), nil
 }

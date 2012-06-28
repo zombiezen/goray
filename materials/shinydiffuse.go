@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package shinydiffuse
+package materials
 
 import (
 	"errors"
@@ -29,11 +29,8 @@ import (
 	"bitbucket.org/zombiezen/goray/sampleutil"
 	"bitbucket.org/zombiezen/goray/shader"
 	"bitbucket.org/zombiezen/goray/vector"
-
-	"bitbucket.org/zombiezen/goray/std/materials/common"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
-
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 )
 
 type ShinyDiffuse struct {
@@ -63,9 +60,13 @@ type ShinyDiffuse struct {
 	useShaders    [4]bool
 }
 
-var _ goray.Material = &ShinyDiffuse{}
-var _ goray.EmitMaterial = &ShinyDiffuse{}
+var (
+	_ goray.Material     = &ShinyDiffuse{}
+	_ goray.EmitMaterial = &ShinyDiffuse{}
+)
 
+// Init initializes sd's internal parameters. This must be called before using
+// the material.
 func (sd *ShinyDiffuse) Init() {
 	const threshold = 1e-5
 
@@ -210,7 +211,7 @@ func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) (kr float64) {
 	if !sd.fresnelEffect {
 		return 1.0
 	}
-	kr, _ = common.Fresnel(wo, n, sd.IOR)
+	kr, _ = fresnel(wo, n, sd.IOR)
 	return
 }
 
@@ -431,7 +432,7 @@ func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint
 }
 
 func (sd *ShinyDiffuse) Reflectivity(state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) color.Color {
-	return common.GetReflectivity(sd, state, sp, flags)
+	return getReflectivity(sd, state, sp, flags)
 }
 
 func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
@@ -448,7 +449,7 @@ func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, w
 }
 
 func (sd *ShinyDiffuse) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
-	return common.ScatterPhoton(sd, state, sp, wi, s)
+	return scatterPhoton(sd, state, sp, wi, s)
 }
 
 func (sd *ShinyDiffuse) Emit(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) color.Color {
@@ -460,24 +461,21 @@ func (sd *ShinyDiffuse) Emit(state *goray.RenderState, sp goray.SurfacePoint, wo
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"materials/shinydiffuse"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"materials/shinydiffuse"] = yamlscene.MapConstruct(constructShinyDiffuse)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func constructShinyDiffuse(m yamldata.Map) (interface{}, error) {
 	col, ok := m["color"].(color.Color)
 	if !ok {
-		err = errors.New("Color must be an RGB")
-		return
+		return nil, errors.New("Color must be an RGB")
 	}
 	srcol, ok := m["mirrorColor"].(color.Color)
 	if !ok {
-		err = errors.New("Mirror color must be an RGB")
-		return
+		return nil, errors.New("Mirror color must be an RGB")
 	}
 	diffuse, ok := yamldata.AsFloat(m["diffuseReflect"])
 	if !ok {
-		err = errors.New("Diffuse reflection must be a float")
-		return
+		return nil, errors.New("Diffuse reflection must be a float")
 	}
 	specRefl, ok := yamldata.AsFloat(m["specularReflect"])
 	if !ok {

@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package common
+package materials
 
 import (
 	"math"
@@ -30,7 +30,7 @@ import (
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
-func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
+func fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 	c := vector.Dot(i, n)
 	if c < 0 {
 		n = n.Negate()
@@ -54,12 +54,12 @@ func Fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 	return
 }
 
-type Sampler interface {
+type sampler interface {
 	Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (color.Color, vector.Vector3D)
 	MaterialFlags() goray.BSDF
 }
 
-func ScatterPhoton(mat Sampler, state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func scatterPhoton(mat sampler, state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
 	scol, wo := mat.Sample(state, sp, wi, &s.MaterialSample)
 	if s.Pdf <= 1e-6 {
 		return
@@ -75,7 +75,7 @@ func ScatterPhoton(mat Sampler, state *goray.RenderState, sp goray.SurfacePoint,
 	return
 }
 
-func GetReflectivity(mat Sampler, state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) (col color.Color) {
+func getReflectivity(mat sampler, state *goray.RenderState, sp goray.SurfacePoint, flags goray.BSDF) (col color.Color) {
 	const N = 16
 
 	col = color.Black

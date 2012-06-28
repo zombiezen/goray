@@ -35,8 +35,8 @@ import (
 
 	"bitbucket.org/zombiezen/goray/job"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/std/textures/image/fileloader"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
+	"bitbucket.org/zombiezen/goray/textures"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 )
 
 var (
@@ -94,7 +94,7 @@ func httpServer() int {
 
 	// Start up job rendering
 	baseParams = yamlscene.Params{
-		"ImageLoader": fileloader.New(imagePath),
+		"ImageLoader": textures.NewImageLoaderDirectory(imagePath),
 	}
 	go jobManager.RenderJobs()
 

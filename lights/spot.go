@@ -18,7 +18,7 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package spot
+package lights
 
 import (
 	"math"
@@ -26,8 +26,8 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/sampleutil"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 )
@@ -46,7 +46,7 @@ type spotLight struct {
 
 var _ goray.DiracLight = &spotLight{}
 
-func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) goray.Light {
+func NewSpot(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) goray.Light {
 	newSpot := &spotLight{
 		position:  from,
 		direction: vector.Sub(to, from).Normalize(),
@@ -82,10 +82,16 @@ func New(from, to vector.Vector3D, col color.Color, power, angle, falloff float6
 	return newSpot
 }
 
-func (spot *spotLight) LightFlags() uint { return goray.LightTypeSingular }
-func (spot *spotLight) NumSamples() int  { return 1 }
+func (spot *spotLight) LightFlags() uint {
+	return goray.LightTypeSingular
+}
 
-func (spot *spotLight) SetScene(scene *goray.Scene) {}
+func (spot *spotLight) NumSamples() int {
+	return 1
+}
+
+func (spot *spotLight) SetScene(scene *goray.Scene) {
+}
 
 func (spot *spotLight) TotalEnergy() color.Color {
 	return color.ScalarMul(spot.color, 2*math.Pi*(1-0.5*(spot.cosStart+spot.cosEnd)))
@@ -194,16 +200,15 @@ func (spot *spotLight) CanIlluminate(pt vector.Vector3D) bool {
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"lights/spot"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"lights/spot"] = yamlscene.MapConstruct(constructSpot)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func constructSpot(m yamldata.Map) (interface{}, error) {
 	pos := m["position"].(vector.Vector3D)
 	look := m["look"].(vector.Vector3D)
 	col := m["color"].(color.Color)
 	power, _ := yamldata.AsFloat(m["intensity"])
 	angle, _ := yamldata.AsFloat(m["coneAngle"])
 	falloff, _ := yamldata.AsFloat(m["falloff"])
-	data = New(pos, look, col, power, angle, falloff)
-	return
+	return NewSpot(pos, look, col, power, angle, falloff), nil
 }

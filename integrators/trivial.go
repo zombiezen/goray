@@ -18,23 +18,29 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-	Package std does not provide any functionality, but merely imports all
-	the packages in the std directory.  This, in turn, registers all the
-	packages with yamlscene.  Typical usage:
-
-		import _ "goray/std"
-*/
-package std
+package integrators
 
 import (
-	_ "bitbucket.org/zombiezen/goray/std/cameras/ortho"
-	_ "bitbucket.org/zombiezen/goray/std/cameras/perspective"
-	_ "bitbucket.org/zombiezen/goray/std/integrators/directlight"
-	_ "bitbucket.org/zombiezen/goray/std/lights/point"
-	_ "bitbucket.org/zombiezen/goray/std/lights/spot"
-	_ "bitbucket.org/zombiezen/goray/std/materials/debug"
-	_ "bitbucket.org/zombiezen/goray/std/materials/shinydiffuse"
-	_ "bitbucket.org/zombiezen/goray/std/shaders/texmap"
-	_ "bitbucket.org/zombiezen/goray/std/textures/image"
+	"bitbucket.org/zombiezen/goray"
+	"bitbucket.org/zombiezen/goray/color"
 )
+
+type trivial struct{}
+
+var _ goray.SurfaceIntegrator = trivial{}
+
+// NewTrivial creates a surface integrator that outputs white for collisions and
+// gray for no collisions.
+func NewTrivial() goray.SurfaceIntegrator {
+	return trivial{}
+}
+
+func (ti trivial) SurfaceIntegrator()         {}
+func (ti trivial) Preprocess(sc *goray.Scene) {}
+
+func (ti trivial) Integrate(sc *goray.Scene, s *goray.RenderState, r goray.DifferentialRay) color.AlphaColor {
+	if coll := sc.Intersect(r.Ray, -1); coll.Hit() {
+		return color.NewRGBAFromColor(color.White, 1.0)
+	}
+	return color.NewRGBAFromColor(color.Gray(0.1), 0.0)
+}

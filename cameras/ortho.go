@@ -18,29 +18,28 @@
 	along with goray.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// Package ortho provides an orthographic camera.
-package ortho
+package cameras
 
 import (
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/std/yamlscene"
 	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
 	"errors"
 )
 
-// orthoCam is a simple orthographic camera.
-type orthoCam struct {
+// orthographic is a simple orthographic camera.
+type orthographic struct {
 	resx, resy         int
 	position           vector.Vector3D
 	vlook, vup, vright vector.Vector3D
 }
 
-var _ goray.Camera = &orthoCam{}
+var _ goray.Camera = &orthographic{}
 
-// NewOrtho creates a new orthographic camera.
-func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) goray.Camera {
-	c := new(orthoCam)
+// NewOrthographic creates a new orthographic camera.
+func NewOrthographic(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) goray.Camera {
+	c := new(orthographic)
 	c.resx, c.resy = resx, resy
 	c.vup = vector.Sub(up, pos)
 	c.vlook = vector.Sub(look, pos).Normalize()
@@ -61,11 +60,19 @@ func New(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) g
 	return c
 }
 
-func (c *orthoCam) SampleLens() bool { return false }
-func (c *orthoCam) ResolutionX() int { return c.resx }
-func (c *orthoCam) ResolutionY() int { return c.resy }
+func (c *orthographic) SampleLens() bool {
+	return false
+}
 
-func (c *orthoCam) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
+func (c *orthographic) ResolutionX() int {
+	return c.resx
+}
+
+func (c *orthographic) ResolutionY() int {
+	return c.resy
+}
+
+func (c *orthographic) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1
 	r = goray.Ray{
 		From: vector.Sum(c.position, c.vright.Scale(x), c.vup.Scale(y)),
@@ -75,30 +82,28 @@ func (c *orthoCam) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	return
 }
 
-func (c *orthoCam) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
+func (c *orthographic) Project(wo goray.Ray, lu, lv *float64) (pdf float64, changed bool) {
 	return 0.0, false
 }
 
 func init() {
-	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/ortho"] = yamlscene.MapConstruct(Construct)
+	yamlscene.Constructor[yamlscene.StdPrefix+"cameras/ortho"] = yamlscene.MapConstruct(constructOrthographic)
 }
 
-func Construct(m yamldata.Map) (data interface{}, err error) {
+func constructOrthographic(m yamldata.Map) (interface{}, error) {
 	// Obtain position, look, and up
 	pos, posOk := m["position"].(vector.Vector3D)
 	look, lookOk := m["look"].(vector.Vector3D)
 	up, upOk := m["up"].(vector.Vector3D)
 	if !posOk || !lookOk || !upOk {
-		err = errors.New("Ortho nodes must have position, look, and up vectors")
-		return
+		return nil, errors.New("Ortho nodes must have position, look, and up vectors")
 	}
 
 	// Width and height
 	width, widthOk := yamldata.AsInt(m["width"])
 	height, heightOk := yamldata.AsInt(m["height"])
 	if !widthOk || !heightOk {
-		err = errors.New("Ortho must have width and height")
-		return
+		return nil, errors.New("Ortho must have width and height")
 	}
 
 	// Aspect and scale
@@ -112,6 +117,5 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 	}
 
 	// Create camera (finally!)
-	data = New(pos, look, up, width, height, aspect, scale)
-	return
+	return NewOrthographic(pos, look, up, width, height, aspect, scale), nil
 }
