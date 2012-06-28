@@ -26,7 +26,7 @@ import (
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/kdtree"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
@@ -115,7 +115,7 @@ func (kd *kdPartition) Clip(i int, bound bound.Bound, axis vector.Axis, lower bo
 	return bound, data
 }
 
-func NewKD(prims []goray.Primitive, log logging.Handler) goray.Intersecter {
+func NewKD(prims []goray.Primitive, log log.Logger) goray.Intersecter {
 	kd := &kdPartition{
 		prims: prims,
 		tris:  make([]*goray.Triangle, len(prims)),

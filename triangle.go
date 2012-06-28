@@ -25,7 +25,7 @@ import (
 	"math"
 
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
@@ -210,7 +210,7 @@ func (tri *Triangle) Clip(bound bound.Bound, axis vector.Axis, lower bool, oldDa
 func (tri *Triangle) clipPlane(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			logging.Debug(logging.MainLog, "Clip plane fault: %v", err)
+			log.Debugf("Clip plane fault: %v", err)
 			clipped, newData = tri.clipBox(bound)
 		}
 	}()
@@ -238,7 +238,7 @@ func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData inter
 	defer func() {
 		if err := recover(); err != nil {
 			clipped, newData = bound.Bound{}, nil
-			logging.Warning(logging.MainLog, "Clip panic: %v", err)
+			log.Warningf("Clip panic: %v", err)
 		}
 	}()
 

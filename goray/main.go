@@ -28,7 +28,7 @@ import (
 	"runtime/pprof"
 
 	"bitbucket.org/zombiezen/goray/job"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 
 	_ "bitbucket.org/zombiezen/goray/std"
 	"bitbucket.org/zombiezen/goray/std/textures/image/fileloader"
@@ -65,7 +65,7 @@ func main() {
 	setupLogging()
 
 	runtime.GOMAXPROCS(*maxProcs)
-	logging.MainLog.Debug("Using %d processor(s)", runtime.GOMAXPROCS(0))
+	log.Debugf("Using %d processor(s)", runtime.GOMAXPROCS(0))
 
 	var exitCode int
 	switch {
@@ -82,9 +82,7 @@ func main() {
 }
 
 func setupLogging() {
-	level := logging.Level(logging.InfoLevel - 10*debug)
-	writeHandler := logging.NewWriterHandler(os.Stdout)
-	logging.MainLog.AddHandler(logging.NewMinLevelFilter(writeHandler, level))
+	log.Default = filterLogger{log.New(os.Stdout), debug}
 }
 
 func printInstructions() {
@@ -122,14 +120,14 @@ func singleFile() int {
 	// Check output format
 	formatStruct, found := job.FormatMap[outputFormat]
 	if !found {
-		logging.MainLog.Critical("Unrecognized output format: %s", outputFormat)
+		log.Criticalf("Unrecognized output format: %s", outputFormat)
 		return 1
 	}
 
 	// Open input file
 	inFile, err := os.Open(flag.Arg(0))
 	if err != nil {
-		logging.MainLog.Critical("Error opening input file: %v", err)
+		log.Criticalf("Error opening input file: %v", err)
 		return 1
 	}
 	defer inFile.Close()
@@ -140,7 +138,7 @@ func singleFile() int {
 	}
 	outFile, err := os.Create(outputPath)
 	if err != nil {
-		logging.MainLog.Critical("Error opening output file: %v", err)
+		log.Criticalf("Error opening output file: %v", err)
 		return 1
 	}
 	defer outFile.Close()
@@ -150,7 +148,7 @@ func singleFile() int {
 	if cpuprofile != "" {
 		cpuprofileFile, err = os.Create(cpuprofile)
 		if err != nil {
-			logging.MainLog.Critical("Error opening cpuprofile file: %v", err)
+			log.Criticalf("Error opening cpuprofile file: %v", err)
 			return 1
 		}
 		defer cpuprofileFile.Close()
@@ -162,18 +160,8 @@ func singleFile() int {
 		"OutputFormat": formatStruct,
 	})
 	ch := j.StatusChan()
-	j.SceneLog = logging.NewFormatFilter(
-		logging.MainLog,
-		func(rec logging.Record) string {
-			return "  SCENE: " + rec.String()
-		},
-	)
-	j.RenderLog = logging.NewFormatFilter(
-		logging.MainLog,
-		func(rec logging.Record) string {
-			return "  RENDER: " + rec.String()
-		},
-	)
+	j.SceneLog = log.Default
+	j.RenderLog = log.Default
 	go func() {
 		if cpuprofileFile != nil {
 			pprof.StartCPUProfile(cpuprofileFile)
@@ -185,22 +173,52 @@ func singleFile() int {
 	for stat := range ch {
 		switch stat.Code {
 		case job.StatusReading:
-			logging.MainLog.Info("Reading scene file...")
+			log.Infof("Reading scene file...")
 		case job.StatusUpdating:
-			logging.MainLog.Info("Preparing scene...")
+			log.Infof("Preparing scene...")
 		case job.StatusRendering:
-			logging.MainLog.Info("Finalized in %v", stat.UpdateTime)
-			logging.MainLog.Info("Rendering...")
+			log.Infof("Finalized in %v", stat.UpdateTime)
+			log.Infof("Rendering...")
 		case job.StatusWriting:
-			logging.MainLog.Info("Render finished in %v", stat.RenderTime)
-			logging.MainLog.Info("Writing...")
+			log.Infof("Render finished in %v", stat.RenderTime)
+			log.Infof("Writing...")
 			pprof.StopCPUProfile()
 		case job.StatusDone:
-			logging.MainLog.Info("TOTAL TIME: %v", stat.TotalTime())
+			log.Infof("TOTAL TIME: %v", stat.TotalTime())
 		case job.StatusError:
-			logging.MainLog.Critical("Error: %v", stat.Error)
+			log.Criticalf("Error: %v", stat.Error)
 			return 1
 		}
 	}
 	return 0
+}
+
+// A filterLogger can hide messages below a given severity.
+type filterLogger struct {
+	log.Logger
+	Level int
+}
+
+func (l filterLogger) Debugf(format string, args ...interface{}) {
+	if l.Level >= 1 {
+		l.Logger.Debugf(format, args...)
+	}
+}
+
+func (l filterLogger) Infof(format string, args ...interface{}) {
+	if l.Level >= 0 {
+		l.Logger.Infof(format, args...)
+	}
+}
+
+func (l filterLogger) Warningf(format string, args ...interface{}) {
+	if l.Level >= -1 {
+		l.Logger.Warningf(format, args...)
+	}
+}
+
+func (l filterLogger) Errorf(format string, args ...interface{}) {
+	if l.Level >= -2 {
+		l.Logger.Errorf(format, args...)
+	}
 }

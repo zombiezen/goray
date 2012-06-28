@@ -26,7 +26,7 @@ import (
 
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
@@ -68,7 +68,7 @@ type Intersecter interface {
 	Bound() bound.Bound
 }
 
-type IntersecterBuilder func([]Primitive, logging.Handler) Intersecter
+type IntersecterBuilder func([]Primitive, log.Logger) Intersecter
 
 // Scene stores all of the entities that define an environment to render.
 // Scene also functions as a high-level API for goray: once you have created a scene, you can create geometry,
@@ -77,7 +77,7 @@ type Scene struct {
 	changes    sceneChangeSet
 	nextFreeID ObjectID
 
-	log *logging.Logger
+	log log.Logger
 
 	objects    map[ObjectID]Object3D
 	materials  map[string]Material
@@ -97,9 +97,9 @@ type Scene struct {
 }
 
 // NewScene creates a new scene.
-func NewScene(ib IntersecterBuilder) (s *Scene) {
+func NewScene(ib IntersecterBuilder, l log.Logger) (s *Scene) {
 	s = &Scene{
-		log: logging.NewLogger(),
+		log: l,
 
 		aaSamples:   1,
 		aaPasses:    1,
@@ -118,8 +118,6 @@ func NewScene(ib IntersecterBuilder) (s *Scene) {
 	s.changes.SetAll()
 	return s
 }
-
-func (s *Scene) Log() *logging.Logger { return s.log }
 
 // AddLight adds a light to the scene.
 func (s *Scene) AddLight(l Light) (err error) {
@@ -221,7 +219,7 @@ func (s *Scene) Intersect(r Ray, dist float64) Collision {
 
 	// Perform low-level intersection
 	if s.intersecter == nil {
-		s.log.Warning("Intersect called without an Update")
+		s.log.Warningf("Intersect called without an Update")
 		return Collision{}
 	}
 	return s.intersecter.Intersect(r, dist)
@@ -230,7 +228,7 @@ func (s *Scene) Intersect(r Ray, dist float64) Collision {
 // Shadowed returns whether a ray will cast a shadow.
 func (s *Scene) Shadowed(r Ray, dist float64) bool {
 	if s.intersecter == nil {
-		s.log.Warning("Shadowed called without an Update")
+		s.log.Warningf("Shadowed called without an Update")
 		return false
 	}
 	r.From = vector.Add(r.From, r.Dir.Scale(r.TMin))
@@ -250,7 +248,7 @@ func (s *Scene) Update() (err error) {
 	if s.camera == nil {
 		return errors.New("Scene has no camera")
 	}
-	s.log.Debug("Performing scene update...")
+	s.log.Debugf("Performing scene update...")
 
 	if s.changes.Has(sceneObjectsChanged) {
 		// We've changed the scene's geometry.  We need to rebuild the intersection scheme.
@@ -261,7 +259,7 @@ func (s *Scene) Update() (err error) {
 		for _, obj := range s.objects {
 			prims = append(prims, obj.Primitives()...)
 		}
-		s.log.Debug("Geometry collected, %d primitives", len(prims))
+		s.log.Debugf("Geometry collected, %d primitives", len(prims))
 
 		// Do partition building
 		if len(prims) > 0 {
@@ -280,7 +278,7 @@ func (s *Scene) Update() (err error) {
 				bgLight.SetScene(s)
 			}
 		}
-		s.log.Debug("Set up lights")
+		s.log.Debugf("Set up lights")
 	}
 
 	s.changes.Clear()

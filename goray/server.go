@@ -34,17 +34,16 @@ import (
 	"code.google.com/p/gorilla/mux"
 
 	"bitbucket.org/zombiezen/goray/job"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/std/textures/image/fileloader"
 	"bitbucket.org/zombiezen/goray/std/yamlscene"
 )
 
 var (
-	router      *mux.Router
-	jobManager  *job.Manager
-	baseParams  yamlscene.Params
-	templates   *template.Template
-	logRecorder *logging.CircularHandler
+	router     *mux.Router
+	jobManager *job.Manager
+	baseParams yamlscene.Params
+	templates  *template.Template
 )
 
 const defaultOutputRoot = "output"
@@ -67,7 +66,7 @@ func httpServer() int {
 	// Init job manager
 	storage, err := job.NewFileStorage(outputPath)
 	if err != nil {
-		logging.MainLog.Critical("FileStorage: %v", err)
+		log.Criticalf("FileStorage: %v", err)
 		return 1
 	}
 	jobManager = job.NewManager(storage, 5)
@@ -75,7 +74,7 @@ func httpServer() int {
 	// Parse templates
 	templates, err = template.ParseGlob(filepath.Join(dataRoot, dataTemplateSubdir, "*.html"))
 	if err != nil {
-		logging.MainLog.Critical("Server: %v", err)
+		log.Criticalf("Server: %v", err)
 		return 1
 	}
 
@@ -85,7 +84,6 @@ func httpServer() int {
 	router.HandleFunc("/license", handleLicense).Name("license")
 	router.HandleFunc("/job/{job:[0-9]+}", handleViewJob).Name("view")
 	router.HandleFunc("/submit", handleSubmitJob).Name("submit")
-	router.HandleFunc("/log", handleLog).Name("log")
 	router.Handle("/status", websocket.Handler(func(ws *websocket.Conn) { handleStatus(ws) })).Name("status")
 	router.HandleFunc("/output/{job:[0-9]+}", handleOutput).Name("output")
 	fs := http.FileServer(http.Dir(filepath.Join(dataRoot, dataStaticSubdir)))
@@ -94,10 +92,6 @@ func httpServer() int {
 		fs.ServeHTTP(w, req)
 	}).Name("static")
 
-	// Init logging
-	logRecorder = logging.NewCircularHandler(100)
-	logging.MainLog.AddHandler(logRecorder)
-
 	// Start up job rendering
 	baseParams = yamlscene.Params{
 		"ImageLoader": fileloader.New(imagePath),
@@ -105,10 +99,10 @@ func httpServer() int {
 	go jobManager.RenderJobs()
 
 	// Run HTTP server
-	logging.MainLog.Info("Starting HTTP server")
+	log.Infof("Starting HTTP server")
 	err = http.ListenAndServe(httpAddress, router)
 	if err != nil {
-		logging.MainLog.Critical("ListenAndServe: %v", err)
+		log.Criticalf("ListenAndServe: %v", err)
 		return 1
 	}
 	return 0
@@ -135,16 +129,11 @@ func handleSubmitJob(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		logging.MainLog.Info("Created job %s", j.Name)
+		log.Infof("Created job %s", j.Name)
 		http.Redirect(w, req, "/job/"+j.Name, http.StatusMovedPermanently)
 	default:
 		http.Error(w, "Method not supported", http.StatusMethodNotAllowed)
 	}
-}
-
-func handleLog(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	templates.ExecuteTemplate(w, "log.html", logRecorder.Records())
 }
 
 func handleViewJob(w http.ResponseWriter, req *http.Request) {

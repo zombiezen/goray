@@ -28,7 +28,7 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/intersect"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/std/yamlscene"
 )
 
@@ -36,8 +36,8 @@ type Job struct {
 	Name      string
 	Source    io.Reader
 	Params    yamlscene.Params
-	SceneLog  logging.Handler
-	RenderLog logging.Handler
+	SceneLog  log.Logger
+	RenderLog log.Logger
 
 	status Status
 	lock   sync.RWMutex
@@ -103,10 +103,7 @@ func (job *Job) Render(w io.Writer) (err error) {
 	// 1. Read
 	status.Code = StatusReading
 	job.ChangeStatus(status)
-	sc := goray.NewScene(goray.IntersecterBuilder(intersect.NewKD))
-	if job.SceneLog != nil {
-		sc.Log().AddHandler(job.SceneLog)
-	}
+	sc := goray.NewScene(goray.IntersecterBuilder(intersect.NewKD), job.SceneLog)
 	var integ goray.Integrator
 	status.ReadTime = stopwatch(func() {
 		integ, err = yamlscene.Load(job.Source, sc, job.Params)

@@ -25,7 +25,7 @@ import (
 	"sync"
 
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/logging"
+	"bitbucket.org/zombiezen/goray/log"
 	"bitbucket.org/zombiezen/goray/vector"
 )
 
@@ -52,7 +52,7 @@ type VolumeIntegrator interface {
 //
 // Render will update the scene, create a new image, and then use one of the
 // integration functions to write to the image.
-func Render(s *Scene, i Integrator, log logging.Handler) (img *Image) {
+func Render(s *Scene, i Integrator, log log.Logger) (img *Image) {
 	s.Update()
 	img = NewImage(s.Camera().ResolutionX(), s.Camera().ResolutionY())
 	i.Preprocess(s)
@@ -93,7 +93,7 @@ func RenderPixel(s *Scene, i Integrator, x, y int) Fragment {
 const fragBufferSize = 100
 
 // SimpleIntegrate integrates an image one pixel at a time.
-func SimpleIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragment {
+func SimpleIntegrate(s *Scene, in Integrator, log log.Logger) <-chan Fragment {
 	ch := make(chan Fragment, fragBufferSize)
 	go func() {
 		defer close(ch)
@@ -108,7 +108,7 @@ func SimpleIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragme
 }
 
 // BlockIntegrate integrates an image in small batches.
-func BlockIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragment {
+func BlockIntegrate(s *Scene, in Integrator, log log.Logger) <-chan Fragment {
 	const blockDim = 32
 	numWorkers := runtime.GOMAXPROCS(0)
 	cam := s.Camera()
@@ -133,11 +133,10 @@ func BlockIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragmen
 			wg.Add(1)
 			go func() {
 				for loc := range locCh {
-					//logging.Debug(log, "BLOCK (%3d, %3d)", loc[0], loc[1])
+					log.Debugf("Block (%3d, %3d)", loc[0], loc[1])
 					for y := loc[1]; y < loc[1]+blockDim && y < h; y++ {
 						for x := loc[0]; x < loc[0]+blockDim && x < w; x++ {
 							ch <- RenderPixel(s, in, x, y)
-							//logging.VerboseDebug(log, "Rendered (%3d, %3d)", x, y)
 						}
 					}
 				}
@@ -150,7 +149,7 @@ func BlockIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragmen
 }
 
 // WorkerIntegrate integrates an image using a set number of jobs.
-func WorkerIntegrate(s *Scene, in Integrator, log logging.Handler) <-chan Fragment {
+func WorkerIntegrate(s *Scene, in Integrator, log log.Logger) <-chan Fragment {
 	numWorkers := runtime.GOMAXPROCS(0)
 	cam := s.Camera()
 	w, h := cam.ResolutionX(), cam.ResolutionY()
