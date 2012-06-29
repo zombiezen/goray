@@ -82,11 +82,6 @@ func (v Vector3D) GoString() string {
 	return fmt.Sprintf("vector.Vector3D{%#v, %#v, %#v}", v[X], v[Y], v[Z])
 }
 
-// Add computes the sum of two vectors.
-func Add(v1, v2 Vector3D) Vector3D {
-	return Vector3D{v1[X] + v2[X], v1[Y] + v2[Y], v1[Z] + v2[Z]}
-}
-
 // Sum computes the sum of two or more vectors.
 func Sum(v1, v2 Vector3D, vn ...Vector3D) Vector3D {
 	result := Vector3D{v1[X] + v2[X], v1[Y] + v2[Y], v1[Z] + v2[Z]}
@@ -103,11 +98,6 @@ func (v Vector3D) AddScalar(s float64) Vector3D {
 	return Vector3D{v[X] + s, v[Y] + s, v[Z] + s}
 }
 
-// Sub computes the difference of two vectors.
-func Sub(v1, v2 Vector3D) Vector3D {
-	return Vector3D{v1[X] - v2[X], v1[Y] - v2[Y], v1[Z] - v2[Z]}
-}
-
 // Scale multiplies all of a vector's components by a scalar.
 func (v Vector3D) Scale(s float64) Vector3D {
 	return Vector3D{v[X] * s, v[Y] * s, v[Z] * s}
@@ -116,11 +106,6 @@ func (v Vector3D) Scale(s float64) Vector3D {
 // Mul multiplies the components of two vectors together.
 func Mul(v1, v2 Vector3D) Vector3D {
 	return Vector3D{v1[X] * v2[X], v1[Y] * v2[Y], v1[Z] * v2[Z]}
-}
-
-// Dot computes the dot product of two vectors.
-func Dot(v1, v2 Vector3D) float64 {
-	return v1[X]*v2[X] + v1[Y]*v2[Y] + v1[Z]*v2[Z]
 }
 
 // Cross computes the cross product of two vectors.

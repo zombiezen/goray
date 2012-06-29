@@ -22,6 +22,67 @@ package vector
 
 import "testing"
 
+func TestAdd(t *testing.T) {
+	tests := []struct {
+		A, B, Result Vector3D
+	}{
+		{Vector3D{0, 0, 0}, Vector3D{0, 0, 0}, Vector3D{0, 0, 0}},
+		{Vector3D{1, 2, 3}, Vector3D{4, 5, 6}, Vector3D{5, 7, 9}},
+	}
+	for _, tt := range tests {
+		if r := Add(tt.A, tt.B); r != tt.Result {
+			t.Errorf("Add(%v, %v) != %v (got %v)", tt.A, tt.B, tt.Result, r)
+		}
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Add(Vector3D{1, 2, 3}, Vector3D{4, 5, 6})
+	}
+}
+
+func TestSub(t *testing.T) {
+	tests := []struct {
+		A, B, Result Vector3D
+	}{
+		{Vector3D{0, 0, 0}, Vector3D{0, 0, 0}, Vector3D{0, 0, 0}},
+		{Vector3D{1, 2, 3}, Vector3D{6, 5, 4}, Vector3D{-5, -3, -1}},
+	}
+	for _, tt := range tests {
+		if r := Sub(tt.A, tt.B); r != tt.Result {
+			t.Errorf("Sub(%v, %v) != %v (got %v)", tt.A, tt.B, tt.Result, r)
+		}
+	}
+}
+
+func BenchmarkSub(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Sub(Vector3D{1, 2, 3}, Vector3D{4, 5, 6})
+	}
+}
+
+func TestDot(t *testing.T) {
+	tests := []struct {
+		A, B   Vector3D
+		Result float64
+	}{
+		{Vector3D{0, 0, 0}, Vector3D{0, 0, 0}, 0},
+		{Vector3D{1, 2, 3}, Vector3D{4, 5, 6}, 32},
+	}
+	for _, tt := range tests {
+		if r := Dot(tt.A, tt.B); r != tt.Result {
+			t.Errorf("Dot(%v, %v) != %v (got %v)", tt.A, tt.B, tt.Result, r)
+		}
+	}
+}
+
+func BenchmarkDot(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Dot(Vector3D{1, 2, 3}, Vector3D{4, 5, 6})
+	}
+}
+
 func TestNormalize(t *testing.T) {
 	comps := []float64{1.0, 2.0, -2.0}
 	length := 3.0
