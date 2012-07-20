@@ -21,7 +21,6 @@
 package goray
 
 import (
-	"bitbucket.org/zombiezen/goray/matrix"
 	"bitbucket.org/zombiezen/math3/vec64"
 )
 
@@ -37,7 +36,6 @@ type Mesh struct {
 	uvs       []UV
 	hasOrco   bool
 	light     Light
-	world2obj *matrix.Matrix
 	hidden    bool
 }
 

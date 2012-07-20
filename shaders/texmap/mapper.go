@@ -26,11 +26,11 @@ import (
 	"math"
 
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/matrix"
 	"bitbucket.org/zombiezen/goray/shader"
 	"bitbucket.org/zombiezen/goray/vecutil"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/mat64"
 	"bitbucket.org/zombiezen/math3/vec64"
 )
 
@@ -47,14 +47,14 @@ const (
 
 // A TextureMapper is a shader that applies a texture to geometry.
 type TextureMapper struct {
-	Texture          Texture       // The 2D/3D texture to apply
-	Coordinates      Coordinates   // The coordinate system to use
-	Projector        Projector     // The 3D projection type to use
-	MapX, MapY, MapZ vecutil.Axis  // Axis re-mapping (use -1 to indicate zero)
-	Transform        matrix.Matrix // Transformation matrix (if using Transform coordinates)
-	Scale, Offset    vec64.Vector  // Constant scale and offset for coordinates
-	Scalar           bool          // Should the result be a scalar?
-	BumpStrength     float64       // Bump mapping weight
+	Texture          Texture      // The 2D/3D texture to apply
+	Coordinates      Coordinates  // The coordinate system to use
+	Projector        Projector    // The 3D projection type to use
+	MapX, MapY, MapZ vecutil.Axis // Axis re-mapping (use -1 to indicate zero)
+	Transform        mat64.Matrix // Transformation matrix (if using Transform coordinates)
+	Scale, Offset    vec64.Vector // Constant scale and offset for coordinates
+	Scalar           bool         // Should the result be a scalar?
+	BumpStrength     float64      // Bump mapping weight
 
 	delta, deltaU, deltaV, deltaW float64
 }
@@ -77,7 +77,7 @@ func (tmap *TextureMapper) Init(tex Texture, coord Coordinates, scalar bool) {
 	tmap.Coordinates = coord
 	tmap.Projector = FlatMap
 	tmap.MapX, tmap.MapY, tmap.MapZ = vecutil.X, vecutil.Y, vecutil.Z
-	tmap.Transform = matrix.Identity
+	tmap.Transform = mat64.Identity
 	tmap.Scale = vec64.Vector{1.0, 1.0, 1.0}
 	tmap.Offset = vec64.Vector{}
 	tmap.Scalar = scalar
@@ -108,7 +108,7 @@ func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray
 	case Orco:
 		p, n = sp.OrcoPosition, sp.OrcoNormal
 	case Transform:
-		p = matrix.VecMul(tmap.Transform, p)
+		p = tmap.Transform.Transform(p)
 	case Window:
 		p = state.ScreenPos
 	}
