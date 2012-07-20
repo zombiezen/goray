@@ -26,13 +26,12 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
-
 	"bitbucket.org/zombiezen/goray/shaders/texmap"
-	"bitbucket.org/zombiezen/goray/yamlscene"
-
+	"bitbucket.org/zombiezen/goray/vecutil"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yaml/parser"
+	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type Interpolation int
@@ -63,8 +62,8 @@ type Texture struct {
 
 var _ texmap.DiscreteTexture = &Texture{}
 
-func (t *Texture) ColorAt(pt vector.Vector3D) (col color.AlphaColor) {
-	pt = vector.Vector3D{pt[vector.X], -pt[vector.Y], pt[vector.Z]}
+func (t *Texture) ColorAt(pt vec64.Vector) (col color.AlphaColor) {
+	pt = vec64.Vector{pt[0], -pt[1], pt[2]}
 	pt, outside := t.mapping(pt)
 	if outside {
 		return color.RGBA{}
@@ -76,7 +75,7 @@ func (t *Texture) ColorAt(pt vector.Vector3D) (col color.AlphaColor) {
 	return
 }
 
-func (t *Texture) ScalarAt(pt vector.Vector3D) float64 {
+func (t *Texture) ScalarAt(pt vec64.Vector) float64 {
 	return color.Energy(t.ColorAt(pt))
 }
 
@@ -84,28 +83,28 @@ func (t *Texture) Is3D() bool                { return false }
 func (t *Texture) IsNormalMap() bool         { return false }
 func (t *Texture) Resolution() (x, y, z int) { x, y = t.Image.Width, t.Image.Height; return }
 
-func (t *Texture) mapping(texPt vector.Vector3D) (p vector.Vector3D, outside bool) {
+func (t *Texture) mapping(texPt vec64.Vector) (p vec64.Vector, outside bool) {
 	texPt = texPt.Scale(0.5).AddScalar(0.5)
 	if t.ClipMode == ClipRepeat {
 		if t.RepeatX > 1 {
-			texPt[vector.X] = mapRepeat(texPt[vector.X], t.RepeatX)
+			texPt[vecutil.X] = mapRepeat(texPt[vecutil.X], t.RepeatX)
 		}
 		if t.RepeatY > 1 {
-			texPt[vector.Y] = mapRepeat(texPt[vector.Y], t.RepeatY)
+			texPt[vecutil.Y] = mapRepeat(texPt[vecutil.Y], t.RepeatY)
 		}
 	}
 	switch t.ClipMode {
 	case ClipCube:
-		if texPt[vector.X] < 0 || texPt[vector.X] > 1 || texPt[vector.Y] < 0 || texPt[vector.Y] > 1 || texPt[vector.Z] < -1 || texPt[vector.Z] > 1 {
+		if texPt[vecutil.X] < 0 || texPt[vecutil.X] > 1 || texPt[vecutil.Y] < 0 || texPt[vecutil.Y] > 1 || texPt[vecutil.Z] < -1 || texPt[vecutil.Z] > 1 {
 			outside = true
 		}
 	case Clip:
-		if texPt[vector.X] < 0 || texPt[vector.X] > 1 || texPt[vector.Y] < 0 || texPt[vector.Y] > 1 {
+		if texPt[vecutil.X] < 0 || texPt[vecutil.X] > 1 || texPt[vecutil.Y] < 0 || texPt[vecutil.Y] > 1 {
 			outside = true
 		}
 	case ClipExtend:
-		texPt[vector.X] = mapExtend(texPt[vector.X])
-		texPt[vector.Y] = mapExtend(texPt[vector.Y])
+		texPt[vecutil.X] = mapExtend(texPt[vecutil.X])
+		texPt[vecutil.Y] = mapExtend(texPt[vecutil.Y])
 	}
 	p = texPt
 	return
@@ -140,9 +139,9 @@ func cubicInterpolate(c1, c2, c3, c4 color.AlphaColor, x float64) (col color.Alp
 	return
 }
 
-func interpolateImage(img *goray.Image, intp Interpolation, p vector.Vector3D) color.AlphaColor {
-	xf := float64(img.Width) * (p[vector.X] - math.Floor(p[vector.X]))
-	yf := float64(img.Width) * (p[vector.Y] - math.Floor(p[vector.Y]))
+func interpolateImage(img *goray.Image, intp Interpolation, p vec64.Vector) color.AlphaColor {
+	xf := float64(img.Width) * (p[vecutil.X] - math.Floor(p[vecutil.X]))
+	yf := float64(img.Width) * (p[vecutil.Y] - math.Floor(p[vecutil.Y]))
 	if intp != NoInterpolation {
 		xf -= 0.5
 		yf -= 0.5

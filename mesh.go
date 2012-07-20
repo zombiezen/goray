@@ -22,7 +22,7 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/matrix"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // UV holds a set of texture coordinates.
@@ -32,8 +32,8 @@ type UV [2]float64
 // The basic workflow for making a working mesh is: create the mesh, set the mesh's data, then add the triangles.
 type Mesh struct {
 	triangles []*Triangle
-	vertices  []vector.Vector3D
-	normals   []vector.Vector3D
+	vertices  []vec64.Vector
+	normals   []vec64.Vector
 	uvs       []UV
 	hasOrco   bool
 	light     Light
@@ -69,7 +69,7 @@ func (mesh *Mesh) SetVisible(v bool) { mesh.hidden = !v }
 func (mesh *Mesh) SetLight(l Light) { mesh.light = l }
 
 //func (mesh *Mesh) EnableSampling() bool {}
-//func (mesh *Mesh) Sample(s1, s2 float) (p, n vector.Vector3D) {}
+//func (mesh *Mesh) Sample(s1, s2 float) (p, n vec64.Vector) {}
 
 // SetData changes the mesh's data.
 //
@@ -83,7 +83,7 @@ func (mesh *Mesh) SetLight(l Light) { mesh.light = l }
 // normals or UV coordinates, then pass nil for the corresponding parameter.
 // Any triangles that don't have per-vertex normals set will use the computed
 // normal.
-func (mesh *Mesh) SetData(vertices, normals []vector.Vector3D, uvs []UV) {
+func (mesh *Mesh) SetData(vertices, normals []vec64.Vector, uvs []UV) {
 	mesh.vertices, mesh.normals, mesh.uvs = vertices, normals, uvs
 }
 

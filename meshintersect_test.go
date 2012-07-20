@@ -21,7 +21,7 @@
 package goray
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"testing"
 )
 
@@ -107,7 +107,7 @@ func BenchmarkMeshIntersect(b *testing.B) {
 
 func BenchmarkMeshIntersectMethod(b *testing.B) {
 	mesh := NewMesh(1, false)
-	mesh.SetData([]vector.Vector3D{
+	mesh.SetData([]vec64.Vector{
 		{1.565772, -0.227881, -0.856351},
 		{0.480624, 1.452136, -0.856351},
 		{2.433322, 0.332482, 0.856351},
@@ -117,8 +117,8 @@ func BenchmarkMeshIntersectMethod(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		tri.Intersect(Ray{
-			Dir:  vector.Vector3D{0.211504, 0.558421, -0.802142},
-			From: vector.Vector3D{1.339351, 0.225915, -0.059020},
+			Dir:  vec64.Vector{0.211504, 0.558421, -0.802142},
+			From: vec64.Vector{1.339351, 0.225915, -0.059020},
 		})
 	}
 }

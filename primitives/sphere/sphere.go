@@ -26,11 +26,11 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type sphere struct {
-	center   vector.Vector3D
+	center   vec64.Vector
 	radius   float64
 	material goray.Material
 }
@@ -38,13 +38,13 @@ type sphere struct {
 var _ goray.Primitive = &sphere{}
 
 // New creates a spherical primitive.
-func New(center vector.Vector3D, radius float64, material goray.Material) goray.Primitive {
+func New(center vec64.Vector, radius float64, material goray.Material) goray.Primitive {
 	return &sphere{center, radius, material}
 }
 
 func (s *sphere) Bound() bound.Bound {
-	r := vector.Vector3D{s.radius * 1.0001, s.radius * 1.0001, s.radius * 1.0001}
-	return bound.Bound{vector.Sub(s.center, r), vector.Add(s.center, r)}
+	r := vec64.Vector{s.radius * 1.0001, s.radius * 1.0001, s.radius * 1.0001}
+	return bound.Bound{vec64.Sub(s.center, r), vec64.Add(s.center, r)}
 }
 
 func (s *sphere) IntersectsBound(b bound.Bound) bool { return true }
@@ -53,9 +53,9 @@ func (s *sphere) Material() goray.Material           { return s.material }
 func (s *sphere) Intersect(r goray.Ray) (coll goray.Collision) {
 	coll.Ray = r
 
-	vf := vector.Sub(r.From, s.center)
+	vf := vec64.Sub(r.From, s.center)
 	ea := r.Dir.LengthSqr()
-	eb := vector.Dot(vf, r.Dir) * 2.0
+	eb := vec64.Dot(vf, r.Dir) * 2.0
 	ec := vf.LengthSqr() - s.radius*s.radius
 	osc := eb*eb - 4.0*ea*ec
 	if osc < 0 {
@@ -77,7 +77,7 @@ func (s *sphere) Intersect(r goray.Ray) (coll goray.Collision) {
 }
 
 func (s *sphere) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
-	normal := vector.Sub(coll.Point(), s.center)
+	normal := vec64.Sub(coll.Point(), s.center)
 	sp.HasOrco = true
 	sp.OrcoPosition = normal
 	normal = normal.Normalize()
@@ -88,7 +88,7 @@ func (s *sphere) Surface(coll goray.Collision) (sp goray.SurfacePoint) {
 	sp.Position = coll.Point()
 	sp.Normal = normal
 	sp.GeometricNormal = normal
-	sp.U = math.Atan2(normal[vector.Y], normal[vector.X])*(1.0/math.Pi) + 1
-	sp.V = 1.0 - math.Acos(normal[vector.Z])*(1.0/math.Pi)
+	sp.U = math.Atan2(normal[1], normal[0])*(1.0/math.Pi) + 1
+	sp.V = 1.0 - math.Acos(normal[2])*(1.0/math.Pi)
 	return
 }

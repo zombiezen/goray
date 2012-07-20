@@ -27,7 +27,7 @@ import (
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 const (
@@ -231,7 +231,7 @@ func (s *Scene) Shadowed(r Ray, dist float64) bool {
 		s.log.Warningf("Shadowed called without an Update")
 		return false
 	}
-	r.From = vector.Add(r.From, r.Dir.Scale(r.TMin))
+	r.From = vec64.Add(r.From, r.Dir.Scale(r.TMin))
 	if r.TMax >= 0 {
 		dist = r.TMax - 2*r.TMin
 	}

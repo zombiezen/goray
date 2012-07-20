@@ -26,8 +26,8 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/std/primitives/sphere"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/primitives/sphere"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type TestMat struct {
@@ -40,19 +40,19 @@ func (mat TestMat) InitBSDF(state *goray.RenderState, sp goray.SurfacePoint) gor
 
 func (mat TestMat) MaterialFlags() goray.BSDF { return goray.BSDFNone }
 
-func (mat TestMat) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vector.Vector3D, types goray.BSDF) color.Color {
+func (mat TestMat) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vec64.Vector, types goray.BSDF) color.Color {
 	return color.Black
 }
 
-func (mat TestMat) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (color.Color, vector.Vector3D) {
-	return color.Black, vector.Vector3D{0, 0, 0}
+func (mat TestMat) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector, s *goray.MaterialSample) (color.Color, vec64.Vector) {
+	return color.Black, vec64.Vector{0, 0, 0}
 }
 
-func (mat TestMat) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vector.Vector3D, bsdfs goray.BSDF) float64 {
+func (mat TestMat) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vec64.Vector, bsdfs goray.BSDF) float64 {
 	return 0
 }
 
-func (mat TestMat) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (mat TestMat) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) (reflect, refract bool, dir [2]vec64.Vector, col [2]color.Color) {
 	return
 }
 
@@ -60,18 +60,18 @@ func (mat TestMat) Reflectivity(state *goray.RenderState, sp goray.SurfacePoint,
 	return color.Black
 }
 
-func (mat TestMat) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
+func (mat TestMat) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) float64 {
 	if mat.Transp == nil {
 		return 1.0
 	}
 	return 0
 }
 
-func (mat TestMat) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func (mat TestMat) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vec64.Vector, s *goray.PhotonSample) (wo vec64.Vector, scattered bool) {
 	return
 }
 
-func (mat TestMat) Transparency(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) color.Color {
+func (mat TestMat) Transparency(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) color.Color {
 	if mat.Transp == nil {
 		return color.Black
 	}
@@ -149,12 +149,12 @@ func TestTransparentShadow(t *testing.T) {
 	for _, c := range cases {
 		primitives := make([]goray.Primitive, 0, len(c.Filters))
 		for i, f := range c.Filters {
-			primitives = append(primitives, sphere.New(vector.Vector3D{float64(i + 1), 0, 0}, 0.5, TestMat{f}))
+			primitives = append(primitives, sphere.New(vec64.Vector{float64(i + 1), 0, 0}, 0.5, TestMat{f}))
 		}
 		intersect := NewKD(primitives, nil)
 		r := goray.Ray{
-			From: vector.Vector3D{0, 0, 0},
-			Dir:  vector.Vector3D{1, 0, 0},
+			From: vec64.Vector{0, 0, 0},
+			Dir:  vec64.Vector{1, 0, 0},
 			TMin: 0,
 			TMax: math.Inf(1),
 		}

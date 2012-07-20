@@ -22,7 +22,7 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // Light types
@@ -63,13 +63,13 @@ type Light interface {
 	EmitPhoton(s1, s2, s3, s4 float64) (color.Color, Ray, float64)
 
 	// EmitSample creates a light emission sample.  It's more suited to bidirectional methods than EmitPhoton.
-	EmitSample(s *LightSample) (vector.Vector3D, color.Color)
+	EmitSample(s *LightSample) (vec64.Vector, color.Color)
 
 	// EmitPdf returns the PDFs for sampling with EmitSample.
-	EmitPdf(sp SurfacePoint, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64)
+	EmitPdf(sp SurfacePoint, wo vec64.Vector) (areaPdf, dirPdf, cosWo float64)
 
 	// CanIlluminate returns whether the light can illuminate a certain point.
-	CanIlluminate(pt vector.Vector3D) bool
+	CanIlluminate(pt vec64.Vector) bool
 
 	// IlluminateSample samples the illumination at a given point.
 	//

@@ -22,13 +22,13 @@ package texmap
 
 import (
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // A Texture is a 2D/3D function for surface values.  This is usually based on a raster image, but could be procedurally generated.
 type Texture interface {
-	ColorAt(pt vector.Vector3D) color.AlphaColor
-	ScalarAt(pt vector.Vector3D) float64
+	ColorAt(pt vec64.Vector) color.AlphaColor
+	ScalarAt(pt vec64.Vector) float64
 	Is3D() bool
 	IsNormalMap() bool
 }

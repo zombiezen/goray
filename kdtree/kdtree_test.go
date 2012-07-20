@@ -22,18 +22,19 @@ package kdtree
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"reflect"
 	"testing"
 )
 
-type pointTree []vector.Vector3D
+type pointTree []vec64.Vector
 
 func (t pointTree) Len() int {
 	return len(t)
 }
 
-func (t pointTree) Dimension(i int, axis vector.Axis) (float64, float64) {
+func (t pointTree) Dimension(i int, axis vecutil.Axis) (float64, float64) {
 	return t[i][axis], t[i][axis]
 }
 
@@ -43,7 +44,7 @@ func (t boxTree) Len() int {
 	return len(t)
 }
 
-func (t boxTree) Dimension(i int, axis vector.Axis) (float64, float64) {
+func (t boxTree) Dimension(i int, axis vecutil.Axis) (float64, float64) {
 	return t[i].Min[axis], t[i].Max[axis]
 }
 
@@ -60,29 +61,16 @@ func TestLeafTree(t *testing.T) {
 }
 
 func TestBound(t *testing.T) {
-	ptA, ptB := vector.Vector3D{1, 2, 3}, vector.Vector3D{4, 5, 6}
+	ptA, ptB := vec64.Vector{1, 2, 3}, vec64.Vector{4, 5, 6}
+
 	b := New(boxTree{{ptA, ptB}}, DefaultOptions).Bound()
-	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.Min[axis] != ptA[axis] {
-			t.Errorf("Box tree %v minimum expects %.2f, got %.2f", axis, b.Min[axis], ptA[axis])
-		}
-	}
-	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.Max[axis] != ptB[axis] {
-			t.Errorf("Box tree %v maximum expects %.2f, got %.2f", axis, b.Max[axis], ptB[axis])
-		}
+	if expected := (bound.Bound{ptA, ptB}); b != expected {
+		t.Errorf("Box tree bound != %v (got %v)", expected, b)
 	}
 
 	b = New(pointTree{ptA, ptB}, DefaultOptions).Bound()
-	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.Min[axis] != ptA[axis] {
-			t.Errorf("Point tree %v minimum expects %.2f, got %.2f", axis, b.Min[axis], ptA[axis])
-		}
-	}
-	for axis := vector.X; axis <= vector.Z; axis++ {
-		if b.Max[axis] != ptB[axis] {
-			t.Errorf("Point tree %v maximum expects %.2f, got %.2f", axis, b.Max[axis], ptB[axis])
-		}
+	if expected := (bound.Bound{ptA, ptB}); b != expected {
+		t.Errorf("Point tree bound != %v (got %v)", expected, b)
 	}
 }
 
@@ -93,9 +81,9 @@ func TestTree(t *testing.T) {
 		{-2, 0, 0},
 		{2, 0, 0},
 	}, DefaultOptions)
-	expected := newInterior(vector.X, -1,
+	expected := newInterior(vecutil.X, -1,
 		newLeaf([]int{2}),
-		newInterior(vector.X, 1,
+		newInterior(vecutil.X, 1,
 			newLeaf([]int{0}),
 			newLeaf([]int{1, 3})))
 	if !reflect.DeepEqual(tree.root, expected) {

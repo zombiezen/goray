@@ -21,49 +21,52 @@
 package texmap
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"math"
 )
 
 // A Projector computes the projection of 3D space into a 2D texture coordinate.
 type Projector interface {
-	Project(p, n vector.Vector3D) vector.Vector3D
+	Project(p, n vec64.Vector) vec64.Vector
 }
 
 // A ProjectorFunc is a simple function-based projector.
-type ProjectorFunc func(p, n vector.Vector3D) vector.Vector3D
+type ProjectorFunc func(p, n vec64.Vector) vec64.Vector
 
-func (f ProjectorFunc) Project(p, n vector.Vector3D) vector.Vector3D { return f(p, n) }
+func (f ProjectorFunc) Project(p, n vec64.Vector) vec64.Vector {
+	return f(p, n)
+}
 
-func flatMap(p, n vector.Vector3D) vector.Vector3D {
+func flatMap(p, n vec64.Vector) vec64.Vector {
 	return p
 }
 
-func tubeMap(p, n vector.Vector3D) (res vector.Vector3D) {
-	res[vector.Y] = p[vector.Z]
-	d := p[vector.X]*p[vector.X] + p[vector.Y]*p[vector.Y]
+func tubeMap(p, n vec64.Vector) (res vec64.Vector) {
+	res[vecutil.Y] = p[vecutil.Z]
+	d := p[vecutil.X]*p[vecutil.X] + p[vecutil.Y]*p[vecutil.Y]
 	if d > 0 {
-		res[vector.Z] = 1 / math.Sqrt(d)
-		res[vector.X] = -math.Atan2(p[vector.X], p[vector.Y]) / math.Pi
+		res[vecutil.Z] = 1 / math.Sqrt(d)
+		res[vecutil.X] = -math.Atan2(p[vecutil.X], p[vecutil.Y]) / math.Pi
 	}
 	return
 }
 
-func sphereMap(p, n vector.Vector3D) (res vector.Vector3D) {
-	d := p[vector.X]*p[vector.X] + p[vector.Y]*p[vector.Y] + p[vector.Z]*p[vector.Z]
+func sphereMap(p, n vec64.Vector) (res vec64.Vector) {
+	d := p[vecutil.X]*p[vecutil.X] + p[vecutil.Y]*p[vecutil.Y] + p[vecutil.Z]*p[vecutil.Z]
 	if d > 0 {
-		res[vector.Z] = math.Sqrt(d)
-		if p[vector.X] != 0 && p[vector.Y] != 0 {
-			res[vector.X] = -math.Atan2(p[vector.X], p[vector.Y]) / math.Pi
+		res[vecutil.Z] = math.Sqrt(d)
+		if p[vecutil.X] != 0 && p[vecutil.Y] != 0 {
+			res[vecutil.X] = -math.Atan2(p[vecutil.X], p[vecutil.Y]) / math.Pi
 		}
-		res[vector.Y] = 1.0 - 2.0*math.Acos(p[vector.Z]/res[vector.Z])/math.Pi
+		res[vecutil.Y] = 1.0 - 2.0*math.Acos(p[vecutil.Z]/res[vecutil.Z])/math.Pi
 	}
 	return
 }
 
-func cubeMap(p, n vector.Vector3D) (res vector.Vector3D) {
-	axis := vector.LargestAxis(math.Abs(n[vector.X]), math.Abs(n[vector.Y]), math.Abs(n[vector.Z]))
-	return vector.Vector3D{p[axis.Next()], p[axis.Prev()], p[axis]}
+func cubeMap(p, n vec64.Vector) (res vec64.Vector) {
+	axis := vecutil.LargestAxis(math.Abs(n[vecutil.X]), math.Abs(n[vecutil.Y]), math.Abs(n[vecutil.Z]))
+	return vec64.Vector{p[axis.Next()], p[axis.Prev()], p[axis]}
 }
 
 // Built-in projection schemes

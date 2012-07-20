@@ -22,7 +22,7 @@ package goray
 
 import (
 	color_ "bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"image"
 	"image/color"
 )
@@ -41,7 +41,7 @@ type RenderState struct {
 	Traveled       float64
 	PixelNumber    int
 	SamplingOffset uint
-	ScreenPos      vector.Vector3D
+	ScreenPos      vec64.Vector
 	Chromatic      bool
 	IncludeLights  bool
 	WaveLength     float64

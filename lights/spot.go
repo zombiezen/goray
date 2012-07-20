@@ -26,16 +26,16 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/sampleutil"
-	"bitbucket.org/zombiezen/goray/vector"
-	"bitbucket.org/zombiezen/goray/yamlscene"
-
+	"bitbucket.org/zombiezen/goray/vecutil"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type spotLight struct {
-	position         vector.Vector3D
-	direction        vector.Vector3D
-	du, dv           vector.Vector3D
+	position         vec64.Vector
+	direction        vec64.Vector
+	du, dv           vec64.Vector
 	cosStart, cosEnd float64
 	icosDiff         float64
 	intensity        float64
@@ -46,14 +46,14 @@ type spotLight struct {
 
 var _ goray.DiracLight = &spotLight{}
 
-func NewSpot(from, to vector.Vector3D, col color.Color, power, angle, falloff float64) goray.Light {
+func NewSpot(from, to vec64.Vector, col color.Color, power, angle, falloff float64) goray.Light {
 	newSpot := &spotLight{
 		position:  from,
-		direction: vector.Sub(to, from).Normalize(),
+		direction: vec64.Sub(to, from).Normalize(),
 		color:     color.ScalarMul(col, power),
 		intensity: power,
 	}
-	newSpot.du, newSpot.dv = vector.CreateCS(newSpot.direction)
+	newSpot.du, newSpot.dv = vecutil.CreateCS(newSpot.direction)
 	radAngle := angle * math.Pi / 180
 	radInnerAngle := radAngle * (1 - falloff)
 	newSpot.cosStart = math.Cos(radInnerAngle)
@@ -98,14 +98,14 @@ func (spot *spotLight) TotalEnergy() color.Color {
 }
 
 func (spot *spotLight) Illuminate(sp goray.SurfacePoint, wi *goray.Ray) (col color.Color, ok bool) {
-	ldir := vector.Sub(spot.position, sp.Position)
+	ldir := vec64.Sub(spot.position, sp.Position)
 	distSqr := ldir.LengthSqr()
 	dist := math.Sqrt(distSqr)
 	if dist == 0 {
 		return
 	}
 	ldir = ldir.Scale(1.0 / dist) // normalize
-	cosa := vector.Dot(spot.direction.Negate(), ldir)
+	cosa := vec64.Dot(spot.direction.Negate(), ldir)
 	switch {
 	case cosa < spot.cosEnd:
 		// Outside cone
@@ -128,7 +128,7 @@ func (spot *spotLight) IlluminateSample(sp goray.SurfacePoint, wi *goray.Ray, s 
 	s.Color, ok = spot.Illuminate(sp, wi)
 	if ok {
 		s.Flags = spot.LightFlags()
-		s.Pdf = vector.Sub(spot.position, sp.Position).LengthSqr()
+		s.Pdf = vec64.Sub(spot.position, sp.Position).LengthSqr()
 	}
 	return
 }
@@ -137,7 +137,7 @@ func (spot *spotLight) IlluminatePdf(sp, spLight goray.SurfacePoint) float64 {
 	return 0
 }
 
-func (spot *spotLight) emit(s1, s2, s3 float64) (col color.Color, wo vector.Vector3D, pdf float64) {
+func (spot *spotLight) emit(s1, s2, s3 float64) (col color.Color, wo vec64.Vector, pdf float64) {
 	col = spot.color
 	if s3 <= spot.interv1 {
 		// Sample from cone not affected by falloff
@@ -152,7 +152,7 @@ func (spot *spotLight) emit(s1, s2, s3 float64) (col color.Color, wo vector.Vect
 	cosAngle := spot.cosEnd + (spot.cosStart-spot.cosEnd)*sm2
 	sinAngle := math.Sqrt(1 - cosAngle*cosAngle)
 	t1 := 2 * math.Pi * s1
-	wo = vector.Add(vector.Add(spot.du.Scale(math.Cos(t1)), spot.dv.Scale(math.Sin(t1))).Scale(sinAngle), spot.direction.Scale(cosAngle))
+	wo = vec64.Add(vec64.Add(spot.du.Scale(math.Cos(t1)), spot.dv.Scale(math.Sin(t1))).Scale(sinAngle), spot.direction.Scale(cosAngle))
 	col = color.ScalarMul(spot.color, spdf*spot.pdf.Integral) // color is scaled by falloff
 	return
 }
@@ -164,7 +164,7 @@ func (spot *spotLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r go
 	return
 }
 
-func (spot *spotLight) EmitSample(s *goray.LightSample) (wo vector.Vector3D, col color.Color) {
+func (spot *spotLight) EmitSample(s *goray.LightSample) (wo vec64.Vector, col color.Color) {
 	col, wo, s.DirPdf = spot.emit(s.S1, s.S2, s.S3)
 	s.Point.Position = spot.position
 	s.AreaPdf = 1.0
@@ -172,9 +172,9 @@ func (spot *spotLight) EmitSample(s *goray.LightSample) (wo vector.Vector3D, col
 	return
 }
 
-func (spot *spotLight) EmitPdf(sp goray.SurfacePoint, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
+func (spot *spotLight) EmitPdf(sp goray.SurfacePoint, wo vec64.Vector) (areaPdf, dirPdf, cosWo float64) {
 	areaPdf, cosWo = 1, 1
-	cosa := vector.Dot(spot.direction, wo)
+	cosa := vec64.Dot(spot.direction, wo)
 	switch {
 	case cosa < spot.cosEnd:
 		dirPdf = 0
@@ -188,14 +188,14 @@ func (spot *spotLight) EmitPdf(sp goray.SurfacePoint, wo vector.Vector3D) (areaP
 	return
 }
 
-func (spot *spotLight) CanIlluminate(pt vector.Vector3D) bool {
-	ldir := vector.Sub(spot.position, pt)
+func (spot *spotLight) CanIlluminate(pt vec64.Vector) bool {
+	ldir := vec64.Sub(spot.position, pt)
 	dist := ldir.Length()
 	if dist == 0 {
 		return false
 	}
 	ldir = ldir.Scale(1.0 / dist) // normalize
-	cosa := vector.Dot(spot.direction.Negate(), ldir)
+	cosa := vec64.Dot(spot.direction.Negate(), ldir)
 	return cosa >= spot.cosEnd
 }
 
@@ -204,8 +204,8 @@ func init() {
 }
 
 func constructSpot(m yamldata.Map) (interface{}, error) {
-	pos := m["position"].(vector.Vector3D)
-	look := m["look"].(vector.Vector3D)
+	pos := m["position"].(vec64.Vector)
+	look := m["look"].(vec64.Vector)
 	col := m["color"].(color.Color)
 	power, _ := yamldata.AsFloat(m["intensity"])
 	angle, _ := yamldata.AsFloat(m["coneAngle"])

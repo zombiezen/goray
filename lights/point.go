@@ -26,21 +26,20 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/sampleutil"
-	"bitbucket.org/zombiezen/goray/vector"
-	"bitbucket.org/zombiezen/goray/yamlscene"
-
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type pointLight struct {
-	position  vector.Vector3D
+	position  vec64.Vector
 	color     color.Color
 	intensity float64
 }
 
 var _ goray.DiracLight = &pointLight{}
 
-func NewPoint(pos vector.Vector3D, col color.Color, intensity float64) goray.Light {
+func NewPoint(pos vec64.Vector, col color.Color, intensity float64) goray.Light {
 	pl := pointLight{position: pos, color: color.ScalarMul(col, intensity)}
 	pl.intensity = color.Energy(pl.color)
 	return &pl
@@ -71,7 +70,7 @@ func (l *pointLight) EmitPhoton(s1, s2, s3, s4 float64) (col color.Color, r gora
 	return
 }
 
-func (l *pointLight) EmitSample(s *goray.LightSample) (wo vector.Vector3D, col color.Color) {
+func (l *pointLight) EmitSample(s *goray.LightSample) (wo vec64.Vector, col color.Color) {
 	s.Point.Position = l.position
 	s.Flags = l.LightFlags()
 	s.DirPdf, s.AreaPdf = 0.25, 1.0
@@ -80,7 +79,7 @@ func (l *pointLight) EmitSample(s *goray.LightSample) (wo vector.Vector3D, col c
 	return
 }
 
-func (l *pointLight) CanIlluminate(pt vector.Vector3D) bool {
+func (l *pointLight) CanIlluminate(pt vec64.Vector) bool {
 	return true
 }
 
@@ -89,13 +88,13 @@ func (l *pointLight) IlluminateSample(sp goray.SurfacePoint, wi *goray.Ray, s *g
 	if ok {
 		s.Flags = l.LightFlags()
 		s.Color = l.color
-		s.Pdf = vector.Sub(l.position, sp.Position).LengthSqr()
+		s.Pdf = vec64.Sub(l.position, sp.Position).LengthSqr()
 	}
 	return
 }
 
 func (l *pointLight) Illuminate(sp goray.SurfacePoint, wi *goray.Ray) (col color.Color, ok bool) {
-	ldir := vector.Sub(l.position, sp.Position)
+	ldir := vec64.Sub(l.position, sp.Position)
 	distSqr := ldir.LengthSqr()
 	dist := math.Sqrt(distSqr)
 	if dist == 0.0 {
@@ -117,7 +116,7 @@ func (l *pointLight) IlluminatePdf(sp, spLight goray.SurfacePoint) float64 {
 	return 0.0
 }
 
-func (l *pointLight) EmitPdf(sp goray.SurfacePoint, wo vector.Vector3D) (areaPdf, dirPdf, cosWo float64) {
+func (l *pointLight) EmitPdf(sp goray.SurfacePoint, wo vec64.Vector) (areaPdf, dirPdf, cosWo float64) {
 	return 1.0, 0.25, 1.0
 }
 
@@ -126,7 +125,7 @@ func init() {
 }
 
 func constructPoint(m yamldata.Map) (interface{}, error) {
-	pos := m["position"].(vector.Vector3D)
+	pos := m["position"].(vec64.Vector)
 	col := m["color"].(color.Color)
 	intensity, _ := yamldata.AsFloat(m["intensity"])
 	return NewPoint(pos, col, intensity), nil

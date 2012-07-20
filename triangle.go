@@ -26,7 +26,8 @@ import (
 
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // Triangle stores information for a single triangle.
@@ -36,7 +37,7 @@ type Triangle struct {
 	uv    [3]int // uv contains the UV indices in the mesh's array (if UV is enabled).
 	index int
 
-	normal   vector.Vector3D
+	normal   vec64.Vector
 	material Material
 	mesh     *Mesh
 }
@@ -61,14 +62,14 @@ func (tri *Triangle) String() string {
 	return fmt.Sprintf("Triangle{%v %v %v N:%v}", v[0], v[1], v[2], tri.normal)
 }
 
-func (tri *Triangle) getVertices() (v [3]vector.Vector3D) {
+func (tri *Triangle) getVertices() (v [3]vec64.Vector) {
 	for i := 0; i < 3; i++ {
 		v[i] = tri.mesh.vertices[tri.v[i]]
 	}
 	return
 }
 
-func (tri *Triangle) getNormals() (n [3]vector.Vector3D) {
+func (tri *Triangle) getNormals() (n [3]vec64.Vector) {
 	for i := 0; i < 3; i++ {
 		if tri.n[i] >= 0 && tri.mesh.normals != nil {
 			n[i] = tri.mesh.normals[tri.n[i]]
@@ -116,7 +117,7 @@ func (tri *Triangle) Surface(coll Collision) (sp SurfacePoint) {
 
 	if tri.mesh.normals != nil {
 		n := tri.getNormals()
-		sp.Normal = vector.Sum(n[0].Scale(u), n[1].Scale(v), n[2].Scale(w)).Normalize()
+		sp.Normal = vec64.Sum(n[0].Scale(u), n[1].Scale(v), n[2].Scale(w)).Normalize()
 	} else {
 		sp.Normal = tri.normal
 	}
@@ -124,8 +125,8 @@ func (tri *Triangle) Surface(coll Collision) (sp SurfacePoint) {
 	sp.HasOrco = tri.mesh.hasOrco
 	if tri.mesh.hasOrco {
 		// TODO: Yafaray uses index+1 for each one of the vertices. Why?
-		sp.OrcoPosition = vector.Sum(vert[0].Scale(u), vert[1].Scale(v), vert[2].Scale(w))
-		sp.OrcoNormal = vector.Cross(vector.Sub(vert[1], vert[0]), vector.Sub(vert[2], vert[0])).Normalize()
+		sp.OrcoPosition = vec64.Sum(vert[0].Scale(u), vert[1].Scale(v), vert[2].Scale(w))
+		sp.OrcoNormal = vec64.Cross(vec64.Sub(vert[1], vert[0]), vec64.Sub(vert[2], vert[0])).Normalize()
 	} else {
 		sp.OrcoPosition = coll.Point()
 		sp.OrcoNormal = sp.GeometricNormal
@@ -144,15 +145,15 @@ func (tri *Triangle) Surface(coll Collision) (sp SurfacePoint) {
 
 		if det != 0.0 {
 			invdet := 1.0 / det
-			dp1, dp2 := vector.Sub(vert[0], vert[2]), vector.Sub(vert[1], vert[2])
-			sp.WorldU = vector.Sub(dp1.Scale(dv2*invdet), dp2.Scale(dv1*invdet))
-			sp.WorldV = vector.Sub(dp2.Scale(du1*invdet), dp1.Scale(du2*invdet))
+			dp1, dp2 := vec64.Sub(vert[0], vert[2]), vec64.Sub(vert[1], vert[2])
+			sp.WorldU = vec64.Sub(dp1.Scale(dv2*invdet), dp2.Scale(dv1*invdet))
+			sp.WorldV = vec64.Sub(dp2.Scale(du1*invdet), dp1.Scale(du2*invdet))
 		} else {
-			sp.WorldU, sp.WorldV = vector.Vector3D{}, vector.Vector3D{}
+			sp.WorldU, sp.WorldV = vec64.Vector{}, vec64.Vector{}
 		}
 	} else {
 		sp.U, sp.V = u, v
-		sp.WorldU, sp.WorldV = vector.Sub(vert[1], vert[0]), vector.Sub(vert[2], vert[0])
+		sp.WorldU, sp.WorldV = vec64.Sub(vert[1], vert[0]), vec64.Sub(vert[2], vert[0])
 	}
 
 	sp.Object = tri.mesh
@@ -164,25 +165,24 @@ func (tri *Triangle) Surface(coll Collision) (sp SurfacePoint) {
 	sp.PrimitiveNumber = tri.index
 	sp.Position = coll.Point()
 
-	sp.NormalU, sp.NormalV = vector.CreateCS(sp.Normal)
-	sp.ShadingU[vector.X] = vector.Dot(sp.NormalU, sp.WorldU)
-	sp.ShadingU[vector.Y] = vector.Dot(sp.NormalV, sp.WorldU)
-	sp.ShadingU[vector.Z] = vector.Dot(sp.Normal, sp.WorldU)
-	sp.ShadingV[vector.X] = vector.Dot(sp.NormalU, sp.WorldV)
-	sp.ShadingV[vector.Y] = vector.Dot(sp.NormalV, sp.WorldV)
-	sp.ShadingV[vector.Z] = vector.Dot(sp.Normal, sp.WorldV)
+	sp.NormalU, sp.NormalV = vecutil.CreateCS(sp.Normal)
+	sp.ShadingU[0] = vec64.Dot(sp.NormalU, sp.WorldU)
+	sp.ShadingU[1] = vec64.Dot(sp.NormalV, sp.WorldU)
+	sp.ShadingU[2] = vec64.Dot(sp.Normal, sp.WorldU)
+	sp.ShadingV[0] = vec64.Dot(sp.NormalU, sp.WorldV)
+	sp.ShadingV[1] = vec64.Dot(sp.NormalV, sp.WorldV)
+	sp.ShadingV[2] = vec64.Dot(sp.Normal, sp.WorldV)
 
 	return
 }
 
-func (tri *Triangle) Bound() bound.Bound {
-	var minPt, maxPt vector.Vector3D
+func (tri *Triangle) Bound() (bd bound.Bound) {
 	v := tri.getVertices()
-	for axis := vector.X; axis <= vector.Z; axis++ {
-		minPt[axis] = math.Min(math.Min(v[0][axis], v[1][axis]), v[2][axis])
-		maxPt[axis] = math.Max(math.Max(v[0][axis], v[1][axis]), v[2][axis])
+	for axis := range bd.Min {
+		bd.Min[axis] = math.Min(math.Min(v[0][axis], v[1][axis]), v[2][axis])
+		bd.Max[axis] = math.Max(math.Max(v[0][axis], v[1][axis]), v[2][axis])
 	}
-	return bound.Bound{minPt, maxPt}
+	return
 }
 
 func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
@@ -200,14 +200,14 @@ func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
 
 func (tri *Triangle) Material() Material { return tri.material }
 
-func (tri *Triangle) Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
+func (tri *Triangle) Clip(bound bound.Bound, axis vecutil.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	if axis >= 0 {
 		return tri.clipPlane(bound, axis, lower, oldData)
 	}
 	return tri.clipBox(bound)
 }
 
-func (tri *Triangle) clipPlane(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
+func (tri *Triangle) clipPlane(bound bound.Bound, axis vecutil.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Debugf("Clip plane fault: %v", err)
@@ -215,12 +215,12 @@ func (tri *Triangle) clipPlane(bound bound.Bound, axis vector.Axis, lower bool, 
 		}
 	}()
 
-	var poly []vector.Vector3D
+	var poly []vec64.Vector
 	if oldData == nil {
 		v := tri.getVertices()
-		poly = []vector.Vector3D{v[0], v[1], v[2], v[0]}
+		poly = []vec64.Vector{v[0], v[1], v[2], v[0]}
 	} else {
-		poly = oldData.([]vector.Vector3D)
+		poly = oldData.([]vec64.Vector)
 	}
 
 	var split float64
@@ -243,27 +243,27 @@ func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData inter
 	}()
 
 	v := tri.getVertices()
-	poly := []vector.Vector3D{v[0], v[1], v[2], v[0]}
+	poly := []vec64.Vector{v[0], v[1], v[2], v[0]}
 	newData, clipped = triBoxClip([3]float64(bd.Min), [3]float64(bd.Max), poly)
 	return
 }
 
 // The rest of these are non-interface triangle-specific methods.
 
-func (tri *Triangle) SetMaterial(mat Material)   { tri.material = mat }
-func (tri *Triangle) SetNormals(a, b, c int)     { tri.n = [3]int{a, b, c} }
-func (tri *Triangle) ClearNormals()              { tri.n = [3]int{-1, -1, -1} }
-func (tri *Triangle) SetUVs(a, b, c int)         { tri.uv = [3]int{a, b, c} }
-func (tri *Triangle) ClearUVs()                  { tri.uv = [3]int{-1, -1, -1} }
-func (tri *Triangle) GetNormal() vector.Vector3D { return tri.normal }
+func (tri *Triangle) SetMaterial(mat Material) { tri.material = mat }
+func (tri *Triangle) SetNormals(a, b, c int)   { tri.n = [3]int{a, b, c} }
+func (tri *Triangle) ClearNormals()            { tri.n = [3]int{-1, -1, -1} }
+func (tri *Triangle) SetUVs(a, b, c int)       { tri.uv = [3]int{a, b, c} }
+func (tri *Triangle) ClearUVs()                { tri.uv = [3]int{-1, -1, -1} }
+func (tri *Triangle) GetNormal() vec64.Vector  { return tri.normal }
 
 func (tri *Triangle) CalculateNormal() {
 	v := tri.getVertices()
-	tri.normal = vector.Cross(vector.Sub(v[1], v[0]), vector.Sub(v[2], v[0])).Normalize()
+	tri.normal = vec64.Cross(vec64.Sub(v[1], v[0]), vec64.Sub(v[2], v[0])).Normalize()
 }
 
 func (tri *Triangle) SurfaceArea() float64 {
 	v := tri.getVertices()
-	edge1, edge2 := vector.Sub(v[1], v[0]), vector.Sub(v[2], v[0])
-	return vector.Cross(edge1, edge2).Length() * 0.5
+	edge1, edge2 := vec64.Sub(v[1], v[0]), vec64.Sub(v[2], v[0])
+	return vec64.Cross(edge1, edge2).Length() * 0.5
 }

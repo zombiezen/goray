@@ -28,9 +28,9 @@ import (
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/sampleutil"
 	"bitbucket.org/zombiezen/goray/shader"
-	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type ShinyDiffuse struct {
@@ -207,7 +207,7 @@ func (sd *ShinyDiffuse) MaterialFlags() goray.BSDF {
 	return sd.bsdfFlags
 }
 
-func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) (kr float64) {
+func (sd *ShinyDiffuse) getFresnel(wo, n vec64.Vector) (kr float64) {
 	if !sd.fresnelEffect {
 		return 1.0
 	}
@@ -215,9 +215,9 @@ func (sd *ShinyDiffuse) getFresnel(wo, n vector.Vector3D) (kr float64) {
 	return
 }
 
-func (sd *ShinyDiffuse) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vector.Vector3D, types goray.BSDF) (col color.Color) {
-	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
-	cosNgWl := vector.Dot(sp.GeometricNormal, wl)
+func (sd *ShinyDiffuse) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vec64.Vector, types goray.BSDF) (col color.Color) {
+	cosNgWo := vec64.Dot(sp.GeometricNormal, wo)
+	cosNgWl := vec64.Dot(sp.GeometricNormal, wl)
 	col = color.Black
 
 	n := sp.Normal
@@ -242,7 +242,7 @@ func (sd *ShinyDiffuse) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo
 		return
 	}
 
-	if vector.Dot(n, wl) < 0 {
+	if vec64.Dot(n, wl) < 0 {
 		return
 	}
 	md := mt * (1 - data.Transl) * data.Diffuse
@@ -284,10 +284,10 @@ func getComps(sd *ShinyDiffuse, data sdData) (comps sdComps) {
 	return
 }
 
-func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (col color.Color, wi vector.Vector3D) {
+func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector, s *goray.MaterialSample) (col color.Color, wi vec64.Vector) {
 	data := state.MaterialData.(sdData)
-	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
-	cosNgWi := vector.Dot(sp.GeometricNormal, wi)
+	cosNgWo := vec64.Dot(sp.GeometricNormal, wo)
+	cosNgWi := vec64.Dot(sp.GeometricNormal, wi)
 	n := sp.Normal
 	if cosNgWo < 0 {
 		n = n.Negate()
@@ -330,18 +330,18 @@ func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, 
 	col = color.Black
 	switch comps[pick].BSDF {
 	case goray.BSDFSpecular | goray.BSDFReflect:
-		wi = vector.Reflect(n, wo)
+		wi = vec64.Reflect(n, wo)
 		s.Pdf = comps[pick].Value
 		col = color.ScalarMul(accumC.MirrorColor, accumC.SpecRefl)
 		if s.Reverse {
 			s.PdfBack = s.Pdf
-			s.ColorBack = color.ScalarDiv(col, math.Abs(vector.Dot(sp.Normal, wo)))
+			s.ColorBack = color.ScalarDiv(col, math.Abs(vec64.Dot(sp.Normal, wo)))
 		}
-		col = color.ScalarDiv(col, math.Abs(vector.Dot(sp.Normal, wi)))
+		col = color.ScalarDiv(col, math.Abs(vec64.Dot(sp.Normal, wi)))
 	case goray.BSDFTransmit | goray.BSDFFilter:
 		wi = wo.Negate()
 		col = color.ScalarMul(color.Add(color.ScalarMul(accumC.DiffuseColor, sd.TransmitFilter), color.Gray(1-sd.TransmitFilter)), accumC.Transp)
-		cosN := math.Abs(vector.Dot(wi, n))
+		cosN := math.Abs(vec64.Dot(wi, n))
 		if cosN < 1e-6 {
 			s.Pdf = 0
 		} else {
@@ -353,7 +353,7 @@ func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, 
 		if cosNgWo*cosNgWi < 0 {
 			col = color.ScalarMul(accumC.DiffuseColor, accumC.Transl)
 		}
-		s.Pdf = math.Abs(vector.Dot(wi, n)) * comps[pick].Value
+		s.Pdf = math.Abs(vec64.Dot(wi, n)) * comps[pick].Value
 	case goray.BSDFDiffuse | goray.BSDFReflect:
 		fallthrough
 	default:
@@ -362,20 +362,20 @@ func (sd *ShinyDiffuse) Sample(state *goray.RenderState, sp goray.SurfacePoint, 
 			col = color.ScalarMul(accumC.DiffuseColor, accumC.Diffuse)
 		}
 		// TODO: if OrenNayer
-		s.Pdf = math.Abs(vector.Dot(wi, n)) * comps[pick].Value
+		s.Pdf = math.Abs(vec64.Dot(wi, n)) * comps[pick].Value
 	}
 	s.SampledFlags = comps[pick].BSDF
 	return
 }
 
-func (sd *ShinyDiffuse) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vector.Vector3D, bsdfs goray.BSDF) (pdf float64) {
+func (sd *ShinyDiffuse) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vec64.Vector, bsdfs goray.BSDF) (pdf float64) {
 	if bsdfs&goray.BSDFDiffuse == 0 {
 		return
 	}
 
 	data := state.MaterialData.(sdData)
-	cosNgWo := vector.Dot(sp.GeometricNormal, wo)
-	cosNgWi := vector.Dot(sp.GeometricNormal, wi)
+	cosNgWo := vec64.Dot(sp.GeometricNormal, wo)
+	cosNgWi := vec64.Dot(sp.GeometricNormal, wi)
 	n := sp.Normal
 	if cosNgWo < 0 {
 		n = n.Negate()
@@ -390,11 +390,11 @@ func (sd *ShinyDiffuse) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo,
 		switch c.BSDF {
 		case goray.BSDFDiffuse | goray.BSDFTransmit:
 			if cosNgWo*cosNgWi < 0 {
-				pdf += math.Abs(vector.Dot(wi, n)) * c.Value
+				pdf += math.Abs(vec64.Dot(wi, n)) * c.Value
 			}
 		case goray.BSDFDiffuse | goray.BSDFReflect:
 			if cosNgWo*cosNgWi > 0 {
-				pdf += math.Abs(vector.Dot(wi, n)) * c.Value
+				pdf += math.Abs(vec64.Dot(wi, n)) * c.Value
 			}
 		}
 	}
@@ -404,9 +404,9 @@ func (sd *ShinyDiffuse) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo,
 	return pdf / sum
 }
 
-func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) (reflect, refract bool, dir [2]vec64.Vector, col [2]color.Color) {
 	data := state.MaterialData.(sdData)
-	backface := vector.Dot(sp.GeometricNormal, wo) < 0
+	backface := vec64.Dot(sp.GeometricNormal, wo) < 0
 	n, ng := sp.Normal, sp.GeometricNormal
 	if backface {
 		n, ng = n.Negate(), ng.Negate()
@@ -420,10 +420,10 @@ func (sd *ShinyDiffuse) Specular(state *goray.RenderState, sp goray.SurfacePoint
 	}
 	reflect = sd.isReflective
 	if sd.isReflective {
-		dir[0] = vector.Sub(n.Scale(2.0*vector.Dot(wo, n)), wo)
-		cosWiNg := vector.Dot(dir[0], ng)
+		dir[0] = vec64.Sub(n.Scale(2.0*vec64.Dot(wo, n)), wo)
+		cosWiNg := vec64.Dot(dir[0], ng)
 		if cosWiNg < 0.01 {
-			dir[0] = vector.Add(dir[0], ng.Scale(0.01-cosWiNg))
+			dir[0] = vec64.Add(dir[0], ng.Scale(0.01-cosWiNg))
 			dir[0] = dir[0].Normalize()
 		}
 		col[0] = color.ScalarMul(data.MirrorColor, data.SpecRefl*kr)
@@ -435,11 +435,11 @@ func (sd *ShinyDiffuse) Reflectivity(state *goray.RenderState, sp goray.SurfaceP
 	return getReflectivity(sd, state, sp, flags)
 }
 
-func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
+func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) float64 {
 	if sd.isTransp {
 		data := state.MaterialData.(sdData)
 		n := sp.Normal
-		if vector.Dot(sp.GeometricNormal, wo) < 0 {
+		if vec64.Dot(sp.GeometricNormal, wo) < 0 {
 			n = n.Negate()
 		}
 		kr := sd.getFresnel(wo, n)
@@ -448,11 +448,11 @@ func (sd *ShinyDiffuse) Alpha(state *goray.RenderState, sp goray.SurfacePoint, w
 	return 1
 }
 
-func (sd *ShinyDiffuse) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func (sd *ShinyDiffuse) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vec64.Vector, s *goray.PhotonSample) (wo vec64.Vector, scattered bool) {
 	return scatterPhoton(sd, state, sp, wi, s)
 }
 
-func (sd *ShinyDiffuse) Emit(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) color.Color {
+func (sd *ShinyDiffuse) Emit(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) color.Color {
 	if sd.DiffuseColorShad != nil {
 		data := state.MaterialData.(sdData)
 		return color.ScalarMul(data.DiffuseColor, sd.EmitValue)

@@ -28,10 +28,10 @@ import (
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/matrix"
 	"bitbucket.org/zombiezen/goray/shader"
-	"bitbucket.org/zombiezen/goray/vector"
-	"bitbucket.org/zombiezen/goray/yamlscene"
-
+	"bitbucket.org/zombiezen/goray/vecutil"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
+	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // Coordinates specifies which coordinate system to use during texture mapping.
@@ -47,14 +47,14 @@ const (
 
 // A TextureMapper is a shader that applies a texture to geometry.
 type TextureMapper struct {
-	Texture          Texture         // The 2D/3D texture to apply
-	Coordinates      Coordinates     // The coordinate system to use
-	Projector        Projector       // The 3D projection type to use
-	MapX, MapY, MapZ vector.Axis     // Axis re-mapping (use -1 to indicate zero)
-	Transform        matrix.Matrix   // Transformation matrix (if using Transform coordinates)
-	Scale, Offset    vector.Vector3D // Constant scale and offset for coordinates
-	Scalar           bool            // Should the result be a scalar?
-	BumpStrength     float64         // Bump mapping weight
+	Texture          Texture       // The 2D/3D texture to apply
+	Coordinates      Coordinates   // The coordinate system to use
+	Projector        Projector     // The 3D projection type to use
+	MapX, MapY, MapZ vecutil.Axis  // Axis re-mapping (use -1 to indicate zero)
+	Transform        matrix.Matrix // Transformation matrix (if using Transform coordinates)
+	Scale, Offset    vec64.Vector  // Constant scale and offset for coordinates
+	Scalar           bool          // Should the result be a scalar?
+	BumpStrength     float64       // Bump mapping weight
 
 	delta, deltaU, deltaV, deltaW float64
 }
@@ -76,10 +76,10 @@ func (tmap *TextureMapper) Init(tex Texture, coord Coordinates, scalar bool) {
 	tmap.Texture = tex
 	tmap.Coordinates = coord
 	tmap.Projector = FlatMap
-	tmap.MapX, tmap.MapY, tmap.MapZ = vector.X, vector.Y, vector.Z
+	tmap.MapX, tmap.MapY, tmap.MapZ = vecutil.X, vecutil.Y, vecutil.Z
 	tmap.Transform = matrix.Identity
-	tmap.Scale = vector.Vector3D{1.0, 1.0, 1.0}
-	tmap.Offset = vector.Vector3D{}
+	tmap.Scale = vec64.Vector{1.0, 1.0, 1.0}
+	tmap.Offset = vec64.Vector{}
 	tmap.Scalar = scalar
 
 	if discreteTex, ok := tex.(DiscreteTexture); ok {
@@ -100,11 +100,11 @@ func (tmap *TextureMapper) Init(tex Texture, coord Coordinates, scalar bool) {
 	}
 }
 
-func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray.SurfacePoint) (p, n vector.Vector3D) {
+func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray.SurfacePoint) (p, n vec64.Vector) {
 	p, n = sp.Position, sp.GeometricNormal
 	switch tmap.Coordinates {
 	case UV:
-		p = vector.Vector3D{sp.U, sp.V, 0}
+		p = vec64.Vector{sp.U, sp.V, 0}
 	case Orco:
 		p, n = sp.OrcoPosition, sp.OrcoNormal
 	case Transform:
@@ -115,29 +115,29 @@ func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray
 	return
 }
 
-func (tmap *TextureMapper) mapping(p, n vector.Vector3D) (texPt vector.Vector3D) {
+func (tmap *TextureMapper) mapping(p, n vec64.Vector) (texPt vec64.Vector) {
 	texPt = p
 	if tmap.Coordinates == UV {
 		// Normalize to [-1, 1]
-		texPt = vector.Vector3D{2*texPt[vector.X] - 1, 2*texPt[vector.Y] - 1, texPt[vector.Z]}
+		texPt = vec64.Vector{2*texPt[vecutil.X] - 1, 2*texPt[vecutil.Y] - 1, texPt[vecutil.Z]}
 	}
 
 	// Map axes
-	m := map[vector.Axis]float64{
-		-1:       0.0,
-		vector.X: texPt[vector.X],
-		vector.Y: texPt[vector.Y],
-		vector.Z: texPt[vector.Z],
+	m := map[vecutil.Axis]float64{
+		-1:        0.0,
+		vecutil.X: texPt[vecutil.X],
+		vecutil.Y: texPt[vecutil.Y],
+		vecutil.Z: texPt[vecutil.Z],
 	}
-	texPt[vector.X] = m[tmap.MapX]
-	texPt[vector.Y] = m[tmap.MapY]
-	texPt[vector.Z] = m[tmap.MapZ]
+	texPt[vecutil.X] = m[tmap.MapX]
+	texPt[vecutil.Y] = m[tmap.MapY]
+	texPt[vecutil.Z] = m[tmap.MapZ]
 
 	// Texture coordinate mapping
 	texPt = tmap.Projector.Project(texPt, n)
 
 	// Scale and offset
-	texPt = vector.Add(vector.Mul(texPt, tmap.Scale), tmap.Offset)
+	texPt = vec64.Add(vec64.Mul(texPt, tmap.Scale), tmap.Offset)
 	return
 }
 
@@ -162,31 +162,31 @@ func (tmap *TextureMapper) EvalDerivative(inputs []shader.Result, params shader.
 	scale := tmap.Scale.Length()
 	bstr := tmap.BumpStrength / scale
 	if tmap.Coordinates == UV {
-		var p1, p2 vector.Vector3D
-		p1 = tmap.mapping(vector.Vector3D{sp.U - tmap.deltaU, sp.V, 0}, sp.GeometricNormal)
-		p2 = tmap.mapping(vector.Vector3D{sp.U + tmap.deltaU, sp.V, 0}, sp.GeometricNormal)
+		var p1, p2 vec64.Vector
+		p1 = tmap.mapping(vec64.Vector{sp.U - tmap.deltaU, sp.V, 0}, sp.GeometricNormal)
+		p2 = tmap.mapping(vec64.Vector{sp.U + tmap.deltaU, sp.V, 0}, sp.GeometricNormal)
 		dfdu := (tmap.Texture.ScalarAt(p2) - tmap.Texture.ScalarAt(p1)) / tmap.deltaU
-		p1 = tmap.mapping(vector.Vector3D{sp.U, sp.V - tmap.deltaV, 0}, sp.GeometricNormal)
-		p2 = tmap.mapping(vector.Vector3D{sp.U, sp.V + tmap.deltaV, 0}, sp.GeometricNormal)
+		p1 = tmap.mapping(vec64.Vector{sp.U, sp.V - tmap.deltaV, 0}, sp.GeometricNormal)
+		p2 = tmap.mapping(vec64.Vector{sp.U, sp.V + tmap.deltaV, 0}, sp.GeometricNormal)
 		dfdv := (tmap.Texture.ScalarAt(p2) - tmap.Texture.ScalarAt(p1)) / tmap.deltaV
 
 		// Derivative is in UV-space, convert to shading space.
 		vecU, vecV := sp.ShadingU, sp.ShadingV
-		vecU[vector.Z], vecV[vector.Z] = dfdu, dfdv
+		vecU[vecutil.Z], vecV[vecutil.Z] = dfdu, dfdv
 
 		// Solve plane equation to get 1/0/df 0/1/df.
-		norm := vector.Cross(vecU, vecV)
-		if math.Abs(norm[vector.Z]) > 1e-30 {
-			nf := 1 / norm[vector.Z] * bstr
-			result = shader.Result{norm[vector.X] * nf, norm[vector.Y] * nf}
+		norm := vec64.Cross(vecU, vecV)
+		if math.Abs(norm[vecutil.Z]) > 1e-30 {
+			nf := 1 / norm[vecutil.Z] * bstr
+			result = shader.Result{norm[vecutil.X] * nf, norm[vecutil.Y] * nf}
 		}
 	} else {
 		p, n := tmap.textureCoordinates(state, sp)
 		delta := tmap.delta / scale
 		du := sp.NormalU.Scale(delta)
 		dv := sp.NormalV.Scale(delta)
-		u1, u2 := tmap.mapping(vector.Sub(p, du), n), tmap.mapping(vector.Add(p, du), n)
-		v1, v2 := tmap.mapping(vector.Sub(p, dv), n), tmap.mapping(vector.Add(p, dv), n)
+		u1, u2 := tmap.mapping(vec64.Sub(p, du), n), tmap.mapping(vec64.Add(p, du), n)
+		v1, v2 := tmap.mapping(vec64.Sub(p, dv), n), tmap.mapping(vec64.Add(p, dv), n)
 		result = shader.Result{
 			-bstr * (tmap.Texture.ScalarAt(u2) - tmap.Texture.ScalarAt(u1)) / delta,
 			-bstr * (tmap.Texture.ScalarAt(v2) - tmap.Texture.ScalarAt(v1)) / delta,
@@ -211,8 +211,8 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 	m = m.Copy()
 	m.SetDefault("projection", "flat")
 	m.SetDefault("mapAxes", yamldata.Sequence{"x", "y", "z"})
-	m.SetDefault("scale", vector.Vector3D{1, 1, 1})
-	m.SetDefault("offset", vector.Vector3D{})
+	m.SetDefault("scale", vec64.Vector{1, 1, 1})
+	m.SetDefault("offset", vec64.Vector{})
 	m.SetDefault("scalar", false)
 	m.SetDefault("bumpStrength", 0.02)
 
@@ -298,12 +298,12 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 	}
 
 	// Scale and offset
-	tmap.Scale, ok = m["scale"].(vector.Vector3D)
+	tmap.Scale, ok = m["scale"].(vec64.Vector)
 	if !ok {
 		err = errors.New("scale must be a vector")
 		return
 	}
-	tmap.Offset, ok = m["offset"].(vector.Vector3D)
+	tmap.Offset, ok = m["offset"].(vec64.Vector)
 	if !ok {
 		err = errors.New("offset must be a vector")
 		return
@@ -320,14 +320,14 @@ func Construct(m yamldata.Map) (data interface{}, err error) {
 	return tmap, nil
 }
 
-func constructMapAxis(name string) (a vector.Axis) {
+func constructMapAxis(name string) (a vecutil.Axis) {
 	switch name {
 	case "x":
-		a = vector.X
+		a = vecutil.X
 	case "y":
-		a = vector.Y
+		a = vecutil.Y
 	case "z":
-		a = vector.Z
+		a = vecutil.Z
 	case "none":
 		a = -1
 	default:

@@ -21,7 +21,7 @@
 package kdtree
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
 )
 
 // TODO: This could be more memory-efficient.
@@ -42,7 +42,7 @@ func newLeaf(indices []int) *Node {
 	}
 }
 
-func newInterior(axis vector.Axis, pivot float64, left, right *Node) *Node {
+func newInterior(axis vecutil.Axis, pivot float64, left, right *Node) *Node {
 	return &Node{
 		axis:  int8(axis),
 		pivot: pivot,
@@ -55,8 +55,8 @@ func (n *Node) IsLeaf() bool {
 	return n.axis == -1
 }
 
-func (n *Node) Axis() vector.Axis {
-	return vector.Axis(n.axis)
+func (n *Node) Axis() vecutil.Axis {
+	return vecutil.Axis(n.axis)
 }
 
 func (n *Node) Pivot() float64 {

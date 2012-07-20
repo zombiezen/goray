@@ -23,26 +23,26 @@ package goray
 import (
 	"bitbucket.org/zombiezen/goray/bound"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // VolumeRegion defines a volumetric effect.
 type VolumeRegion interface {
 	// SigmaA returns the amount of light absorption in the volume.
-	SigmaA(p, v vector.Vector3D) color.Color
+	SigmaA(p, v vec64.Vector) color.Color
 
 	// SigmaS returns the amount of light scattering in the volume.
-	SigmaS(p, v vector.Vector3D) color.Color
+	SigmaS(p, v vec64.Vector) color.Color
 
 	// Emission returns the amout of light the volume emits.
-	Emission(p, v vector.Vector3D) color.Color
+	Emission(p, v vec64.Vector) color.Color
 
-	SigmaT(p, v vector.Vector3D) color.Color
+	SigmaT(p, v vec64.Vector) color.Color
 
 	// Attenuation returns how much the volumetric effect dissipates over distance.
-	Attenuation(p vector.Vector3D, l Light) float64
+	Attenuation(p vec64.Vector, l Light) float64
 
-	P(l, s vector.Vector3D) float64
+	P(l, s vec64.Vector) float64
 
 	Tau(r Ray, step, offset float64) color.Color
 

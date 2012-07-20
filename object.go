@@ -21,7 +21,7 @@
 package goray
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // Object3D is a collection of primitives.
@@ -39,7 +39,7 @@ type Samplable interface {
 	EnableSampling() bool
 
 	// Sample takes a sample of the object's surface.
-	Sample(s1, s2 float64) (p, n vector.Vector3D)
+	Sample(s1, s2 float64) (p, n vec64.Vector)
 }
 
 // SamplableObject3D is the set of three-dimensional objects that can sample their surfaces.

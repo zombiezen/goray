@@ -26,7 +26,7 @@ import (
 
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // An Integrator renders rays.
@@ -70,7 +70,7 @@ func RenderPixel(s *Scene, i Integrator, x, y int) Fragment {
 	state := new(RenderState)
 	state.Init()
 	state.PixelNumber = y*w + x
-	state.ScreenPos = vector.Vector3D{2.0*float64(x)/float64(w) - 1.0, -2.0*float64(y)/float64(h) + 1.0, 0.0}
+	state.ScreenPos = vec64.Vector{2.0*float64(x)/float64(w) - 1.0, -2.0*float64(y)/float64(h) + 1.0, 0.0}
 	state.Time = 0.0
 
 	// Shoot ray

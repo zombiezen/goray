@@ -21,14 +21,14 @@
 package goray
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"fmt"
 )
 
 // Ray defines the path of light.
 type Ray struct {
-	From       vector.Vector3D
-	Dir        vector.Vector3D
+	From       vec64.Vector
+	Dir        vec64.Vector
 	TMin, TMax float64
 	Time       float64
 }
@@ -41,8 +41,8 @@ func (r Ray) String() string {
 // For an explanation, see http://www.opticalres.com/white%20papers/DifferentialRayTracing.pdf
 type DifferentialRay struct {
 	Ray
-	FromX, FromY vector.Vector3D
-	DirX, DirY   vector.Vector3D
+	FromX, FromY vec64.Vector
+	DirX, DirY   vec64.Vector
 }
 
 func (r DifferentialRay) String() string {

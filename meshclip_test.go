@@ -22,13 +22,13 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"testing"
 )
 
 type boxClipTest struct {
 	Min, Max        [3]float64
-	PolyIn, PolyOut []vector.Vector3D
+	PolyIn, PolyOut []vec64.Vector
 	Region          bound.Bound
 }
 
@@ -36,15 +36,15 @@ var boxTests = []boxClipTest{
 	{
 		Min:     [3]float64{-1, -1, -1},
 		Max:     [3]float64{0, 0, 0},
-		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
+		PolyIn:  []vec64.Vector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
 		PolyOut: nil,
 	},
 	{
 		Min:     [3]float64{0, 0, 0},
 		Max:     [3]float64{1, 1, 1},
-		PolyIn:  []vector.Vector3D{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
-		PolyOut: []vector.Vector3D{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
-		Region:  bound.Bound{vector.Vector3D{0.1, 0.1, 0.1}, vector.Vector3D{0.9, 0.9, 0.9}},
+		PolyIn:  []vec64.Vector{{0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}, {0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}},
+		PolyOut: []vec64.Vector{{0.9, 0.1, 0.9}, {0.1, 0.1, 0.1}, {0.1, 0.1, 0.1}, {0.9, 0.9, 0.9}},
+		Region:  bound.Bound{vec64.Vector{0.1, 0.1, 0.1}, vec64.Vector{0.9, 0.9, 0.9}},
 	},
 }
 
@@ -75,14 +75,7 @@ func (test boxClipTest) Run(t *testing.T) {
 		}
 	}
 
-	boundEq := true
-	for axis := vector.X; boundEq && axis <= vector.Z; axis++ {
-		if test.Region.Min[axis] != resultBound.Min[axis] || test.Region.Max[axis] != resultBound.Max[axis] {
-			boundEq = false
-			break
-		}
-	}
-	if !boundEq {
+	if resultBound != test.Region {
 		t.Errorf("Bound: %v, wanted %v", resultBound, test.Region)
 	}
 }

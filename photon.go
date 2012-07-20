@@ -25,12 +25,13 @@ import (
 
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/kdtree"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type Photon struct {
-	Position  vector.Vector3D
-	Direction vector.Vector3D
+	Position  vec64.Vector
+	Direction vec64.Vector
 	Color     color.Color
 }
 
@@ -66,7 +67,7 @@ func (pm *PhotonMap) Len() int {
 	return len(pm.photons)
 }
 
-func (pm *PhotonMap) Dimension(i int, axis vector.Axis) (float64, float64) {
+func (pm *PhotonMap) Dimension(i int, axis vecutil.Axis) (float64, float64) {
 	val := pm.photons[i].Position[axis]
 	return val, val
 }
@@ -123,7 +124,7 @@ func (h *gatherHeap) Pop() (val interface{}) {
 	return
 }
 
-func (pm *PhotonMap) Gather(p vector.Vector3D, nLookup int, maxDist float64) []GatherResult {
+func (pm *PhotonMap) Gather(p vec64.Vector, nLookup int, maxDist float64) []GatherResult {
 	resultHeap := make(gatherHeap, 0, nLookup)
 
 	ch, distCh := make(chan GatherResult), make(chan float64)
@@ -136,13 +137,13 @@ func (pm *PhotonMap) Gather(p vector.Vector3D, nLookup int, maxDist float64) []G
 	return resultHeap
 }
 
-func (pm *PhotonMap) FindNearest(p, n vector.Vector3D, dist float64) (nearest Photon) {
+func (pm *PhotonMap) FindNearest(p, n vec64.Vector, dist float64) (nearest Photon) {
 	ch, distCh := make(chan GatherResult), make(chan float64)
 	go lookup(p, ch, distCh, pm.photons, pm.tree.Root())
 	distCh <- dist
 
 	for gresult := range ch {
-		if vector.Dot(gresult.Photon.Direction, n) > 0 {
+		if vec64.Dot(gresult.Photon.Direction, n) > 0 {
 			nearest, dist = gresult.Photon, gresult.Distance
 		}
 		distCh <- dist
@@ -150,7 +151,7 @@ func (pm *PhotonMap) FindNearest(p, n vector.Vector3D, dist float64) (nearest Ph
 	return
 }
 
-func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, photons []Photon, root *kdtree.Node) {
+func lookup(p vec64.Vector, ch chan<- GatherResult, distCh <-chan float64, photons []Photon, root *kdtree.Node) {
 	defer close(ch)
 	st := []*kdtree.Node{root}
 	maxDistSqr := <-distCh
@@ -168,7 +169,7 @@ func lookup(p vector.Vector3D, ch chan<- GatherResult, distCh <-chan float64, ph
 	for currNode, empty := next(); !empty; currNode, empty = next() {
 		if currNode.IsLeaf() {
 			phot := photons[currNode.Indices()[0]]
-			v := vector.Sub(phot.Position, p)
+			v := vec64.Sub(phot.Position, p)
 			distSqr := v.LengthSqr()
 			if distSqr < maxDistSqr {
 				ch <- GatherResult{phot, distSqr}

@@ -22,42 +22,42 @@
 package sampleutil
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"math"
 	"sort"
 )
 
 // CosHemisphere samples a cosine-weighted hemisphere given the coordinate system built by n, ru, and rv.
-func CosHemisphere(n, ru, rv vector.Vector3D, s1, s2 float64) (v vector.Vector3D) {
+func CosHemisphere(n, ru, rv vec64.Vector, s1, s2 float64) (v vec64.Vector) {
 	z1 := s1
 	z2 := s2 * 2 * math.Pi
-	v = vector.Add(ru.Scale(math.Cos(z2)), rv.Scale(math.Sin(z2))).Scale(math.Sqrt(1 - z1))
-	v = vector.Add(v, n.Scale(math.Sqrt(z1)))
+	v = vec64.Add(ru.Scale(math.Cos(z2)), rv.Scale(math.Sin(z2))).Scale(math.Sqrt(1 - z1))
+	v = vec64.Add(v, n.Scale(math.Sqrt(z1)))
 	return
 }
 
 // Sphere uniformly samples a sphere.
-func Sphere(s1, s2 float64) (dir vector.Vector3D) {
-	dir[vector.Z] = 1.0 - 2.0*s1
-	r := 1.0 - dir[vector.Z]*dir[vector.Z]
+func Sphere(s1, s2 float64) (dir vec64.Vector) {
+	dir[2] = 1.0 - 2.0*s1
+	r := 1.0 - dir[2]*dir[2]
 	if r > 0.0 {
 		r = math.Sqrt(r)
 		a := 2 * math.Pi * s2
-		dir[vector.X], dir[vector.Y] = math.Cos(a)*r, math.Sin(a)*r
+		dir[0], dir[1] = math.Cos(a)*r, math.Sin(a)*r
 	} else {
-		dir[vector.X], dir[vector.Y] = 0.0, 0.0
+		dir[0], dir[1] = 0.0, 0.0
 	}
 	return
 }
 
 // Cone uniformly samples a cone.
-func Cone(d, u, v vector.Vector3D, maxCosAngle, s1, s2 float64) vector.Vector3D {
+func Cone(d, u, v vec64.Vector, maxCosAngle, s1, s2 float64) vec64.Vector {
 	cosAngle := 1 - (1-maxCosAngle)*s2
 	sinAngle := math.Sqrt(1 - cosAngle*cosAngle)
 	t1 := 2 * math.Pi * s1
 
 	// \sin \theta (\vec{u} \cos t_1 + \vec{v} \cos t_1) + \vec{d} \cos \theta
-	return vector.Add(vector.Add(u.Scale(math.Cos(t1)), v.Scale(math.Sin(t1))).Scale(sinAngle), d.Scale(cosAngle))
+	return vec64.Add(vec64.Add(u.Scale(math.Cos(t1)), v.Scale(math.Sin(t1))).Scale(sinAngle), d.Scale(cosAngle))
 }
 
 // AddMod1 performs an floating-point addition modulo 1. Both values must be in the range [0,1].

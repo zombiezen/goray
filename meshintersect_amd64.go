@@ -20,6 +20,10 @@
 
 package goray
 
+import (
+	"bitbucket.org/zombiezen/math3/vec64"
+)
+
 // Declaration of ray intersection
 
-func intersect(a, b, c, rDir, rFrom [3]float64) (rayDepth, u, v float64)
+func intersect(a, b, c, rDir, rFrom vec64.Vector) (rayDepth, u, v float64)

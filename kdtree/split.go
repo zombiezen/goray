@@ -22,12 +22,12 @@ package kdtree
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
 	"math"
 	"sort"
 )
 
-func split(indices []int, bd bound.Bound, state *buildState) (axis vector.Axis, pivot float64, cost float64) {
+func split(indices []int, bd bound.Bound, state *buildState) (axis vecutil.Axis, pivot float64, cost float64) {
 	const pigeonThreshold = 128
 	if len(indices) > pigeonThreshold {
 		return pigeonSplit(indices, bd, state)
@@ -35,7 +35,7 @@ func split(indices []int, bd bound.Bound, state *buildState) (axis vector.Axis, 
 	return minimalSplit(indices, bd, state)
 }
 
-func simpleSplit(indices []int, bd bound.Bound, state *buildState) (axis vector.Axis, pivot float64, cost float64) {
+func simpleSplit(indices []int, bd bound.Bound, state *buildState) (axis vecutil.Axis, pivot float64, cost float64) {
 	axis = bd.LargestAxis()
 	data := make([]float64, 0, len(indices)*2)
 	for _, i := range indices {
@@ -51,7 +51,7 @@ func simpleSplit(indices []int, bd bound.Bound, state *buildState) (axis vector.
 	return
 }
 
-func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
+func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vecutil.Axis, bestPivot float64, bestCost float64) {
 	const numBins = 1024
 	type pigeonBin struct {
 		n           int
@@ -61,7 +61,7 @@ func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vec
 	}
 
 	var bins [numBins + 1]pigeonBin
-	d := [3]float64{bd.LengthX(), bd.LengthY(), bd.LengthZ()}
+	d := bd.Size()
 	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
 	invTotalSA := 0.0
@@ -69,7 +69,7 @@ func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vec
 		invTotalSA = 1.0 / totalSA
 	}
 
-	for axis := vector.X; axis <= vector.Z; axis++ {
+	for axis := vecutil.X; axis <= vecutil.Z; axis++ {
 		s := numBins / d[axis]
 		min := bd.Min[axis]
 
@@ -157,7 +157,7 @@ func pigeonSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vec
 	return
 }
 
-func computeCost(axis vector.Axis, bd bound.Bound, capArea, capPerim, invTotalSA float64, nBelow, nAbove int, edget float64) float64 {
+func computeCost(axis vecutil.Axis, bd bound.Bound, capArea, capPerim, invTotalSA float64, nBelow, nAbove int, edget float64) float64 {
 	const emptyBonus = 0.33
 	const costRatio = 0.35
 
@@ -206,7 +206,7 @@ const (
 	upperB
 )
 
-func minimalSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vector.Axis, bestPivot float64, bestCost float64) {
+func minimalSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis vecutil.Axis, bestPivot float64, bestCost float64) {
 	d := bd.Size()
 	bestCost = math.Inf(1)
 	totalSA := d[0]*d[1] + d[0]*d[2] + d[1]*d[2]
@@ -215,7 +215,7 @@ func minimalSplit(indices []int, bd bound.Bound, state *buildState) (bestAxis ve
 		invTotalSA = 1.0 / totalSA
 	}
 
-	for axis := vector.X; axis <= vector.Z; axis++ {
+	for axis := vecutil.X; axis <= vecutil.Z; axis++ {
 		edges := make(boundEdgeArray, 0, len(indices)*2)
 		for _, i := range indices {
 			min, max := state.ClippedDimension(i, axis)

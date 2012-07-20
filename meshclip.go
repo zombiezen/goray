@@ -22,25 +22,26 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"math"
 )
 
-func calcPolyBound(poly []vector.Vector3D) bound.Bound {
-	a, g := poly[0], poly[0]
-	for i := 1; i < len(poly); i++ {
-		for axis := vector.X; axis <= vector.Z; axis++ {
-			a[axis] = math.Min(a[axis], poly[i][axis])
-			g[axis] = math.Max(g[axis], poly[i][axis])
+func calcPolyBound(poly []vec64.Vector) bound.Bound {
+	bd := bound.Bound{poly[0], poly[0]}
+	for _, p := range poly[1:] {
+		for axis := range bd.Min {
+			bd.Min[axis] = math.Min(bd.Min[axis], p[axis])
+			bd.Max[axis] = math.Max(bd.Max[axis], p[axis])
 		}
 	}
-	return bound.Bound{a, g}
+	return bd
 }
 
-func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3D, bound.Bound) {
-	for axis := vector.X; axis <= vector.Z; axis++ { // for each axis
+func triBoxClip(bMin, bMax [3]float64, poly []vec64.Vector) ([]vec64.Vector, bound.Bound) {
+	for axis := range bMin {
 		// clip lower bound
-		poly = triClip(axis, bMin[axis], poly, cmpMin)
+		poly = triClip(vecutil.Axis(axis), bMin[axis], poly, cmpMin)
 		if len(poly) > 9 {
 			// fatal error
 			panic("clipped polygon is too complex")
@@ -51,7 +52,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 		}
 
 		// clip upper bound
-		poly = triClip(axis, bMax[axis], poly, cmpMax)
+		poly = triClip(vecutil.Axis(axis), bMax[axis], poly, cmpMax)
 		if len(poly) > 10 {
 			// fatal error
 			panic("clipped polygon is too complex")
@@ -69,7 +70,7 @@ func triBoxClip(bMin, bMax [3]float64, poly []vector.Vector3D) ([]vector.Vector3
 	return poly, calcPolyBound(poly)
 }
 
-func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vector3D) ([]vector.Vector3D, bound.Bound) {
+func triPlaneClip(axis vecutil.Axis, pos float64, lower bool, poly []vec64.Vector) ([]vec64.Vector, bound.Bound) {
 	if lower {
 		poly = triClip(axis, pos, poly, cmpMin)
 	} else {
@@ -89,10 +90,10 @@ func triPlaneClip(axis vector.Axis, pos float64, lower bool, poly []vector.Vecto
 }
 
 // triClip is the internal clipping function. It's not very user-friendly; use triBoxClip or triPlaneClip.
-func triClip(axis vector.Axis, bound float64, poly []vector.Vector3D, cmp func(a, b float64) bool) (cpoly []vector.Vector3D) {
+func triClip(axis vecutil.Axis, bound float64, poly []vec64.Vector, cmp func(a, b float64) bool) (cpoly []vec64.Vector) {
 	nextAxis, prevAxis := (axis+1)%3, (axis+2)%3
 
-	cpoly = make([]vector.Vector3D, 0, 11)
+	cpoly = make([]vec64.Vector, 0, 11)
 	p1_inside := poly[0][axis] == bound || cmp(poly[0][axis], bound)
 
 	for i := 0; i < len(poly)-1; i++ {
@@ -106,7 +107,7 @@ func triClip(axis vector.Axis, bound float64, poly []vector.Vector3D, cmp func(a
 			} else {
 				// clip line, add intersection to new poly
 				t := (bound - p1[axis]) / (p2[axis] - p1[axis])
-				dv := vector.Vector3D{}
+				dv := vec64.Vector{}
 				dv[axis] = bound
 				dv[nextAxis] = p2[nextAxis] + t*(p1[nextAxis]-p2[nextAxis])
 				dv[prevAxis] = p2[prevAxis] + t*(p1[prevAxis]-p2[prevAxis])
@@ -119,7 +120,7 @@ func triClip(axis vector.Axis, bound float64, poly []vector.Vector3D, cmp func(a
 			case cmp(p2[axis], bound):
 				// p2 inside, add s and p2
 				t := (bound - p2[axis]) / (p1[axis] - p2[axis])
-				dv := vector.Vector3D{}
+				dv := vec64.Vector{}
 				dv[axis] = bound
 				dv[nextAxis] = p2[nextAxis] + t*(p1[nextAxis]-p2[nextAxis])
 				dv[prevAxis] = p2[prevAxis] + t*(p1[prevAxis]-p2[prevAxis])

@@ -27,7 +27,7 @@ import (
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/montecarlo"
 	"bitbucket.org/zombiezen/goray/sampleutil"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 const (
@@ -86,7 +86,7 @@ func halSeq(n int, base, start uint) (seq []float64) {
 }
 
 // estimateDirectPH computes an estimate of direct lighting with multiple importance sampling using the power heuristic with exponent=2.
-func estimateDirectPH(state *goray.RenderState, sp goray.SurfacePoint, lights []goray.Light, sc *goray.Scene, wo vector.Vector3D, trShad bool, sDepth int) (col color.Color) {
+func estimateDirectPH(state *goray.RenderState, sp goray.SurfacePoint, lights []goray.Light, sc *goray.Scene, wo vec64.Vector, trShad bool, sDepth int) (col color.Color) {
 	params := directParams{state, sp, lights, sc, wo, trShad, sDepth}
 
 	return colorSum(len(lights), false, func(i int) (col color.Color) {
@@ -107,7 +107,7 @@ type directParams struct {
 	Surf   goray.SurfacePoint
 	Lights []goray.Light
 	Scene  *goray.Scene
-	Wo     vector.Vector3D
+	Wo     vec64.Vector
 	TrShad bool
 	SDepth int
 }
@@ -138,7 +138,7 @@ func estimateDiracDirect(params directParams, l goray.DiracLight) color.Color {
 			//TODO: transmitCol
 			return color.ScalarMul(
 				color.Mul(surfCol, lcol),
-				math.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
+				math.Abs(vec64.Dot(sp.Normal, lightRay.Dir)),
 			)
 		}
 	}
@@ -206,7 +206,7 @@ func sampleLight(params directParams, l goray.Light, canIntersect bool, lightSam
 			surfCol := mat.Eval(params.State, sp, params.Wo, lightRay.Dir, goray.BSDFAll)
 			col = color.ScalarMul(
 				color.Mul(surfCol, lightSamp.Color),
-				math.Abs(vector.Dot(sp.Normal, lightRay.Dir)),
+				math.Abs(vec64.Dot(sp.Normal, lightRay.Dir)),
 			)
 			if canIntersect {
 				mPdf := mat.Pdf(
@@ -253,7 +253,7 @@ func sampleBSDF(params directParams, l goray.LightIntersecter, s1, s2 float64) (
 			l2 := lPdf * lPdf
 			m2 := s.Pdf * s.Pdf
 			w := m2 / (l2 + m2)
-			cos2 := math.Abs(vector.Dot(sp.Normal, bRay.Dir))
+			cos2 := math.Abs(vec64.Dot(sp.Normal, bRay.Dir))
 			if s.Pdf > pdfCutoff {
 				col = color.ScalarMul(
 					color.Mul(surfCol, lcol),
@@ -266,7 +266,7 @@ func sampleBSDF(params directParams, l goray.LightIntersecter, s1, s2 float64) (
 	return
 }
 
-func estimatePhotons(state *goray.RenderState, sp goray.SurfacePoint, m *goray.PhotonMap, wo vector.Vector3D, nSearch int, radius float64) (sum color.Color) {
+func estimatePhotons(state *goray.RenderState, sp goray.SurfacePoint, m *goray.PhotonMap, wo vec64.Vector, nSearch int, radius float64) (sum color.Color) {
 	sum = color.Black
 	if !m.Ready() {
 		return
@@ -296,7 +296,7 @@ func ckernel(phot, gather float64) float64 {
 	return 3.0 * (1.0 - p/g) / (gather * math.Pi)
 }
 
-func sampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
+func sampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector, aoSamples int, aoDist float64, aoColor color.Color) color.Color {
 	mat := sp.Material.(goray.Material)
 
 	n := aoSamples
@@ -331,7 +331,7 @@ func sampleAO(sc *goray.Scene, state *goray.RenderState, sp goray.SurfacePoint, 
 		if s.Pdf <= pdfCutoff || sc.Shadowed(lightRay, math.Inf(1)) {
 			return color.Black
 		}
-		cos := math.Abs(vector.Dot(sp.Normal, lightRay.Dir))
+		cos := math.Abs(vec64.Dot(sp.Normal, lightRay.Dir))
 		return color.ScalarMul(color.Mul(aoColor, surfCol), cos/s.Pdf)
 	})
 }

@@ -22,9 +22,9 @@ package cameras
 
 import (
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"errors"
 	"math"
 )
@@ -91,14 +91,14 @@ func shirleyDisk(r1, r2 float64) (u, v float64) {
 // perspective is a conventional perspective camera.
 type perspective struct {
 	resx, resy    int
-	eye           vector.Vector3D // eye is the camera position
+	eye           vec64.Vector // eye is the camera position
 	focalDistance float64
 	dofDistance   float64
 	aspectRatio   float64 // aspectRatio is the aspect of the camera (not the image)
 
-	look, up, right vector.Vector3D
-	dofUp, dofRight vector.Vector3D
-	x, y, z         vector.Vector3D
+	look, up, right vec64.Vector
+	dofUp, dofRight vec64.Vector
+	x, y, z         vec64.Vector
 
 	aperture  float64
 	aPix      float64
@@ -111,7 +111,7 @@ var _ goray.Camera = &perspective{}
 
 // NewPerspective creates a perspective camera.
 // It will not lead you to enlightenment.
-func NewPerspective(pos, look, up vector.Vector3D,
+func NewPerspective(pos, look, up vec64.Vector,
 	resx, resy int,
 	aspect, focalDist, aperture float64,
 	bokeh Bokeh, bias BokehBias, bokehRot float64) goray.Camera {
@@ -121,10 +121,10 @@ func NewPerspective(pos, look, up vector.Vector3D,
 	cam.dofDistance = 0
 	cam.resx, cam.resy = resx, resy
 
-	cam.up = vector.Sub(up, pos)
-	cam.look = vector.Sub(look, pos)
-	cam.right = vector.Cross(cam.up, cam.look)
-	cam.up = vector.Cross(cam.right, cam.look)
+	cam.up = vec64.Sub(up, pos)
+	cam.look = vec64.Sub(look, pos)
+	cam.right = vec64.Cross(cam.up, cam.look)
+	cam.up = vec64.Cross(cam.right, cam.look)
 
 	cam.up = cam.up.Normalize()
 	cam.right = cam.right.Normalize()
@@ -143,7 +143,7 @@ func NewPerspective(pos, look, up vector.Vector3D,
 	cam.up = cam.up.Scale(cam.aspectRatio)
 
 	cam.focalDistance = focalDist
-	cam.look = vector.Sub(cam.look.Scale(cam.focalDistance), vector.Add(cam.up, cam.right).Scale(0.5))
+	cam.look = vec64.Sub(cam.look.Scale(cam.focalDistance), vec64.Add(cam.up, cam.right).Scale(0.5))
 	cam.up = cam.up.Scale(1.0 / float64(resy))
 	cam.right = cam.right.Scale(1.0 / float64(resx))
 	cam.aPix = cam.aspectRatio / (cam.focalDistance * cam.focalDistance)
@@ -207,15 +207,15 @@ func (cam *perspective) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 
 	r = goray.Ray{
 		From: cam.eye,
-		Dir:  vector.Sum(cam.right.Scale(x), cam.up.Scale(y), cam.look).Normalize(),
+		Dir:  vec64.Sum(cam.right.Scale(x), cam.up.Scale(y), cam.look).Normalize(),
 		TMax: -1.0,
 	}
 
 	if cam.SampleLens() {
 		u, v = cam.getLensUV(u, v)
-		li := vector.Add(cam.dofRight.Scale(u), cam.dofUp.Scale(v))
-		r.From = vector.Add(r.From, li)
-		r.Dir = vector.Sub(r.Dir.Scale(cam.dofDistance), li).Normalize()
+		li := vec64.Add(cam.dofRight.Scale(u), cam.dofUp.Scale(v))
+		r.From = vec64.Add(r.From, li)
+		r.Dir = vec64.Sub(r.Dir.Scale(cam.dofDistance), li).Normalize()
 	}
 	return
 }
@@ -240,9 +240,9 @@ func constructPerspective(m yamldata.Map) (interface{}, error) {
 		return nil, errors.New("Missing required camera key")
 	}
 
-	pos := m["position"].(vector.Vector3D)
-	look := m["look"].(vector.Vector3D)
-	up := m["up"].(vector.Vector3D)
+	pos := m["position"].(vec64.Vector)
+	look := m["look"].(vec64.Vector)
+	up := m["up"].(vec64.Vector)
 	width, _ := yamldata.AsInt(m["width"])
 	height, _ := yamldata.AsInt(m["height"])
 

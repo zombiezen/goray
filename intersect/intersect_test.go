@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/std/primitives/sphere"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/primitives/sphere"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 func TestDepth(t *testing.T) {
@@ -36,14 +36,14 @@ func TestDepth(t *testing.T) {
 	}
 
 	r := goray.Ray{
-		From: vector.Vector3D{2, 0, 0},
-		Dir:  vector.Vector3D{-1, 0, 0},
+		From: vec64.Vector{2, 0, 0},
+		Dir:  vec64.Vector{-1, 0, 0},
 		TMax: -1.0,
 	}
 
-	sphereA := sphere.New(vector.Vector3D{1, 0, 0}, 0.25, nil)
-	sphereB := sphere.New(vector.Vector3D{0, 0, 0}, 0.25, nil)
-	sphereC := sphere.New(vector.Vector3D{-1, 0, 0}, 0.25, nil)
+	sphereA := sphere.New(vec64.Vector{1, 0, 0}, 0.25, nil)
+	sphereB := sphere.New(vec64.Vector{0, 0, 0}, 0.25, nil)
+	sphereC := sphere.New(vec64.Vector{-1, 0, 0}, 0.25, nil)
 
 	cases := []depthTestCase{
 		{"Simple", NewSimple(

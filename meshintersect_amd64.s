@@ -43,7 +43,7 @@
         7) The low (scalar) value from X0 is the result.
  */
 
-// func intersect(a, b, c, rDir, rFrom [3]float64) (rayDepth, u, v float64)
+// func intersect(a, b, c, rDir, rFrom vec64.Vector) (rayDepth, u, v float64)
 // a: +0(FP)
 // b: +24(FP)
 // c: +48(FP)

@@ -22,7 +22,7 @@
 package matrix
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"fmt"
 	"math"
 )
@@ -194,9 +194,10 @@ func Mul(m1, m2 Matrix) (result Matrix) {
 }
 
 // VecMul transforms a vector by a transformation matrix.
-func VecMul(m Matrix, u vector.Vector3D) (v vector.Vector3D) {
-	for i := vector.X; i <= vector.Z; i++ {
-		for j := vector.X; j <= vector.Z; j++ {
+func VecMul(m Matrix, u vec64.Vector) (v vec64.Vector) {
+	u4 := [4]float64{u[0], u[1], u[2], 1.0}
+	for i := range v {
+		for j := range u4 {
 			v[i] += m[i][j] * u[j]
 		}
 	}

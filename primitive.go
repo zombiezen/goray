@@ -22,7 +22,8 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // Collision stores information about a ray intersection.
@@ -38,8 +39,8 @@ type Collision struct {
 func (c Collision) Hit() bool { return c.Primitive != nil }
 
 // Point returns the point in world coordinates where the ray intersected.
-func (c Collision) Point() vector.Vector3D {
-	return vector.Add(c.Ray.From, c.Ray.Dir.Scale(c.RayDepth))
+func (c Collision) Point() vec64.Vector {
+	return vec64.Add(c.Ray.From, c.Ray.Dir.Scale(c.RayDepth))
 }
 
 // Surface returns the surface point where the ray intersected.
@@ -76,7 +77,7 @@ type Primitive interface {
 type Clipper interface {
 	// Clip calculates the overlapping bounding box of a given bounding box and the primitive.
 	// If the bounding box returned is nil, then no such bound exists.
-	Clip(bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{})
+	Clip(bound bound.Bound, axis vecutil.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{})
 }
 
 type ClipPrimitive interface {

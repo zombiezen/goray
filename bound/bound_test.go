@@ -21,42 +21,42 @@
 package bound
 
 import (
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"math"
 	"testing"
 )
 
 type crossTest struct {
-	From, Dir vector.Vector3D
+	From, Dir vec64.Vector
 	Expected  bool
 }
 
 func TestCross(t *testing.T) {
-	box := Bound{vector.Vector3D{-1, -1, -1}, vector.Vector3D{1, 1, 1}}
+	box := Bound{vec64.Vector{-1, -1, -1}, vec64.Vector{1, 1, 1}}
 
 	tests := []crossTest{
-		crossTest{vector.Vector3D{0, 0, 0}, vector.Vector3D{1, 0, 0}, true},
-		crossTest{vector.Vector3D{0, 0, 0}, vector.Vector3D{0, 1, 0}, true},
-		crossTest{vector.Vector3D{0, 0, 0}, vector.Vector3D{0, 0, 1}, true},
+		crossTest{vec64.Vector{0, 0, 0}, vec64.Vector{1, 0, 0}, true},
+		crossTest{vec64.Vector{0, 0, 0}, vec64.Vector{0, 1, 0}, true},
+		crossTest{vec64.Vector{0, 0, 0}, vec64.Vector{0, 0, 1}, true},
 
-		crossTest{vector.Vector3D{2, 0, 0}, vector.Vector3D{-1, 0, 0}, true},
-		crossTest{vector.Vector3D{0, 2, 0}, vector.Vector3D{0, -1, 0}, true},
-		crossTest{vector.Vector3D{0, 0, 2}, vector.Vector3D{0, 0, -1}, true},
-		crossTest{vector.Vector3D{-2, 0, 0}, vector.Vector3D{1, 0, 0}, true},
-		crossTest{vector.Vector3D{0, -2, 0}, vector.Vector3D{0, 1, 0}, true},
-		crossTest{vector.Vector3D{0, 0, -2}, vector.Vector3D{0, 0, 1}, true},
+		crossTest{vec64.Vector{2, 0, 0}, vec64.Vector{-1, 0, 0}, true},
+		crossTest{vec64.Vector{0, 2, 0}, vec64.Vector{0, -1, 0}, true},
+		crossTest{vec64.Vector{0, 0, 2}, vec64.Vector{0, 0, -1}, true},
+		crossTest{vec64.Vector{-2, 0, 0}, vec64.Vector{1, 0, 0}, true},
+		crossTest{vec64.Vector{0, -2, 0}, vec64.Vector{0, 1, 0}, true},
+		crossTest{vec64.Vector{0, 0, -2}, vec64.Vector{0, 0, 1}, true},
 
-		crossTest{vector.Vector3D{2, 0, 0}, vector.Vector3D{1, 0, 0}, false},
-		crossTest{vector.Vector3D{0, 2, 0}, vector.Vector3D{0, 1, 0}, false},
-		crossTest{vector.Vector3D{0, 0, 2}, vector.Vector3D{0, 0, 1}, false},
-		crossTest{vector.Vector3D{-2, 0, 0}, vector.Vector3D{-1, 0, 0}, false},
-		crossTest{vector.Vector3D{0, -2, 0}, vector.Vector3D{0, -1, 0}, false},
-		crossTest{vector.Vector3D{0, 0, -2}, vector.Vector3D{0, 0, -1}, false},
+		crossTest{vec64.Vector{2, 0, 0}, vec64.Vector{1, 0, 0}, false},
+		crossTest{vec64.Vector{0, 2, 0}, vec64.Vector{0, 1, 0}, false},
+		crossTest{vec64.Vector{0, 0, 2}, vec64.Vector{0, 0, 1}, false},
+		crossTest{vec64.Vector{-2, 0, 0}, vec64.Vector{-1, 0, 0}, false},
+		crossTest{vec64.Vector{0, -2, 0}, vec64.Vector{0, -1, 0}, false},
+		crossTest{vec64.Vector{0, 0, -2}, vec64.Vector{0, 0, -1}, false},
 
-		crossTest{vector.Vector3D{2, 2, 2}, vector.Vector3D{-1, -1, -1}, true},
-		crossTest{vector.Vector3D{2, 2, 2}, vector.Vector3D{1, 1, 1}, false},
-		crossTest{vector.Vector3D{-2, -2, -2}, vector.Vector3D{-1, -1, -1}, false},
-		crossTest{vector.Vector3D{-2, -2, -2}, vector.Vector3D{1, 1, 1}, true},
+		crossTest{vec64.Vector{2, 2, 2}, vec64.Vector{-1, -1, -1}, true},
+		crossTest{vec64.Vector{2, 2, 2}, vec64.Vector{1, 1, 1}, false},
+		crossTest{vec64.Vector{-2, -2, -2}, vec64.Vector{-1, -1, -1}, false},
+		crossTest{vec64.Vector{-2, -2, -2}, vec64.Vector{1, 1, 1}, true},
 	}
 
 	for _, ct := range tests {
@@ -67,8 +67,8 @@ func TestCross(t *testing.T) {
 }
 
 func TestRealCross(t *testing.T) {
-	ct := crossTest{vector.Vector3D{0, 0, 5}, vector.Vector3D{-0.23640189135082473, 0.2234736629175765, -0.9456075654032989}, true}
-	box := Bound{vector.Vector3D{-1.367188, -0.046875, 0.257812}, vector.Vector3D{-0.859375, 0.984375, 0.851562}}
+	ct := crossTest{vec64.Vector{0, 0, 5}, vec64.Vector{-0.23640189135082473, 0.2234736629175765, -0.9456075654032989}, true}
+	box := Bound{vec64.Vector{-1.367188, -0.046875, 0.257812}, vec64.Vector{-0.859375, 0.984375, 0.851562}}
 	a, b, hit := box.Cross(ct.From, ct.Dir, math.Inf(1))
 	aTarget := 4.387060924402294
 	bTarget := 4.404881484235866
@@ -86,7 +86,7 @@ func TestRealCross(t *testing.T) {
 }
 
 func TestVolume(t *testing.T) {
-	b := Bound{vector.Vector3D{15, -27, 3}, vector.Vector3D{20, -24, 7}}
+	b := Bound{vec64.Vector{15, -27, 3}, vec64.Vector{20, -24, 7}}
 	vol := b.Volume()
 	if vol != 60 {
 		t.Errorf("%#v != 60", vol)
@@ -94,7 +94,7 @@ func TestVolume(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	b := Bound{vector.Vector3D{15, -27, 3}, vector.Vector3D{20, -24, 7}}
+	b := Bound{vec64.Vector{15, -27, 3}, vec64.Vector{20, -24, 7}}
 	size := b.Size()
 	if !(size[0] == 5 && size[1] == 3 && size[2] == 4) {
 		t.Errorf("%#v != {5, 3, 4}", size)

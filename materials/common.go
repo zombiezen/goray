@@ -27,11 +27,11 @@ import (
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/montecarlo"
 	"bitbucket.org/zombiezen/goray/sampleutil"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
-func fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
-	c := vector.Dot(i, n)
+func fresnel(i, n vec64.Vector, ior float64) (kr, kt float64) {
+	c := vec64.Dot(i, n)
 	if c < 0 {
 		n = n.Negate()
 		c = -c
@@ -55,16 +55,16 @@ func fresnel(i, n vector.Vector3D, ior float64) (kr, kt float64) {
 }
 
 type sampler interface {
-	Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (color.Color, vector.Vector3D)
+	Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector, s *goray.MaterialSample) (color.Color, vec64.Vector)
 	MaterialFlags() goray.BSDF
 }
 
-func scatterPhoton(mat sampler, state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func scatterPhoton(mat sampler, state *goray.RenderState, sp goray.SurfacePoint, wi vec64.Vector, s *goray.PhotonSample) (wo vec64.Vector, scattered bool) {
 	scol, wo := mat.Sample(state, sp, wi, &s.MaterialSample)
 	if s.Pdf <= 1e-6 {
 		return
 	}
-	cnew := color.ScalarMul(color.Mul(s.LastColor, color.Mul(s.Alpha, scol)), math.Abs(vector.Dot(wo, sp.Normal))/s.Pdf)
+	cnew := color.ScalarMul(color.Mul(s.LastColor, color.Mul(s.Alpha, scol)), math.Abs(vec64.Dot(wo, sp.Normal))/s.Pdf)
 	newMax := math.Max(math.Max(cnew.Red(), cnew.Green()), cnew.Blue())
 	oldMax := math.Max(math.Max(s.LastColor.Red(), s.LastColor.Green()), s.LastColor.Blue())
 	prob := math.Min(1.0, newMax/oldMax)
@@ -95,7 +95,7 @@ func getReflectivity(mat sampler, state *goray.RenderState, sp goray.SurfacePoin
 		s := goray.MaterialSample{S1: s3, S2: s4, Flags: flags}
 		c, wi := mat.Sample(state, sp, wo, &s)
 		if s.Pdf > 1e-6 {
-			col = color.Add(col, color.ScalarMul(c, math.Abs(vector.Dot(wi, sp.Normal))/s.Pdf))
+			col = color.Add(col, color.ScalarMul(c, math.Abs(vec64.Dot(wi, sp.Normal))/s.Pdf))
 		}
 	}
 	return color.ScalarMul(col, 1/N)

@@ -22,7 +22,7 @@ package goray
 
 import (
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 // VolumeHandler defines a type that handles light scattering.
@@ -105,25 +105,25 @@ type Material interface {
 	MaterialFlags() BSDF
 
 	// Eval evaluates the BSDF for the given components.
-	Eval(state *RenderState, sp SurfacePoint, wo, wl vector.Vector3D, types BSDF) color.Color
+	Eval(state *RenderState, sp SurfacePoint, wo, wl vec64.Vector, types BSDF) color.Color
 
 	// Sample takes a sample from the BSDF.  The sample pointer will be filled in with the computed values.
-	Sample(state *RenderState, sp SurfacePoint, wo vector.Vector3D, s *MaterialSample) (color.Color, vector.Vector3D)
+	Sample(state *RenderState, sp SurfacePoint, wo vec64.Vector, s *MaterialSample) (color.Color, vec64.Vector)
 
 	// Pdf returns the PDF for sampling the BSDF.
-	Pdf(state *RenderState, sp SurfacePoint, wo, wi vector.Vector3D, bsdfs BSDF) float64
+	Pdf(state *RenderState, sp SurfacePoint, wo, wi vec64.Vector, bsdfs BSDF) float64
 
 	// Specular evaluates the specular components of a material for a given direction.
-	Specular(state *RenderState, sp SurfacePoint, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color)
+	Specular(state *RenderState, sp SurfacePoint, wo vec64.Vector) (reflect, refract bool, dir [2]vec64.Vector, col [2]color.Color)
 
 	// Reflectivity returns the overal reflectivity of a material.
 	Reflectivity(state *RenderState, sp SurfacePoint, flags BSDF) color.Color
 
 	// Alpha returns the alpha value of a material.
-	Alpha(state *RenderState, sp SurfacePoint, wo vector.Vector3D) float64
+	Alpha(state *RenderState, sp SurfacePoint, wo vec64.Vector) float64
 
 	// ScatterPhoton performs photon mapping.  The sample pointer will be filled in with the computed values.
-	ScatterPhoton(state *RenderState, sp SurfacePoint, wi vector.Vector3D, s *PhotonSample) (wo vector.Vector3D, scattered bool)
+	ScatterPhoton(state *RenderState, sp SurfacePoint, wi vec64.Vector, s *PhotonSample) (wo vec64.Vector, scattered bool)
 }
 
 // TransparentMaterial defines a material that can allow light to pass through it.
@@ -131,14 +131,14 @@ type TransparentMaterial interface {
 	Material
 	// Transparency returns the color that the light is multiplied by when
 	// passing through it.  If the color is black, then the material is opaque.
-	Transparency(state *RenderState, sp SurfacePoint, wo vector.Vector3D) color.Color
+	Transparency(state *RenderState, sp SurfacePoint, wo vec64.Vector) color.Color
 }
 
 // EmitMaterial defines a material that contributes light to the scene.
 type EmitMaterial interface {
 	Material
 	// Emit returns the amount of light to contribute.
-	Emit(state *RenderState, sp SurfacePoint, wo vector.Vector3D) color.Color
+	Emit(state *RenderState, sp SurfacePoint, wo vec64.Vector) color.Color
 }
 
 // VolumetricMaterial defines a material that is aware of volumetric effects.

@@ -25,10 +25,9 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
-
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yaml/parser"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type MapConstruct func(yamldata.Map) (interface{}, error)
@@ -101,7 +100,7 @@ func constructVector(n parser.Node, userData interface{}) (data interface{}, err
 		err = errors.New("Vector must be a sequence of 3 floats")
 		return
 	}
-	return vector.Vector3D{comps[0], comps[1], comps[2]}, nil
+	return vec64.Vector{comps[0], comps[1], comps[2]}, nil
 }
 
 func constructMesh(m yamldata.Map) (data interface{}, err error) {
@@ -130,18 +129,18 @@ func constructMesh(m yamldata.Map) (data interface{}, err error) {
 
 	mesh := goray.NewMesh(len(faces), false)
 
-	var vertexData []vector.Vector3D
+	var vertexData []vec64.Vector
 	var uvData []goray.UV
 
 	// Parse vertices
 	// TODO: Error handling
-	vertexData = make([]vector.Vector3D, len(vertices))
+	vertexData = make([]vec64.Vector, len(vertices))
 	for i, _ := range vertices {
 		vseq, _ := yamldata.AsSequence(vertices[i])
 		x, _ := yamldata.AsFloat(vseq[0])
 		y, _ := yamldata.AsFloat(vseq[1])
 		z, _ := yamldata.AsFloat(vseq[2])
-		vertexData[i] = vector.Vector3D{x, y, z}
+		vertexData[i] = vec64.Vector{x, y, z}
 	}
 
 	// Parse UVs

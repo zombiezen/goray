@@ -22,29 +22,29 @@ package cameras
 
 import (
 	"bitbucket.org/zombiezen/goray"
-	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"errors"
 )
 
 // orthographic is a simple orthographic camera.
 type orthographic struct {
 	resx, resy         int
-	position           vector.Vector3D
-	vlook, vup, vright vector.Vector3D
+	position           vec64.Vector
+	vlook, vup, vright vec64.Vector
 }
 
 var _ goray.Camera = &orthographic{}
 
 // NewOrthographic creates a new orthographic camera.
-func NewOrthographic(pos, look, up vector.Vector3D, resx, resy int, aspect, scale float64) goray.Camera {
+func NewOrthographic(pos, look, up vec64.Vector, resx, resy int, aspect, scale float64) goray.Camera {
 	c := new(orthographic)
 	c.resx, c.resy = resx, resy
-	c.vup = vector.Sub(up, pos)
-	c.vlook = vector.Sub(look, pos).Normalize()
-	c.vright = vector.Cross(c.vup, c.vlook)
-	c.vup = vector.Cross(c.vright, c.vlook)
+	c.vup = vec64.Sub(up, pos)
+	c.vlook = vec64.Sub(look, pos).Normalize()
+	c.vright = vec64.Cross(c.vup, c.vlook)
+	c.vup = vec64.Cross(c.vright, c.vlook)
 
 	// Normalize separately
 	c.vup = c.vup.Normalize()
@@ -53,7 +53,7 @@ func NewOrthographic(pos, look, up vector.Vector3D, resx, resy int, aspect, scal
 	c.vright = c.vright.Negate()
 	c.vup = c.vup.Scale(aspect * float64(resy) / float64(resx))
 
-	c.position = vector.Sub(pos, vector.Add(c.vup, c.vright).Scale(0.5*scale))
+	c.position = vec64.Sub(pos, vec64.Add(c.vup, c.vright).Scale(0.5*scale))
 
 	c.vup = c.vup.Scale(scale / float64(resy))
 	c.vright = c.vright.Scale(scale / float64(resx))
@@ -75,7 +75,7 @@ func (c *orthographic) ResolutionY() int {
 func (c *orthographic) ShootRay(x, y, u, v float64) (r goray.Ray, wt float64) {
 	wt = 1
 	r = goray.Ray{
-		From: vector.Sum(c.position, c.vright.Scale(x), c.vup.Scale(y)),
+		From: vec64.Sum(c.position, c.vright.Scale(x), c.vup.Scale(y)),
 		Dir:  c.vlook,
 		TMax: -1.0,
 	}
@@ -92,9 +92,9 @@ func init() {
 
 func constructOrthographic(m yamldata.Map) (interface{}, error) {
 	// Obtain position, look, and up
-	pos, posOk := m["position"].(vector.Vector3D)
-	look, lookOk := m["look"].(vector.Vector3D)
-	up, upOk := m["up"].(vector.Vector3D)
+	pos, posOk := m["position"].(vec64.Vector)
+	look, lookOk := m["look"].(vec64.Vector)
+	up, upOk := m["up"].(vec64.Vector)
 	if !posOk || !lookOk || !upOk {
 		return nil, errors.New("Ortho nodes must have position, look, and up vectors")
 	}

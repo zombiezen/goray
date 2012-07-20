@@ -27,7 +27,8 @@ import (
 	"bitbucket.org/zombiezen/goray/color"
 	"bitbucket.org/zombiezen/goray/kdtree"
 	"bitbucket.org/zombiezen/goray/log"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type simple struct {
@@ -103,12 +104,12 @@ func (kd *kdPartition) Len() int {
 	return len(kd.prims)
 }
 
-func (kd *kdPartition) Dimension(i int, axis vector.Axis) (min, max float64) {
+func (kd *kdPartition) Dimension(i int, axis vecutil.Axis) (min, max float64) {
 	bd := kd.prims[i].Bound()
 	return bd.Min[axis], bd.Max[axis]
 }
 
-func (kd *kdPartition) Clip(i int, bound bound.Bound, axis vector.Axis, lower bool, data interface{}) (bound.Bound, interface{}) {
+func (kd *kdPartition) Clip(i int, bound bound.Bound, axis vecutil.Axis, lower bool, data interface{}) (bound.Bound, interface{}) {
 	if clipper, ok := kd.prims[i].(goray.Clipper); ok {
 		return clipper.Clip(bound, axis, lower, data)
 	}
@@ -135,7 +136,7 @@ func NewKD(prims []goray.Primitive, log log.Logger) goray.Intersecter {
 type followFrame struct {
 	node  *kdtree.Node
 	t     float64
-	point vector.Vector3D
+	point vec64.Vector
 }
 
 type kdFollower struct {
@@ -163,7 +164,7 @@ func (f *kdFollower) Init(kd *kdPartition) {
 	f.enterStack = append(f.enterStack, followFrame{t: a, point: f.Ray.From})
 	if a > 0 {
 		// XXX: May not align exactly with box
-		f.enterStack[0].point = vector.Add(f.enterStack[0].point, f.Ray.Dir.Scale(a))
+		f.enterStack[0].point = vec64.Add(f.enterStack[0].point, f.Ray.Dir.Scale(a))
 	}
 
 	if f.exitStack == nil {
@@ -174,7 +175,7 @@ func (f *kdFollower) Init(kd *kdPartition) {
 	f.exitStack = append(
 		f.exitStack,
 		f.enterStack[0],
-		followFrame{t: b, point: vector.Add(f.Ray.From, f.Ray.Dir.Scale(b))},
+		followFrame{t: b, point: vec64.Add(f.Ray.From, f.Ray.Dir.Scale(b))},
 	)
 
 	f.currNode = kd.Tree.Root()
@@ -207,7 +208,7 @@ func (f *kdFollower) findLeaf() bool {
 		t := (pivot - f.Ray.From[axis]) * f.Ray.Dir.Inverse()[axis]
 
 		// Set up new exit point
-		var pt vector.Vector3D
+		var pt vec64.Vector
 		pAxis, nAxis := axis.Prev(), axis.Next()
 		pt[axis] = pivot
 		pt[nAxis] = f.Ray.From[nAxis] + t*f.Ray.Dir[nAxis]

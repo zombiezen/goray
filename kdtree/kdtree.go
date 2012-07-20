@@ -23,25 +23,26 @@ package kdtree
 
 import (
 	"bitbucket.org/zombiezen/goray/bound"
-	"bitbucket.org/zombiezen/goray/vector"
+	"bitbucket.org/zombiezen/goray/vecutil"
+	"bitbucket.org/zombiezen/math3/vec64"
 	"fmt"
 )
 
 // A type that implements kdtree.Interface can be partitioned.
 type Interface interface {
 	Len() int
-	Dimension(i int, axis vector.Axis) (min, max float64)
+	Dimension(i int, axis vecutil.Axis) (min, max float64)
 }
 
 type Clipper interface {
-	Clip(i int, bound bound.Bound, axis vector.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{})
+	Clip(i int, bound bound.Bound, axis vecutil.Axis, lower bool, oldData interface{}) (clipped bound.Bound, newData interface{})
 }
 
 func getBound(data Interface, i int) bound.Bound {
-	minX, maxX := data.Dimension(i, vector.X)
-	minY, maxY := data.Dimension(i, vector.Y)
-	minZ, maxZ := data.Dimension(i, vector.Z)
-	return bound.Bound{vector.Vector3D{minX, minY, minZ}, vector.Vector3D{maxX, maxY, maxZ}}
+	minX, maxX := data.Dimension(i, vecutil.X)
+	minY, maxY := data.Dimension(i, vecutil.Y)
+	minZ, maxZ := data.Dimension(i, vecutil.Z)
+	return bound.Bound{vec64.Vector{minX, minY, minZ}, vec64.Vector{maxX, maxY, maxZ}}
 }
 
 // Tree is a generic kd-tree.
@@ -85,7 +86,7 @@ type buildState struct {
 	OldCost    float64
 	BadRefines int
 	Clips      map[int]clipInfo
-	ClipAxis   vector.Axis
+	ClipAxis   vecutil.Axis
 	ClipLower  bool
 }
 
@@ -94,7 +95,7 @@ type clipInfo struct {
 	InternalData interface{}
 }
 
-func (state *buildState) ClippedDimension(i int, axis vector.Axis) (min, max float64) {
+func (state *buildState) ClippedDimension(i int, axis vecutil.Axis) (min, max float64) {
 	if state.Clips != nil {
 		if info, ok := state.Clips[i]; ok {
 			return info.Bound.Min[axis], info.Bound.Max[axis]
@@ -104,7 +105,7 @@ func (state *buildState) ClippedDimension(i int, axis vector.Axis) (min, max flo
 }
 
 // Split returns a copy of state with a different split.
-func (state *buildState) Split(axis vector.Axis, lower bool, clips map[int]clipInfo) *buildState {
+func (state *buildState) Split(axis vecutil.Axis, lower bool, clips map[int]clipInfo) *buildState {
 	return &buildState{
 		Data:       state.Data,
 		Options:    state.Options,
@@ -264,7 +265,7 @@ func clip(indices []int, nodeBound bound.Bound, state *buildState) ([]int, map[i
 	}
 
 	var bd bound.Bound
-	for axis := vector.X; axis <= vector.Z; axis++ {
+	for axis := range bd.Min {
 		treeSize := state.TreeBound.Max[axis] - state.TreeBound.Min[axis]
 		nodeSize := nodeBound.Max[axis] - nodeBound.Min[axis]
 		delta := treeSize*treeSizeWeight + nodeSize*nodeSizeWeight

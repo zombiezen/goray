@@ -25,9 +25,9 @@ import (
 
 	"bitbucket.org/zombiezen/goray"
 	"bitbucket.org/zombiezen/goray/color"
-	"bitbucket.org/zombiezen/goray/vector"
 	yamldata "bitbucket.org/zombiezen/goray/yaml/data"
 	"bitbucket.org/zombiezen/goray/yamlscene"
+	"bitbucket.org/zombiezen/math3/vec64"
 )
 
 type debugMaterial struct {
@@ -44,20 +44,20 @@ func (mat *debugMaterial) InitBSDF(state *goray.RenderState, sp goray.SurfacePoi
 	return goray.BSDFDiffuse
 }
 
-func (mat *debugMaterial) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vector.Vector3D, types goray.BSDF) color.Color {
+func (mat *debugMaterial) Eval(state *goray.RenderState, sp goray.SurfacePoint, wo, wl vec64.Vector, types goray.BSDF) color.Color {
 	return mat.Color
 }
 
-func (mat *debugMaterial) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D, s *goray.MaterialSample) (color.Color, vector.Vector3D) {
+func (mat *debugMaterial) Sample(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector, s *goray.MaterialSample) (color.Color, vec64.Vector) {
 	s.Pdf = 1.0
-	return mat.Color, vector.Reflect(wo, sp.Normal)
+	return mat.Color, vec64.Reflect(wo, sp.Normal)
 }
 
-func (mat *debugMaterial) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vector.Vector3D, bsdfs goray.BSDF) float64 {
+func (mat *debugMaterial) Pdf(state *goray.RenderState, sp goray.SurfacePoint, wo, wi vec64.Vector, bsdfs goray.BSDF) float64 {
 	return 0.0
 }
 
-func (mat *debugMaterial) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) (reflect, refract bool, dir [2]vector.Vector3D, col [2]color.Color) {
+func (mat *debugMaterial) Specular(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) (reflect, refract bool, dir [2]vec64.Vector, col [2]color.Color) {
 	return
 }
 
@@ -65,11 +65,11 @@ func (mat *debugMaterial) Reflectivity(state *goray.RenderState, sp goray.Surfac
 	return getReflectivity(mat, state, sp, flags)
 }
 
-func (mat *debugMaterial) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vector.Vector3D) float64 {
+func (mat *debugMaterial) Alpha(state *goray.RenderState, sp goray.SurfacePoint, wo vec64.Vector) float64 {
 	return 1.0
 }
 
-func (mat *debugMaterial) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vector.Vector3D, s *goray.PhotonSample) (wo vector.Vector3D, scattered bool) {
+func (mat *debugMaterial) ScatterPhoton(state *goray.RenderState, sp goray.SurfacePoint, wi vec64.Vector, s *goray.PhotonSample) (wo vec64.Vector, scattered bool) {
 	return scatterPhoton(mat, state, sp, wi, s)
 }
 
