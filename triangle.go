@@ -90,12 +90,10 @@ func (tri *Triangle) getUVs() (uv [3]UV) {
 func (tri *Triangle) Intersect(r Ray) (coll Collision) {
 	coll.Ray = r
 	rayDepth, u, v := intersect(
-		[3]float64(tri.mesh.vertices[tri.v[0]]),
-		[3]float64(tri.mesh.vertices[tri.v[1]]),
-		[3]float64(tri.mesh.vertices[tri.v[2]]),
-		[3]float64(r.Dir),
-		[3]float64(r.From),
-	)
+		tri.mesh.vertices[tri.v[0]],
+		tri.mesh.vertices[tri.v[1]],
+		tri.mesh.vertices[tri.v[2]],
+		r.Dir, r.From)
 	if rayDepth < 0 {
 		return
 	}
@@ -266,4 +264,33 @@ func (tri *Triangle) SurfaceArea() float64 {
 	v := tri.getVertices()
 	edge1, edge2 := vec64.Sub(v[1], v[0]), vec64.Sub(v[2], v[0])
 	return vec64.Cross(edge1, edge2).Length() * 0.5
+}
+
+func intersect(a, b, c, rDir, rFrom vec64.Vector) (rayDepth, u, v float64)
+
+// intersect_go is a Go implementation of ray-triangle intersection.
+func intersect_go(a, b, c, rDir, rFrom vec64.Vector) (rayDepth, u, v float64) {
+	// Tomas Möller and Ben Trumbore ray intersection scheme
+	// Explanation: <http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle>
+	rayDepth = -1.0
+	edge1 := vec64.Sub(b, a)
+	edge2 := vec64.Sub(c, a)
+	pvec := vec64.Cross(rDir, edge2)
+	det := vec64.Dot(edge1, pvec)
+	if det == 0.0 {
+		return
+	}
+	invDet := 1.0 / det
+	tvec := vec64.Sub(rFrom, a)
+	u = vec64.Dot(pvec, tvec) * invDet
+	if u < 0.0 || u > 1.0 {
+		return
+	}
+	qvec := vec64.Cross(tvec, edge1)
+	v = vec64.Dot(rDir, qvec) * invDet
+	if v < 0.0 || u+v > 1.0 {
+		return
+	}
+	rayDepth = vec64.Dot(edge2, qvec) * invDet
+	return
 }

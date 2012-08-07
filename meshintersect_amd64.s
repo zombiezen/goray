@@ -64,7 +64,7 @@
 // X5: u
 // X6: v
 // X7: d
-TEXT ·intersect(SB),$96-144
+TEXT ·intersect(SB),7,$96-144
     // Step 1: edge1, edge2 = b - a, c - a
     // Move vertices into XMM registers
     MOVUPD      bXY+24(FP), X0
