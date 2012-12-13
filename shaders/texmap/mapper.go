@@ -108,7 +108,7 @@ func (tmap *TextureMapper) textureCoordinates(state *goray.RenderState, sp goray
 	case Orco:
 		p, n = sp.OrcoPosition, sp.OrcoNormal
 	case Transform:
-		p = tmap.Transform.Transform(p)
+		p = tmap.Transform.Transform(vec64.Vector{p[0], p[1], p[2], 1}).Vec3()
 	case Window:
 		p = state.ScreenPos
 	}

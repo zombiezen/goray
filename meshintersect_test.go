@@ -26,57 +26,57 @@ import (
 )
 
 var meshIntersectTests = []struct {
-	Vertices [3][3]float64
-	RayDir   [3]float64
-	RayFrom  [3]float64
+	Vertices [3]vec64.Vector
+	RayDir   vec64.Vector
+	RayFrom  vec64.Vector
 
 	RayDepth float64
 	U, V     float64
 }{
 	{
-		Vertices: [3][3]float64{
+		Vertices: [3]vec64.Vector{
 			{1.0, 0.0, 0.0},
 			{1.0, 1.0, 0.0},
 			{1.0, 0.0, 1.0},
 		},
-		RayDir:   [3]float64{1.0, 0.0, 0.0},
-		RayFrom:  [3]float64{0.0, 0.0, 0.0},
+		RayDir:   vec64.Vector{1.0, 0.0, 0.0},
+		RayFrom:  vec64.Vector{0.0, 0.0, 0.0},
 		RayDepth: 1.0,
 		U:        0.0,
 		V:        0.0,
 	},
 	{
-		Vertices: [3][3]float64{
+		Vertices: [3]vec64.Vector{
 			{0.0, 1.0, 0.0},
 			{1.0, 1.0, 0.0},
 			{0.0, 1.0, 1.0},
 		},
-		RayDir:   [3]float64{0.0, 1.0, 0.0},
-		RayFrom:  [3]float64{0.0, 0.0, 0.0},
+		RayDir:   vec64.Vector{0.0, 1.0, 0.0},
+		RayFrom:  vec64.Vector{0.0, 0.0, 0.0},
 		RayDepth: 1.0,
 		U:        0.0,
 		V:        0.0,
 	},
 	{
-		Vertices: [3][3]float64{
+		Vertices: [3]vec64.Vector{
 			{0.0, 0.0, 1.0},
 			{0.0, 1.0, 1.0},
 			{1.0, 0.0, 1.0},
 		},
-		RayDir:   [3]float64{0.0, 0.0, 1.0},
-		RayFrom:  [3]float64{0.0, 0.0, 0.0},
+		RayDir:   vec64.Vector{0.0, 0.0, 1.0},
+		RayFrom:  vec64.Vector{0.0, 0.0, 0.0},
 		RayDepth: 1.0,
 		U:        0.0,
 		V:        0.0,
 	},
 	{
-		Vertices: [3][3]float64{
+		Vertices: [3]vec64.Vector{
 			{1.565772, -0.227881, -0.856351},
 			{0.480624, 1.452136, -0.856351},
 			{2.433322, 0.332482, 0.856351},
 		},
-		RayDir:   [3]float64{0.211504, 0.558421, -0.802142},
-		RayFrom:  [3]float64{1.339351, 0.225915, -0.059020},
+		RayDir:   vec64.Vector{0.211504, 0.558421, -0.802142},
+		RayFrom:  vec64.Vector{1.339351, 0.225915, -0.059020},
 		RayDepth: 0.44048257340316493,
 		U:        0.3300573931174704,
 		V:        0.2592403276257273,
@@ -104,11 +104,11 @@ func TestGoMeshIntersect(t *testing.T) {
 func BenchmarkMeshIntersect(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		intersect(
-			[3]float64{1.565772, -0.227881, -0.856351}, // A
-			[3]float64{0.480624, 1.452136, -0.856351},  // B
-			[3]float64{2.433322, 0.332482, 0.856351},   // C
-			[3]float64{0.211504, 0.558421, -0.802142},  // Dir
-			[3]float64{1.339351, 0.225915, -0.059020},  // From
+			vec64.Vector{1.565772, -0.227881, -0.856351}, // A
+			vec64.Vector{0.480624, 1.452136, -0.856351},  // B
+			vec64.Vector{2.433322, 0.332482, 0.856351},   // C
+			vec64.Vector{0.211504, 0.558421, -0.802142},  // Dir
+			vec64.Vector{1.339351, 0.225915, -0.059020},  // From
 		)
 	}
 }
@@ -116,11 +116,11 @@ func BenchmarkMeshIntersect(b *testing.B) {
 func BenchmarkGoMeshIntersect(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		intersect_go(
-			[3]float64{1.565772, -0.227881, -0.856351}, // A
-			[3]float64{0.480624, 1.452136, -0.856351},  // B
-			[3]float64{2.433322, 0.332482, 0.856351},   // C
-			[3]float64{0.211504, 0.558421, -0.802142},  // Dir
-			[3]float64{1.339351, 0.225915, -0.059020},  // From
+			vec64.Vector{1.565772, -0.227881, -0.856351}, // A
+			vec64.Vector{0.480624, 1.452136, -0.856351},  // B
+			vec64.Vector{2.433322, 0.332482, 0.856351},   // C
+			vec64.Vector{0.211504, 0.558421, -0.802142},  // Dir
+			vec64.Vector{1.339351, 0.225915, -0.059020},  // From
 		)
 	}
 }

@@ -57,9 +57,9 @@ type Differentials struct {
 func NewDifferentials(p SurfacePoint, r *DifferentialRay) Differentials {
 	d := -vec64.Dot(p.Normal, p.Position)
 	tx := -(vec64.Dot(p.Normal, r.FromX) + d) / vec64.Dot(p.Normal, r.DirX)
-	px := vec64.Mul(r.FromX.AddScalar(tx), r.DirX)
+	px := vec64.Mul(vec64.Add(r.FromX, vec64.Vector{tx, tx, tx}), r.DirX)
 	ty := -(vec64.Dot(p.Normal, r.FromY) + d) / vec64.Dot(p.Normal, r.DirY)
-	py := vec64.Mul(r.FromY.AddScalar(ty), r.DirY)
+	py := vec64.Mul(vec64.Add(r.FromY, vec64.Vector{ty, ty, ty}), r.DirY)
 	return Differentials{
 		X:     vec64.Sub(px, p.Position),
 		Y:     vec64.Sub(py, p.Position),

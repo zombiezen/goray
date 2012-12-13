@@ -93,7 +93,8 @@ func (tri *Triangle) Intersect(r Ray) (coll Collision) {
 		tri.mesh.vertices[tri.v[0]],
 		tri.mesh.vertices[tri.v[1]],
 		tri.mesh.vertices[tri.v[2]],
-		r.Dir, r.From)
+		r.Dir, r.From,
+	)
 	if rayDepth < 0 {
 		return
 	}
@@ -193,7 +194,7 @@ func (tri *Triangle) IntersectsBound(bd bound.Bound) bool {
 	}
 
 	ctr := bd.Center()
-	return triBoxOverlap([3]float64(ctr), bd.HalfSize(), points)
+	return triBoxOverlap(vecutil.Float3(ctr), bd.HalfSize(), points)
 }
 
 func (tri *Triangle) Material() Material { return tri.material }
@@ -242,7 +243,7 @@ func (tri *Triangle) clipBox(bd bound.Bound) (clipped bound.Bound, newData inter
 
 	v := tri.getVertices()
 	poly := []vec64.Vector{v[0], v[1], v[2], v[0]}
-	newData, clipped = triBoxClip([3]float64(bd.Min), [3]float64(bd.Max), poly)
+	newData, clipped = triBoxClip(vecutil.Float3(bd.Min), vecutil.Float3(bd.Max), poly)
 	return
 }
 

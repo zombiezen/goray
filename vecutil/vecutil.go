@@ -81,3 +81,8 @@ func CreateCS(normal vec64.Vector) (u, v vec64.Vector) {
 	}
 	return
 }
+
+// Float3 converts a vector into a float64 triple.
+func Float3(v vec64.Vector) [3]float64 {
+	return [3]float64{v[0], v[1], v[2]}
+}

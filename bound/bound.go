@@ -90,7 +90,8 @@ func (b Bound) Volume() float64 {
 }
 
 func (b Bound) Size() [3]float64 {
-	return [3]float64(vec64.Sub(b.Max, b.Min))
+	size := vec64.Sub(b.Max, b.Min)
+	return [3]float64{size[0], size[1], size[2]}
 }
 
 func (b Bound) LargestAxis() vecutil.Axis {
@@ -99,7 +100,8 @@ func (b Bound) LargestAxis() vecutil.Axis {
 }
 
 func (b Bound) HalfSize() [3]float64 {
-	return [3]float64(vec64.Vector(b.Size()).Scale(0.5))
+	size := b.Size()
+	return [3]float64{size[0] / 2, size[1] / 2, size[2] / 2}
 }
 
 // Include modifies the bounding box so that it contains the specified point.

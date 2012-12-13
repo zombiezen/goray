@@ -45,15 +45,15 @@
 
 // func intersect(a, b, c, rDir, rFrom vec64.Vector) (rayDepth, u, v float64)
 // a: +0(FP)
-// b: +24(FP)
-// c: +48(FP)
-// rDir: +72(FP)
-// rFrom: +96(FP)
+// b: +32(FP)
+// c: +64(FP)
+// rDir: +96(FP)
+// rFrom: +128(FP)
 //
 // Return values:
-// rayDepth: +120(FP)
-// u: +128(FP)
-// v: +136(FP)
+// rayDepth: +160(FP)
+// u: +168(FP)
+// v: +176(FP)
 //
 // Locals:
 // edge2: +-24(SP)
@@ -67,9 +67,10 @@
 TEXT ·intersect(SB),7,$96-144
     // Step 1: edge1, edge2 = b - a, c - a
     // Move vertices into XMM registers
-    MOVUPD      bXY+24(FP), X0
-    MOVUPD      bZcX+40(FP), X1
-    MOVUPD      cYZ+56(FP), X2
+    MOVUPD      bXY+32(FP), X0
+    MOVLPD      bZ+48(FP), X1
+    MOVHPD      cX+64(FP), X1
+    MOVUPD      cYZ+72(FP), X2
     MOVUPD      aXY+0(FP), X3
     MOVHPD      aX+0(FP), X4
     MOVLPD      aZ+16(FP), X4
@@ -84,7 +85,7 @@ TEXT ·intersect(SB),7,$96-144
     MOVUPD      X2, edge2YZ+-16(SP)
     // Step 2: pvec = rDir cross edge2
     // X
-    MOVUPD      rDirYZ+80(FP), X0
+    MOVUPD      rDirYZ+104(FP), X0
     SHUFPD      $1, X0, X0
     MOVUPD      edge2YZ+-16(SP), X1
     MULPD       X1, X0
@@ -92,8 +93,8 @@ TEXT ·intersect(SB),7,$96-144
     SUBPD       X1, X0
     MOVHPD      X0, pvecX+-72(SP)
     // Y
-    MOVHPD      rDirZ+88(FP), X0
-    MOVLPD      rDirX+72(FP), X0
+    MOVHPD      rDirZ+112(FP), X0
+    MOVLPD      rDirX+96(FP), X0
     MOVHPD      edge2X+-24(SP), X1
     MOVLPD      edge2Z+-8(SP), X1
     MULPD       X1, X0
@@ -101,7 +102,7 @@ TEXT ·intersect(SB),7,$96-144
     SUBPD       X1, X0
     MOVHPD      X0, pvecY+-64(SP)
     // Z
-    MOVUPD      rDirXY+72(FP), X0
+    MOVUPD      rDirXY+96(FP), X0
     SHUFPD      $1, X0, X0
     MOVUPD      edge2XY+-24(SP), X1
     MULPD       X1, X0
@@ -129,11 +130,11 @@ TEXT ·intersect(SB),7,$96-144
     MOVSD       $1.0, X7
     DIVSD       X0, X7
     // Step 6: tvec = rFrom - a
-    MOVUPD      rFromXY+96(FP), X0
+    MOVUPD      rFromXY+128(FP), X0
     MOVUPD      aXY+0(FP), X2
     SUBPD       X2, X0
     MOVUPD      X0, tvecXY+-96(SP)
-    MOVSD       rFromZ+112(FP), X1
+    MOVSD       rFromZ+144(FP), X1
     MOVSD       aZ+16(FP), X3
     SUBSD       X3, X1
     MOVSD       X1, tvecZ+-80(SP)
@@ -183,12 +184,12 @@ TEXT ·intersect(SB),7,$96-144
     SUBPD       X1, X0
     MOVHPD      X0, qvecZ+-56(SP)
     // Step 10: v = (rDir dot qvec) * d
-    MOVUPD      rDirXY+72(FP), X6
+    MOVUPD      rDirXY+96(FP), X6
     MOVUPD      qvecXY+-72(SP), X2
     MULPD       X2, X6
     MOVUPD      X6, X2
     SHUFPD      $1, X2, X2
-    MOVSD       rDirZ+88(FP), X1
+    MOVSD       rDirZ+112(FP), X1
     MOVSD       qvecZ+-56(SP), X3
     MULSD       X3, X1
     ADDSD       X2, X6
@@ -216,13 +217,13 @@ TEXT ·intersect(SB),7,$96-144
     ADDSD       X2, X0
     ADDSD       X1, X0
     MULSD       X7, X0
-    MOVSD       X0, rayDepth+120(FP)
+    MOVSD       X0, rayDepth+160(FP)
     // Step 13: return
-    MOVSD       X5, u+128(FP)
-    MOVSD       X6, v+136(FP)
+    MOVSD       X5, u+168(FP)
+    MOVSD       X6, v+176(FP)
     RET
     // No collision return
 NoCollision:
     MOVSD       $-1.0, X0
-    MOVSD       X0, rayDepth+120(FP)
+    MOVSD       X0, rayDepth+160(FP)
     RET
